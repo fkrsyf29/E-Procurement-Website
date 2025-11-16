@@ -1,5 +1,5 @@
-﻿using EProcurement.Api.Models.Config;
-using EProcurement.Api.Models.Responses;
+﻿using EProcurement.Api.Config;
+using EProcurement.Api.DTOs.Responses;
 using EProcurement.Api.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using System.Text;

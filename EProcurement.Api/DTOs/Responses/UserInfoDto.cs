@@ -1,4 +1,4 @@
-﻿namespace EProcurement.Api.Models.Responses
+﻿namespace EProcurement.Api.DTOs.Responses
 {
     public class UserInfoDto
     {

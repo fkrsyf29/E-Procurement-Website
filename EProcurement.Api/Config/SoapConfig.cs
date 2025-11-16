@@ -1,4 +1,4 @@
-﻿namespace EProcurement.Api.Models.Config
+﻿namespace EProcurement.Api.Config
 {
     public class SoapConfig
     {

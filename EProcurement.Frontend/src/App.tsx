@@ -34,21 +34,6 @@ export default function App() {
   const [proposals, setProposals] = useState<Proposal[]>([...mockProposals, ...testProposals]);
   const [approvalMatrices, setApprovalMatrices] = useState<ApprovalMatrix[]>(approvalMatrixData);
 
-  // test API
-  useEffect(() => {
-    console.log('Testing API connection...');
-    fetch('/api/test')
-      .then(r => r.json())
-      .then(data => {
-        console.log('API TEST SUCCESS:', data);
-        alert(`API Connected!\n${data.message}\nPort: ${data.port}`);
-      })
-      .catch(err => {
-        console.error('API TEST FAILED:', err);
-        alert('API Connection Failed! Check console.');
-      });
-  }, []);
-
   // ✅ DEBUG: Log when proposals state changes
   useEffect(() => {
     console.log('📢 [APP] proposals state updated!');

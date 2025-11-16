@@ -1,6 +1,6 @@
 ﻿using EProcurement.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using EProcurement.Api.Models.Requests;
+using EProcurement.Api.DTOs.Requests;
 
 namespace EProcurement.Api.Controllers
 {

@@ -1,4 +1,4 @@
-﻿namespace EProcurement.Api.Models.Requests
+﻿namespace EProcurement.Api.DTOs.Requests
 {
     public class LoginRequest
     {

@@ -1,4 +1,4 @@
-﻿using EProcurement.Api.Models.Responses;
+﻿using EProcurement.Api.DTOs.Responses;
 
 namespace EProcurement.Api.Services.Interfaces
 {

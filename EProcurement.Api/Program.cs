@@ -1,13 +1,20 @@
-using EProcurement.Api.Models.Config;
+using EProcurement.Api.Config;
 using EProcurement.Api.Services.Implementations;
 using EProcurement.Api.Services.Interfaces;
+using EProcurement.Api.Data;
+using EProcurement.Api.Repositories.Interfaces;
+using EProcurement.Api.Repositories.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ================================================
+// SERVICES
+// ================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ===== CORS =====
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
@@ -19,12 +26,25 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ===== CONFIG =====
 builder.Services.Configure<SoapConfig>(builder.Configuration.GetSection("SOAP"));
+
+// ===== CUSTOM SERVICES =====
 builder.Services.AddScoped<ISsoService, SsoService>();
 
+// ===== DAPPER FUNDAMENTAL =====
+// DbConnectionFactory DI
+builder.Services.AddSingleton<DbConnectionFactory>();
+
+// Repository berbasis Dapper
+builder.Services.AddScoped<IQueryRepository, DapperRepository>();
+builder.Services.AddScoped<ICommandRepository, DapperRepository>();
+
+// ================================================
+// APP
+// ================================================
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -41,9 +61,9 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-// === SERVE FRONTEND (Production) ===
+// ===== SERVE FRONTEND (Production) =====
 app.UseStaticFiles();
 app.UseDefaultFiles();
-app.MapFallbackToFile("index.html"); // SPA routing
+app.MapFallbackToFile("index.html");
 
 app.Run();
