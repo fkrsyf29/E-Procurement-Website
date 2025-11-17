@@ -1,13 +1,13 @@
-﻿using EProcurement.Api.Entities;
+﻿using EProcurement.Api.DTOs.Requests;
+using EProcurement.Api.DTOs.Responses;
 
 namespace EProcurement.Api.Repositories.Interfaces
 {
     public interface IRoleRepository
     {
-        Task<IEnumerable<Role>> GetAll();
-        Task<Role?> GetById(int id);
-        Task<int> Insert(Role role);
-        Task<int> Update(Role role);
-        Task<int> Delete(int id);
+        Task<IEnumerable<RoleDto>> GetAllAsync();
+        Task<RoleDto?> GetByIdAsync(string roleId);
+        Task<RoleInsertResult> InsertAsync(RoleCreateRequest req);
+        Task<RoleUpdateResult> UpdateAsync(RoleUpdateRequest request);
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Edit, Trash2, Star, Phone, Mail, MapPin, Award, X, Save, FileText, Building2, Calendar, Shield, Tag } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -41,6 +41,10 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   const [editingVendor, setEditingVendor] = useState<VendorRecord | null>(null);
   const [viewingVendor, setViewingVendor] = useState<VendorRecord | null>(null);
   
+  // Pagination
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Form fields - Basic Info
   const [vendorName, setVendorName] = useState('');
   const [vendorCode, setVendorCode] = useState('');
@@ -104,17 +108,29 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   const availableBrands = getActiveExternalBrands();
   
   // Filter vendors
-  const filteredVendors = vendors.filter(vendor => {
-    if (!searchTerm) return true;
-    
-    const search = searchTerm.toLowerCase();
-    return (
-      vendor.vendorName.toLowerCase().includes(search) ||
-      vendor.vendorCode.toLowerCase().includes(search) ||
-      vendor.email?.toLowerCase().includes(search) ||
-      vendor.contactPerson?.toLowerCase().includes(search)
+  const filteredVendors = useMemo(() => {
+    if (!searchTerm) return vendors;
+
+    const term = searchTerm.toLowerCase();
+    return vendors.filter(vendor =>
+      vendor.vendorName.toLowerCase().includes(term) ||
+      vendor.vendorCode.toLowerCase().includes(term) ||
+      vendor.email?.toLowerCase().includes(term) ||
+      vendor.contactPerson?.toLowerCase().includes(term)
     );
-  });
+  }, [vendors, searchTerm]);
+
+  const totalPages = Math.ceil(filteredVendors.length / pageSize);
+  const paginatedVendors = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredVendors.slice(start, end);
+  }, [filteredVendors, currentPage, pageSize]);
+
+  // Reset ke halaman 1 ketika search atau pageSize berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, pageSize]);
   
   const handleNewVendor = () => {
     resetForm();
@@ -197,100 +213,97 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
     }
     
     const now = new Date().toISOString().split('T')[0];
-    
+        const savedVendor: VendorRecord = editingVendor
+      ? {
+          ...editingVendor,
+          vendorName,
+          vendorCode,
+          contactPerson: contactPerson || undefined,
+          phoneNumber: phoneNumber || undefined,
+          email: email || undefined,
+          address: address || undefined,
+          website: website || undefined,
+          capabilities: {
+            subClassifications: selectedSubClasses.map(sc => ({
+              categoryCode: sc.code.split('.')[0],
+              categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
+              classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
+              classificationName: categoryHierarchy
+                .find(c => c.code === sc.code.split('.')[0])
+                ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
+              subClassificationCode: sc.code,
+              subClassificationName: sc.name
+            })),
+            kbliCodes: selectedKBLICodes,
+            brands: selectedBrands
+          },
+          rating: rating || undefined,
+          certifications: certifications.length > 0 ? certifications : undefined,
+          companySize,
+          yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
+          npwp: npwp || undefined,
+          siup: siup || undefined,
+          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
+          paymentTerms: paymentTerms || undefined,
+          notes: notes || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          isActive,
+          isPreferred,
+          updatedDate: now,
+          updatedBy: user.username
+        }
+      : {
+          id: `VDB-${Date.now()}`,
+          vendorName,
+          vendorCode,
+          contactPerson: contactPerson || undefined,
+          phoneNumber: phoneNumber || undefined,
+          email: email || undefined,
+          address: address || undefined,
+          website: website || undefined,
+          capabilities: {
+            subClassifications: selectedSubClasses.map(sc => ({
+              categoryCode: sc.code.split('.')[0],
+              categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
+              classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
+              classificationName: categoryHierarchy
+                .find(c => c.code === sc.code.split('.')[0])
+                ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
+              subClassificationCode: sc.code,
+              subClassificationName: sc.name
+            })),
+            kbliCodes: selectedKBLICodes,
+            brands: selectedBrands
+          },
+          rating: rating || undefined,
+          certifications: certifications.length > 0 ? certifications : undefined,
+          companySize,
+          yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
+          npwp: npwp || undefined,
+          siup: siup || undefined,
+          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
+          paymentTerms: paymentTerms || undefined,
+          notes: notes || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          isActive,
+          isPreferred,
+          createdDate: now,
+          updatedDate: now,
+          createdBy: user.username,
+          updatedBy: user.username
+        };
+
     if (editingVendor) {
-      // Update existing vendor
-      const updatedVendor: VendorRecord = {
-        ...editingVendor,
-        vendorName,
-        vendorCode,
-        contactPerson: contactPerson || undefined,
-        phoneNumber: phoneNumber || undefined,
-        email: email || undefined,
-        address: address || undefined,
-        website: website || undefined,
-        capabilities: {
-          subClassifications: selectedSubClasses.map(sc => ({
-            categoryCode: sc.code.split('.')[0],
-            categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
-            classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
-            classificationName: categoryHierarchy
-              .find(c => c.code === sc.code.split('.')[0])
-              ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
-            subClassificationCode: sc.code,
-            subClassificationName: sc.name
-          })),
-          kbliCodes: selectedKBLICodes,
-          brands: selectedBrands
-        },
-        rating: rating || undefined,
-        certifications: certifications.length > 0 ? certifications : undefined,
-        companySize: companySize,
-        yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
-        npwp: npwp || undefined,
-        siup: siup || undefined,
-        creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-        paymentTerms: paymentTerms || undefined,
-        notes: notes || undefined,
-        tags: tags.length > 0 ? tags : undefined,
-        isActive,
-        isPreferred,
-        updatedDate: now,
-        updatedBy: user.username
-      };
-      
-      const newVendors = vendors.map(v => v.id === editingVendor.id ? updatedVendor : v);
-      setVendors(newVendors);
+      setVendors(vendors.map(v => v.id === editingVendor.id ? savedVendor : v));
       toast.success('Vendor updated successfully');
     } else {
-      // Create new vendor
-      const newVendor: VendorRecord = {
-        id: `VDB-${Date.now()}`,
-        vendorName,
-        vendorCode,
-        contactPerson: contactPerson || undefined,
-        phoneNumber: phoneNumber || undefined,
-        email: email || undefined,
-        address: address || undefined,
-        website: website || undefined,
-        capabilities: {
-          subClassifications: selectedSubClasses.map(sc => ({
-            categoryCode: sc.code.split('.')[0],
-            categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
-            classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
-            classificationName: categoryHierarchy
-              .find(c => c.code === sc.code.split('.')[0])
-              ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
-            subClassificationCode: sc.code,
-            subClassificationName: sc.name
-          })),
-          kbliCodes: selectedKBLICodes,
-          brands: selectedBrands
-        },
-        rating: rating || undefined,
-        certifications: certifications.length > 0 ? certifications : undefined,
-        companySize,
-        yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
-        npwp: npwp || undefined,
-        siup: siup || undefined,
-        creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-        paymentTerms: paymentTerms || undefined,
-        notes: notes || undefined,
-        tags: tags.length > 0 ? tags : undefined,
-        isActive,
-        isPreferred,
-        createdDate: now,
-        updatedDate: now,
-        createdBy: user.username,
-        updatedBy: user.username
-      };
-      
-      setVendors([...vendors, newVendor]);
+      setVendors([...vendors, savedVendor]);
       toast.success('Vendor created successfully');
     }
     
     setShowForm(false);
     resetForm();
+    setCurrentPage(1);
   };
   
   const resetForm = () => {
@@ -380,6 +393,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   
   return (
     <div className="p-8">
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl text-gray-900 mb-2">Vendor Database Management</h1>
         <p className="text-gray-600">
@@ -443,14 +457,14 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVendors.length === 0 ? (
+              {paginatedVendors.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                     {searchTerm ? 'No vendors found matching your search.' : 'No vendors available. Click "Add Vendor" to create one.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredVendors.map((vendor, index) => (
+                paginatedVendors.map((vendor, index) => (
                   <TableRow key={vendor.id} className={!vendor.isActive ? 'opacity-50' : ''}>
                     <TableCell className="text-gray-600">{index + 1}</TableCell>
                     <TableCell>
@@ -581,6 +595,57 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
             </TableBody>
           </Table>
         </div>
+      {/* Pagination Footer */}
+        {filteredVendors.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <p className="text-sm text-gray-700">
+              Showing {(currentPage - 1) * pageSize + 1} to{' '}
+              {Math.min(currentPage * pageSize, filteredVendors.length)} of {filteredVendors.length} vendors
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Page Size */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="pageSizeVendor" className="text-sm text-gray-700 whitespace-nowrap">
+                  Rows per page:
+                </Label>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger id="pageSizeVendor" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                  First
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  Previous
+                </Button>
+
+                <span className="text-sm text-gray-700 px-2">
+                  Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+                </span>
+
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  Next
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+                  Last
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Form Dialog - will continue in next part */}

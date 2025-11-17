@@ -1,53 +1,15 @@
 ﻿namespace EProcurement.Api.SQL.Roles
 {
-    public static class RoleCommands
+    public static class UserCommands
     {
-        public const string Insert = @"
-            INSERT INTO roles
-            (
-                name,
-                description,
-                permissions,
-                canApprove,
-                canCreate,
-                canView,
-                category,
-                isActive,
-                isSystemGenerated,
-                createdDate
-            )
-            VALUES
-            (
-                @name,
-                @description,
-                @permissions,
-                @canApprove,
-                @canCreate,
-                @canView,
-                @category,
-                @isActive,
-                @isSystemGenerated,
-                GETDATE()
-            );
+        public const string Insert = @"EXEC sp_Role_Insert 
+            @Name, @Description, @RoleCategoryID, @ApprovalRoleID, 
+            @CanApprove, @CanCreate, @CanView, @IsActive, @IsSystemGenerated,
+            @CreatedBy, @PermissionIDs";
 
-            SELECT SCOPE_IDENTITY();
-        ";
-
-        public const string Update = @"
-            UPDATE roles SET
-                name = @name,
-                description = @description,
-                permissions = @permissions,
-                canApprove = @canApprove,
-                canCreate = @canCreate,
-                canView = @canView,
-                category = @category,
-                isActive = @isActive
-            WHERE id = @id;
-        ";
-
-        public const string Delete = @"
-            DELETE FROM roles WHERE id = @id;
-        ";
+        public const string Update = @"EXEC sp_Role_Update 
+            @RoleId, @Name, @Description, @RoleCategoryID, @ApprovalRoleID, 
+            @CanApprove, @CanCreate, @CanView, @IsActive, @UpdatedBy,
+            @IsDeleted, @DeletedBy, @PermissionIDs";
     }
 }

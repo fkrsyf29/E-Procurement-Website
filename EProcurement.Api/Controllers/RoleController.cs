@@ -1,6 +1,7 @@
-﻿using EProcurement.Api.Entities;
+﻿using Microsoft.AspNetCore.Mvc;
 using EProcurement.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+using EProcurement.Api.DTOs.Requests;
+using EProcurement.Api.DTOs.Responses;
 
 namespace EProcurement.Api.Controllers
 {
@@ -18,40 +19,33 @@ namespace EProcurement.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _service.GetAll();
-            return Ok(result);
+            return Ok(await _service.GetAllAsync());
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{roleId}")]
+        public async Task<IActionResult> GetById(string roleId)
         {
-            var result = await _service.GetById(id);
-            if (result == null)
-                return NotFound();
-
+            var result = await _service.GetByIdAsync(roleId);
+            if (result == null) return NotFound();
             return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Role model)
+        public async Task<IActionResult> Insert(RoleCreateRequest request)
         {
-            var newId = await _service.Create(model);
-            return Ok(new { id = newId });
+            RoleInsertResult result = await _service.InsertAsync(request);
+
+            return Ok(new { message = "Role created successfully", data = result });
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Role model)
+        [HttpPut("{roleId}")]
+        public async Task<IActionResult> Update(int roleId, RoleUpdateRequest request)
         {
-            model.Id = id;
-            await _service.Update(model);
-            return Ok();
-        }
+            request.RoleId = roleId;
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            await _service.Delete(id);
-            return Ok();
+            RoleUpdateResult result = await _service.UpdateAsync(request);
+
+            return Ok(new { message = "Role updated successfully", data = result });
         }
     }
 }

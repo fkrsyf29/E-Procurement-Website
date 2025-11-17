@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { ApprovalMatrix, ApprovalStep, Department, Jobsite, ApprovalRole } from '../types';
 import { formatCurrency } from '../utils/formatters';
@@ -68,6 +68,10 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
   const [sortField, setSortField] = useState<SortField>('department');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
+  // Pagination state
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Form state
   const [formData, setFormData] = useState<Partial<ApprovalMatrix>>({
     department: 'Plant',
@@ -114,6 +118,19 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
     
     return sortDirection === 'asc' ? comparison : -comparison;
   });
+
+  // Pagination calculation
+  const totalPages = Math.ceil(sortedMatrices.length / pageSize);
+  const paginatedMatrices = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedMatrices.slice(start, end);
+  }, [sortedMatrices, currentPage, pageSize]);
+
+  // Reset to first page when filters/search/pageSize change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterDepartment, filterJobsite, pageSize]);
 
   // Handle sort column click
   const handleSort = (field: SortField) => {
@@ -534,14 +551,14 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {sortedMatrices.length === 0 ? (
+              {paginatedMatrices.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No approval matrices found. Add one to get started.
                   </td>
                 </tr>
               ) : (
-                sortedMatrices.map((matrix) => (
+                paginatedMatrices.map((matrix) => (
                   <tr key={matrix.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
@@ -599,6 +616,59 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
             </tbody>
           </table>
         </div>
+        {/* Pagination */}
+        {sortedMatrices.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            {/* Showing info */}
+            <p className="text-sm text-gray-700">
+              Showing {(currentPage - 1) * pageSize + 1} to{' '}
+              {Math.min(currentPage * pageSize, sortedMatrices.length)} of {sortedMatrices.length} matrices
+            </p>
+
+            {/* Page size + Navigation */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Page Size Selector */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="pageSizeMatrix" className="text-sm text-gray-700 whitespace-nowrap">
+                  Rows per page:
+                </Label>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger id="pageSizeMatrix" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                  First
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  Previous
+                </Button>
+
+                <span className="text-sm text-gray-700 px-2">
+                  Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+                </span>
+
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  Next
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+                  Last
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Dialog */}

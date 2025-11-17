@@ -1,23 +1,14 @@
 ﻿namespace EProcurement.Api.DTOs.Responses
 {
-    public class RoleDto
+    public class PermissionDto
     {
-        public int RoleID { get; set; }
-        public string Code { get; set; }              
+        public int PermissionID { get; set; }
+        public string Code { get; set; }               
         public string Name { get; set; }
         public string Description { get; set; }
+        public int PermissionCategoryID { get; set; }
         public string Category { get; set; }
-        public string ApprovalRole { get; set; }
-
-        public bool CanApprove { get; set; }
-        public bool CanCreate { get; set; }
-        public bool CanView { get; set; }
         public bool IsActive { get; set; }
-        public bool IsSystemGenerated { get; set; }
-
-        public List<int> PermissionId { get; set; }
-        public List<string> Permission { get; set; }
-
         public DateTime CreatedAt { get; set; }
         public string CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }

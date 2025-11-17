@@ -1,39 +1,8 @@
 ﻿namespace EProcurement.Api.SQL.Roles
 {
-    public static class RoleQueries
+    public static class UserQueries
     {
-        public const string GetAll = @"
-            SELECT 
-                id,
-                name,
-                description,
-                permissions,
-                canApprove,
-                canCreate,
-                canView,
-                category,
-                isActive,
-                isSystemGenerated,
-                createdDate
-            FROM roles
-            ORDER BY createdDate DESC;
-        ";
-
-        public const string GetById = @"
-            SELECT 
-                id,
-                name,
-                description,
-                permissions,
-                canApprove,
-                canCreate,
-                canView,
-                category,
-                isActive,
-                isSystemGenerated,
-                createdDate
-            FROM roles
-            WHERE id = @id;
-        ";
+        public const string GetAll = @"EXEC sp_Role_GetAll";
+        public const string GetById = @"EXEC sp_Role_GetById @RoleId";
     }
 }

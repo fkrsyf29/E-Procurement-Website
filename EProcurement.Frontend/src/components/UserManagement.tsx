@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Key, Eye, EyeOff, RefreshCw, ShieldAlert, Filter, Users, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -54,7 +54,614 @@ interface UserManagementProps {
   onNavigateToRoleManagement: () => void;
 }
 
+interface UserFromApi {
+  userID: number;
+  username: string;
+  password: string;
+  name: string;
+  roleName: string;
+  jobsite: string | null;
+  department: string | null;
+  email: string | null;
+  phone: string | null;
+  lastPasswordChange: string;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
 export function UserManagement({ availableRoles, onNavigateToRoleManagement }: UserManagementProps) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const FALLBACK_USERS: User[] = [
+    { 
+      id: '1', 
+      username: 'admin', 
+      password: 'admin123', 
+      name: 'System Administrator', 
+      role: 'Administrator', 
+      email: 'admin@eproposal.com', 
+      phone: '+62 812-1000-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '2', 
+      username: 'presdir', 
+      password: 'presdir123', 
+      name: 'Budi Santoso', 
+      role: 'President Director', 
+      email: 'president@eproposal.com', 
+      phone: '+62 812-1000-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Plant Department - JAHO
+    { 
+      id: '3', 
+      username: 'creator.plant.jaho', 
+      password: 'creator123', 
+      name: 'Ahmad Fauzi', 
+      role: 'Creator Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'ahmad.fauzi@eproposal.com', 
+      phone: '+62 812-2001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '4', 
+      username: 'uh.plant.jaho', 
+      password: 'unithead123', 
+      name: 'Siti Nurhaliza', 
+      role: 'Unit Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'siti.nurhaliza@eproposal.com', 
+      phone: '+62 812-2001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '5', 
+      username: 'sh.plant.jaho', 
+      password: 'sectionhead123', 
+      name: 'Budi Rahardjo', 
+      role: 'Section Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'budi.rahardjo@eproposal.com', 
+      phone: '+62 812-2001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '6', 
+      username: 'dh.plant.jaho', 
+      password: 'depthead123', 
+      name: 'Dewi Kartika', 
+      role: 'Department Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'dewi.kartika@eproposal.com', 
+      phone: '+62 812-2001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '7', 
+      username: 'mgr.plant.jaho', 
+      password: 'manager123', 
+      name: 'Eko Prasetyo', 
+      role: 'Manager Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'eko.prasetyo@eproposal.com', 
+      phone: '+62 812-2001-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // IT Department - SERA
+    { 
+      id: '8', 
+      username: 'creator.it.sera', 
+      password: 'creator123', 
+      name: 'Rizki Ramadhan', 
+      role: 'Creator IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'rizki.ramadhan@eproposal.com', 
+      phone: '+62 812-2002-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '9', 
+      username: 'uh.it.sera', 
+      password: 'unithead123', 
+      name: 'Maya Sari', 
+      role: 'Unit Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'maya.sari@eproposal.com', 
+      phone: '+62 812-2002-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '10', 
+      username: 'sh.it.sera', 
+      password: 'sectionhead123', 
+      name: 'Agus Setiawan', 
+      role: 'Section Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'agus.setiawan@eproposal.com', 
+      phone: '+62 812-2002-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '11', 
+      username: 'dh.it.sera', 
+      password: 'depthead123', 
+      name: 'Dian Pramudya', 
+      role: 'Department Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'dian.pramudya@eproposal.com', 
+      phone: '+62 812-2002-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '12', 
+      username: 'mgr.it.sera', 
+      password: 'manager123', 
+      name: 'Fitri Handayani', 
+      role: 'Manager IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'fitri.handayani@eproposal.com', 
+      phone: '+62 812-2002-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Finance Department - MACO HAULING
+    { 
+      id: '13', 
+      username: 'creator.finance.maco', 
+      password: 'creator123', 
+      name: 'Linda Wijaya', 
+      role: 'Creator Finance Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Finance', 
+      email: 'linda.wijaya@eproposal.com', 
+      phone: '+62 812-2003-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '14', 
+      username: 'dh.finance.maco', 
+      password: 'depthead123', 
+      name: 'Hendra Kusuma', 
+      role: 'Department Head Finance Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Finance', 
+      email: 'hendra.kusuma@eproposal.com', 
+      phone: '+62 812-2003-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Logistic Department - ADMO MINING
+    { 
+      id: '15', 
+      username: 'creator.logistic.admo', 
+      password: 'creator123', 
+      name: 'Yudi Hartono', 
+      role: 'Creator Logistic Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Logistic', 
+      email: 'yudi.hartono@eproposal.com', 
+      phone: '+62 812-2004-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '16', 
+      username: 'mgr.logistic.admo', 
+      password: 'manager123', 
+      name: 'Ratna Sari', 
+      role: 'Manager Logistic Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Logistic', 
+      email: 'ratna.sari@eproposal.com', 
+      phone: '+62 812-2004-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Additional Creators for Planner Testing
+    // Plant Department - ADMO MINING
+    { 
+      id: '40', 
+      username: 'creator.plant.admo.mining', 
+      password: 'creator123', 
+      name: 'Wawan Setiawan', 
+      role: 'Creator Plant Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Plant', 
+      email: 'wawan.setiawan@eproposal.com', 
+      phone: '+62 812-2005-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - ADMO HAULING
+    { 
+      id: '41', 
+      username: 'creator.plant.admo.hauling', 
+      password: 'creator123', 
+      name: 'Indah Permata', 
+      role: 'Creator Plant Department ADMO HAULING', 
+      jobsite: 'ADMO HAULING', 
+      department: 'Plant', 
+      email: 'indah.permata@eproposal.com', 
+      phone: '+62 812-2006-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - SERA
+    { 
+      id: '42', 
+      username: 'creator.plant.sera', 
+      password: 'creator123', 
+      name: 'Gunawan Santoso', 
+      role: 'Creator Plant Department SERA', 
+      jobsite: 'SERA', 
+      department: 'Plant', 
+      email: 'gunawan.santoso@eproposal.com', 
+      phone: '+62 812-2007-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - NARO
+    { 
+      id: '43', 
+      username: 'creator.plant.naro', 
+      password: 'creator123', 
+      name: 'Dewi Lestari', 
+      role: 'Creator Plant Department NARO', 
+      jobsite: 'NARO', 
+      department: 'Plant', 
+      email: 'dewi.lestari@eproposal.com', 
+      phone: '+62 812-2008-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - MACO MINING
+    { 
+      id: '44', 
+      username: 'creator.plant.maco.mining', 
+      password: 'creator123', 
+      name: 'Budi Cahyono', 
+      role: 'Creator Plant Department MACO MINING', 
+      jobsite: 'MACO MINING', 
+      department: 'Plant', 
+      email: 'budi.cahyono@eproposal.com', 
+      phone: '+62 812-2009-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - MACO HAULING
+    { 
+      id: '45', 
+      username: 'creator.plant.maco.hauling', 
+      password: 'creator123', 
+      name: 'Siti Rahayu', 
+      role: 'Creator Plant Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Plant', 
+      email: 'siti.rahayu@eproposal.com', 
+      phone: '+62 812-2010-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Division Heads
+    { 
+      id: '17', 
+      username: 'divhead.plant', 
+      password: 'divhead123', 
+      name: 'Susanto Wibowo', 
+      role: 'Plant Division Head', 
+      department: 'Plant', 
+      email: 'susanto.wibowo@eproposal.com', 
+      phone: '+62 812-3001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '18', 
+      username: 'divhead.it', 
+      password: 'divhead123', 
+      name: 'Andri Wijaya', 
+      role: 'IT Division Head', 
+      department: 'IT', 
+      email: 'andri.wijaya@eproposal.com', 
+      phone: '+62 812-3001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '19', 
+      username: 'divhead.finance', 
+      password: 'divhead123', 
+      name: 'Diana Kusuma', 
+      role: 'Finance Division Head', 
+      department: 'Finance', 
+      email: 'diana.kusuma@eproposal.com', 
+      phone: '+62 812-3001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '20', 
+      username: 'divhead.logistic', 
+      password: 'divhead123', 
+      name: 'Hari Santoso', 
+      role: 'Logistic Division Head', 
+      department: 'Logistic', 
+      email: 'hari.santoso@eproposal.com', 
+      phone: '+62 812-3001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Directors
+    { 
+      id: '21', 
+      username: 'dir.plant', 
+      password: 'director123', 
+      name: 'Ir. Bambang Suryanto', 
+      role: 'Plant Director', 
+      department: 'Plant', 
+      email: 'bambang.suryanto@eproposal.com', 
+      phone: '+62 812-4001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '22', 
+      username: 'dir.finance', 
+      password: 'director123', 
+      name: 'Dra. Sri Mulyani', 
+      role: 'Finance Director', 
+      department: 'Finance', 
+      email: 'sri.mulyani@eproposal.com', 
+      phone: '+62 812-4001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Chief Operations
+    { 
+      id: '23', 
+      username: 'co.admo', 
+      password: 'chiefop123', 
+      name: 'Ir. Wijaya Kusuma', 
+      role: 'Chief Operation ADMO', 
+      email: 'wijaya.kusuma@eproposal.com', 
+      phone: '+62 812-5001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '24', 
+      username: 'co.sera', 
+      password: 'chiefop123', 
+      name: 'Ir. Hadi Pranoto', 
+      role: 'Chief Operation SERA', 
+      email: 'hadi.pranoto@eproposal.com', 
+      phone: '+62 812-5001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '25', 
+      username: 'co.maco', 
+      password: 'chiefop123', 
+      name: 'Ir. Rudi Hermawan', 
+      role: 'Chief Operation MACO', 
+      email: 'rudi.hermawan@eproposal.com', 
+      phone: '+62 812-5001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Planner (HO Only)
+    { 
+      id: '28', 
+      username: 'planner', 
+      password: 'planner123', 
+      name: 'Andi Saputra', 
+      role: 'Planner', 
+      jobsite: 'HO',
+      department: 'Procurement',
+      email: 'andi.saputra@eproposal.com', 
+      phone: '+62 812-6001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Buyers by Jobsite
+    // Buyer JAHO
+    { 
+      id: '26', 
+      username: 'buyer.jaho', 
+      password: 'buyer123', 
+      name: 'Tommy Wijaya', 
+      role: 'Buyer', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'tommy.wijaya@eproposal.com', 
+      phone: '+62 812-6001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer SERA
+    { 
+      id: '31', 
+      username: 'buyer.sera', 
+      password: 'buyer123', 
+      name: 'Dedi Kurniawan', 
+      role: 'Buyer', 
+      jobsite: 'SERA',
+      department: 'Procurement',
+      email: 'dedi.kurniawan@eproposal.com', 
+      phone: '+62 812-6001-0006', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer ADMO MINING
+    { 
+      id: '32', 
+      username: 'buyer.admo.mining', 
+      password: 'buyer123', 
+      name: 'Sari Wulandari', 
+      role: 'Buyer', 
+      jobsite: 'ADMO MINING',
+      department: 'Procurement',
+      email: 'sari.wulandari@eproposal.com', 
+      phone: '+62 812-6001-0007', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer ADMO HAULING
+    { 
+      id: '33', 
+      username: 'buyer.admo.hauling', 
+      password: 'buyer123', 
+      name: 'Fandi Pratama', 
+      role: 'Buyer', 
+      jobsite: 'ADMO HAULING',
+      department: 'Procurement',
+      email: 'fandi.pratama@eproposal.com', 
+      phone: '+62 812-6001-0008', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer NARO
+    { 
+      id: '34', 
+      username: 'buyer.naro', 
+      password: 'buyer123', 
+      name: 'Rina Melati', 
+      role: 'Buyer', 
+      jobsite: 'NARO',
+      department: 'Procurement',
+      email: 'rina.melati@eproposal.com', 
+      phone: '+62 812-6001-0009', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer MACO MINING
+    { 
+      id: '35', 
+      username: 'buyer.maco.mining', 
+      password: 'buyer123', 
+      name: 'Bambang Sutejo', 
+      role: 'Buyer', 
+      jobsite: 'MACO MINING',
+      department: 'Procurement',
+      email: 'bambang.sutejo@eproposal.com', 
+      phone: '+62 812-6001-0010', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer MACO HAULING
+    { 
+      id: '36', 
+      username: 'buyer.maco.hauling', 
+      password: 'buyer123', 
+      name: 'Hendra Wijaya', 
+      role: 'Buyer', 
+      jobsite: 'MACO HAULING',
+      department: 'Procurement',
+      email: 'hendra.wijaya@eproposal.com', 
+      phone: '+62 812-6001-0011', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Sourcing (JAHO Only)
+    { 
+      id: '27', 
+      username: 'sourcing.jaho', 
+      password: 'sourcing123', 
+      name: 'Emma Kusuma', 
+      role: 'Sourcing', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'emma.kusuma@eproposal.com', 
+      phone: '+62 812-6001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Management
+    { 
+      id: '29', 
+      username: 'sourcing.depthead', 
+      password: 'sourcingdh123', 
+      name: 'Rini Susilowati', 
+      role: 'Sourcing Department Head', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'rini.susilowati@eproposal.com', 
+      phone: '+62 812-6001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      id: '30', 
+      username: 'procurement.divhead', 
+      password: 'procdiv123', 
+      name: 'Hendra Gunawan', 
+      role: 'Procurement Division Head', 
+      email: 'hendra.gunawan@eproposal.com', 
+      phone: '+62 812-6001-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+  ];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('https://localhost:7201/api/User');
+        let userList: User[] = FALLBACK_USERS;
+
+        if (res.ok) {
+          const data: UserFromApi[] = await res.json();
+          userList = data.map(u => ({
+            id: u.userID.toString(),
+            username: u.username,
+            password: u.password,
+            name: u.name,
+            role: u.roleName as UserRole,
+            jobsite: u.jobsite || undefined,
+            department: u.department || undefined,
+            email: u.email || undefined,
+            phone: u.phone || undefined,
+            isLocked: false,
+            lastPasswordChange: u.lastPasswordChange 
+              ? u.lastPasswordChange.split('T')[0] 
+              : new Date().toISOString().split('T')[0],
+          }));
+        toast.success(`Berhasil memuat ${data.length} user dari server`);
+        } else {
+          toast.error('Gagal mengambil data dari server, menggunakan data default');
+        }
+        if (isMounted) {
+          setUsers(userList);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.warn('API User gagal, pakai fallback', err);
+        toast.error('Koneksi ke server gagal, menggunakan data default');
+        if (isMounted) {
+          setUsers(FALLBACK_USERS);
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUsers();
+
+    return () => { isMounted = false; };
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -81,6 +688,10 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Pagination state
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Get active roles and statistics
   const activeRoles = getActiveRoles();
   const roleStats = getRoleStatistics();
@@ -97,7 +708,7 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
 
   // Search, filter, and sort users
   const filteredUsers = useMemo(() => {
-    let filtered = mockUsers.filter(u => {
+    let filtered = users.filter(u => {
       const matchesSearch = 
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -135,6 +746,19 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
 
     return filtered;
   }, [searchTerm, roleFilter, departmentFilter, jobsiteFilter, sortColumn, sortDirection]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredUsers.slice(start, end);
+  }, [filteredUsers, currentPage, pageSize]);
+
+  // Reset ke halaman 1 setiap kali filter/search/pageSize berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, departmentFilter, jobsiteFilter, pageSize]);
 
   // Get roles for the role selector (filtered by search only)
   const rolesByCategory = useMemo(() => {
@@ -258,16 +882,16 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
   // Calculate user statistics
   const userStats = useMemo(() => {
     return {
-      total: mockUsers.length,
-      admins: mockUsers.filter(u => u.role === 'Administrator').length,
-      creators: mockUsers.filter(u => u.role.startsWith('Creator')).length,
-      approvers: mockUsers.filter(u => {
-        const role = activeRoles.find(r => r.name === u.role);
+      total: users.length,
+      admins: users.filter(u => u.role === 'Administrator').length,
+      creators: users.filter(u => u.role.startsWith('Creator')).length,
+      approvers: users.filter(u => {
+        const role = availableRoles.find(r => r.name === u.role);
         return role?.canApprove || false;
       }).length,
-      active: mockUsers.filter(u => !u.isLocked).length,
+      active: users.filter(u => !u.isLocked).length,
     };
-  }, [mockUsers, activeRoles]);
+  }, [users, availableRoles]);
 
   return (
     <div className="space-y-6">
@@ -427,7 +1051,8 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {mockUsers.length} users
+              Showing {filteredUsers.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} to{' '}
+              {Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length} users
             </p>
           </div>
         </div>
@@ -519,19 +1144,28 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center">
-                    <div className="flex flex-col items-center gap-2 text-gray-500">
-                      <Search className="w-8 h-8" />
-                      <p>No users found</p>
-                      <p className="text-sm">Try adjusting your search or filters</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <RefreshCw className="w-8 h-8 animate-spin text-teal-600" />
+                    <span className="text-lg text-gray-600">Memuat data user...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedUsers.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-16 text-center">
+                  <div className="flex flex-col items-center gap-2 text-gray-500">
+                    <Search className="w-8 h-8" />
+                    <p className="text-lg">No users found</p>
+                    <p className="text-sm">Try adjusting your search or filters</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              paginatedUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -601,7 +1235,81 @@ export function UserManagement({ availableRoles, onNavigateToRoleManagement }: U
             </tbody>
           </table>
         </div>
-      </div>
+
+        {/* Pagination */}
+        {filteredUsers.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            {/* Showing info */}
+            <p className="text-sm text-gray-700">
+              Showing {(currentPage - 1) * pageSize + 1} to{' '}
+              {Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length} users
+            </p>
+
+            {/* Page size + Navigation */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Page Size Selector */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="pageSize" className="text-sm text-gray-700 whitespace-nowrap">
+                  Rows per page:
+                </Label>
+                <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger id="pageSize" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  First
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+
+                <span className="text-sm text-gray-700 px-2">
+                  Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
+                </span>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>      
 
       {/* User Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>

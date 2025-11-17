@@ -366,6 +366,26 @@ function generateDirectorRoles(): RoleDefinition[] {
   return roles;
 }
 
+export const mapApiRoleToDefinition = (apiRole: any): RoleDefinition => ({
+  id: apiRole.code,                                            // pakai code sebagai id (string)
+  name: apiRole.name,
+  description: apiRole.description ?? '',
+  permissions: apiRole.permission ?? [],                       // array string permission
+  canApprove: apiRole.canApprove ?? false,
+  canCreate: apiRole.canCreate ?? false,
+  canView: apiRole.canView ?? true,
+  category: (apiRole.category ?? 'Custom') as RoleDefinition['category'],
+  isActive: apiRole.isActive ?? true,
+  isSystemGenerated: apiRole.isSystemGenerated ?? false,
+  createdDate: apiRole.createdAt
+    ? apiRole.createdAt.split('T')[0]
+    : new Date().toISOString().split('T')[0],
+  updatedDate: apiRole.updatedAt
+    ? apiRole.updatedAt.split('T')[0]
+    : undefined,
+  relatedApprovalRole: apiRole.approvalRole ?? undefined,
+});
+
 // ==================== GENERATE ALL ROLES ====================
 
 export const defaultRoles: RoleDefinition[] = [
@@ -445,3 +465,4 @@ export const ROLE_CONFIG = {
 
 // Export total count
 export const totalRoles = defaultRoles.length;
+

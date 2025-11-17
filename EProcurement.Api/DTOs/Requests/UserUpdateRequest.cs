@@ -1,7 +1,8 @@
 ﻿namespace EProcurement.Api.DTOs.Requests
 {
-    public class UserCreateRequest
+    public class UserUpdateRequest
     {
+        public int UserID { get; set; }
         public string Username { get; set; }
         public string PasswordHash { get; set; }
         public string Name { get; set; }
@@ -10,8 +11,9 @@
         public int? DepartmentID { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
-        public string CreatedBy { get; set; }
-
-
+        public bool IsActive { get; set; }
+        public string UpdatedBy { get; set; }
+        public bool IsDeleted { get; set; }
+        public string DeletedBy { get; set; }
     }
 }

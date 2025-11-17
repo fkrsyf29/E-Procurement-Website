@@ -4,17 +4,20 @@ using EProcurement.Api.Services.Interfaces;
 using EProcurement.Api.Data;
 using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.Repositories.Implementations;
+using EProcurement.Api.Data.TypeHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ================================================
-// SERVICES
+// CORE ASP.NET SERVICES
 // ================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ===== CORS =====
+// ================================================
+// CORS
+// ================================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
@@ -26,25 +29,50 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ===== CONFIG =====
+// ================================================
+// CONFIG (AppSettings / SOAP / dll)
+// ================================================
 builder.Services.Configure<SoapConfig>(builder.Configuration.GetSection("SOAP"));
 
-// ===== CUSTOM SERVICES =====
+// ================================================
+// DEPENDENCY INJECTION — SERVICES (Business Logic)
+// ================================================
 builder.Services.AddScoped<ISsoService, SsoService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
-// ===== DAPPER FUNDAMENTAL =====
-// DbConnectionFactory DI
+// ================================================
+// DAPPER FUNDAMENTALS
+// ================================================
+
+// Connection Factory
 builder.Services.AddSingleton<DbConnectionFactory>();
 
-// Repository berbasis Dapper
+// Repository Specific
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// Base Dapper Repositories (Generic)
 builder.Services.AddScoped<IQueryRepository, DapperRepository>();
 builder.Services.AddScoped<ICommandRepository, DapperRepository>();
 
 // ================================================
-// APP
+// REGISTER TYPE HANDLERS (DAPPER)
+// ================================================
+Dapper.SqlMapper.AddTypeHandler(new CsvToIntListHandler());
+Dapper.SqlMapper.AddTypeHandler(new CsvToStringListHandler());
+
+
+// ================================================
+// BUILD APP
 // ================================================
 var app = builder.Build();
 
+// ================================================
+// MIDDLEWARE PIPELINE
+// ================================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -57,13 +85,23 @@ else
     app.UseHsts();
 }
 
+// Security Middleware
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+// ================================================
+// ROUTES
+// ================================================
 app.MapControllers();
 
-// ===== SERVE FRONTEND (Production) =====
+// ================================================
+// STATIC FILES — SERVE REACT FRONTEND (Production)
+// ================================================
 app.UseStaticFiles();
 app.UseDefaultFiles();
 app.MapFallbackToFile("index.html");
 
+// ================================================
+// RUN
+// ================================================
 app.Run();

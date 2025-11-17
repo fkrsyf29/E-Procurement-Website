@@ -1,81 +1,65 @@
 ﻿using Dapper;
 using EProcurement.Api.Data;
+using EProcurement.Api.DTOs.Requests;
 using EProcurement.Api.DTOs.Responses;
-using EProcurement.Api.Entities;
 using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.SQL.Roles;
 
 namespace EProcurement.Api.Repositories.Implementations
 {
-    public class RoleRepository : BaseRepository, IRoleRepository
+    public class RoleRepository : DapperRepository, IRoleRepository
     {
-        public RoleRepository(DbConnectionFactory factory)
-            : base(factory)
+        public RoleRepository(DbConnectionFactory connectionFactory)
+            : base(connectionFactory)
         {
         }
 
-        public async Task<IEnumerable<Role>> GetAll()
+        public async Task<IEnumerable<RoleDto>> GetAllAsync()
         {
-            using var conn = CreateConnection();
-            return await conn.QueryAsync<Role>(RoleQueries.GetAll);
+            return await QueryAsync<RoleDto>(UserQueries.GetAll);
         }
 
-        public async Task<Role?> GetById(int id)
+        public async Task<RoleDto?> GetByIdAsync(string roleId)
         {
-            using var conn = CreateConnection();
-            return await conn.QuerySingleOrDefaultAsync<Role>(
-                RoleQueries.GetById,
-                new { Id = id }
-            );
+            return await QuerySingleAsync<RoleDto>(UserQueries.GetById, new { RoleId = roleId });
         }
 
-        public async Task<int> Insert(Role role)
+        public async Task<RoleInsertResult> InsertAsync(RoleCreateRequest req)
         {
-            using var conn = CreateConnection();
-            return await conn.ExecuteAsync(
-                RoleCommands.Insert,
-                new
-                {
-                    role.Name,
-                    role.Description,
-                    role.CanApprove,
-                    role.CanCreate,
-                    role.CanView,
-                    role.Role_Category_Id,
-                    role.IsActive,
-                    role.IsSystemGenerated,
-                    createdDate = DateTime.Now
-                }
-            );
+            return await QuerySingleAsync<RoleInsertResult>(UserCommands.Insert, new
+            {
+                req.Name,
+                req.Description,
+                req.RoleCategoryId,
+                req.ApprovalRoleId,
+                req.CanApprove,
+                req.CanCreate,
+                req.CanView,
+                req.IsActive,
+                req.IsSystemGenerated,
+                req.CreatedBy,
+                PermissionIds = string.Join(",", req.PermissionIds)
+            });
         }
 
-        public async Task<int> Update(Role role)
+        public async Task<RoleUpdateResult> UpdateAsync(RoleUpdateRequest req)
         {
-            using var conn = CreateConnection();
-            return await conn.ExecuteAsync(
-                RoleCommands.Update,
-                new
-                {
-                    role.Id,
-                    role.Name,
-                    role.Description,
-                    role.CanApprove,
-                    role.CanCreate,
-                    role.CanView,
-                    role.Role_Category_Id,
-                    role.IsActive,
-                    role.IsSystemGenerated
-                }
-            );
-        }
-
-        public async Task<int> Delete(int id)
-        {
-            using var conn = CreateConnection();
-            return await conn.ExecuteAsync(
-                RoleCommands.Delete,
-                new { Id = id }
-            );
+            return await QuerySingleAsync<RoleUpdateResult>(UserCommands.Update, new
+            {
+                req.RoleId,
+                req.Name,
+                req.Description,
+                req.RoleCategoryId,
+                req.ApprovalRoleId,
+                req.CanApprove,
+                req.CanCreate,
+                req.CanView,
+                req.IsActive,
+                req.UpdatedBy,
+                PermissionIds = string.Join(",", req.PermissionIds),
+                req.IsDeleted,
+                req.DeletedBy
+            });
         }
     }
 }

@@ -1,34 +1,25 @@
-﻿using EProcurement.Api.Entities;
-using EProcurement.Api.Repositories.Implementations;
+﻿using EProcurement.Api.DTOs.Requests;
+using EProcurement.Api.DTOs.Responses;
+using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.Services.Interfaces;
 
 namespace EProcurement.Api.Services.Implementations
 {
     public class RoleService : IRoleService
     {
-        private readonly RoleRepository _repo;
+        private readonly IRoleRepository _repo;
 
-        public RoleService(RoleRepository repo)
+        public RoleService(IRoleRepository repo)
         {
             _repo = repo;
         }
 
-        public Task<IEnumerable<Role>> GetAll()
-            => _repo.GetAll();
+        public Task<IEnumerable<RoleDto>> GetAllAsync() => _repo.GetAllAsync();
 
-        public Task<Role?> GetById(int id)
-            => _repo.GetById(id);
+        public Task<RoleDto?> GetByIdAsync(string roleId) => _repo.GetByIdAsync(roleId);
 
-        public async Task<int> Create(Role model)
-        {
-            model.Created_At = DateTime.Now;
-            return await _repo.Insert(model);
-        }
+        public Task<RoleInsertResult> InsertAsync(RoleCreateRequest request) => _repo.InsertAsync(request);
 
-        public Task<int> Update(Role model)
-            => _repo.Update(model);
-
-        public Task<int> Delete(int id)
-            => _repo.Delete(id);
+        public Task<RoleUpdateResult> UpdateAsync(RoleUpdateRequest request) => _repo.UpdateAsync(request);
     }
 }
