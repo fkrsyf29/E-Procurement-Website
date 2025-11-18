@@ -56,11 +56,11 @@ export type Department =
   | 'IT';
 
 export interface User {
-  id: string;
+  userID: string;
   username: string;
   password: string;
   name: string;
-  role: UserRole;
+  roleName: UserRole;
   jobsite?: Jobsite;
   department?: Department;
   email?: string;

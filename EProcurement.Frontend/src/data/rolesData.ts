@@ -1,23 +1,4 @@
-// Dynamic Role Management Data
-// Updated: November 10, 2025 - Cleaned and aligned with actual workflow
-
-export interface RoleDefinition {
-  id: string;
-  name: string;
-  description: string;
-  permissions: string[];
-  canApprove: boolean;
-  canCreate: boolean;
-  canView: boolean;
-  category: 'System' | 'Approval' | 'Sourcing' | 'Custom';
-  isActive: boolean;
-  isSystemGenerated: boolean; // True for auto-generated roles, false for custom roles
-  createdDate: string;
-  updatedDate?: string;
-  relatedApprovalRole?: string; // Maps to ApprovalRole in approval matrix
-}
-
-// ==================== CONFIGURATION ====================
+import { RoleDefinition, Permission, PermissionFromApi } from '../types';
 
 // All active departments
 const DEPARTMENTS = [
@@ -365,7 +346,6 @@ function generateDirectorRoles(): RoleDefinition[] {
   
   return roles;
 }
-
 export const mapApiRoleToDefinition = (apiRole: any): RoleDefinition => ({
   id: apiRole.code,                                            // pakai code sebagai id (string)
   name: apiRole.name,
@@ -385,6 +365,53 @@ export const mapApiRoleToDefinition = (apiRole: any): RoleDefinition => ({
     : undefined,
   relatedApprovalRole: apiRole.approvalRole ?? undefined,
 });
+
+export const mapApiPermissionToDefinition  = (PermissionFromApi: any): Permission => ({
+  id: PermissionFromApi.permissionID,                                            // pakai code sebagai id (string)
+  label: PermissionFromApi.name,
+  category: PermissionFromApi.category,
+});
+
+export const FALLBACK_PERMISSIONS = [
+    { id: 'manage_users', label: 'Manage Users', category: 'System' },
+    { id: 'manage_roles', label: 'Manage Roles', category: 'System' },
+    { id: 'manage_system', label: 'Manage System Data', category: 'System' },
+    { id: 'manage_data', label: 'Manage Master Data', category: 'System' },
+    { id: 'approve_all', label: 'Approve All Levels', category: 'Approval' },
+    { id: 'view_all', label: 'View All Proposals', category: 'System' },
+    { id: 'edit_all', label: 'Edit All Proposals', category: 'System' },
+    { id: 'create_proposal', label: 'Create Proposals', category: 'Creator' },
+    { id: 'view_own_proposals', label: 'View Own Proposals', category: 'Creator' },
+    { id: 'edit_draft_proposals', label: 'Edit Draft Proposals', category: 'Creator' },
+    { id: 'view_proposals', label: 'View Proposals', category: 'Approval' },
+    { id: 'approve_unit_level', label: 'Approve Unit Level', category: 'Approval' },
+    { id: 'approve_section_level', label: 'Approve Section Level', category: 'Approval' },
+    { id: 'approve_department_level', label: 'Approve Department Level', category: 'Approval' },
+    { id: 'approve_manager_level', label: 'Approve Manager Level', category: 'Approval' },
+    { id: 'approve_division_level', label: 'Approve Division Level', category: 'Approval' },
+    { id: 'approve_operation_level', label: 'Approve Operation Level', category: 'Approval' },
+    { id: 'approve_director_level', label: 'Approve Director Level', category: 'Approval' },
+    { id: 'approve_president_level', label: 'Approve President Level', category: 'Approval' },
+    { id: 'reject_proposals', label: 'Reject Proposals', category: 'Approval' },
+    { id: 'view_approved_proposals', label: 'View Approved Proposals', category: 'Sourcing' },
+    { id: 'review_vendors', label: 'Review Vendors', category: 'Sourcing' },
+    { id: 'manage_sourcing', label: 'Manage Sourcing', category: 'Sourcing' },
+    { id: 'upload_documents', label: 'Upload Documents', category: 'Sourcing' },
+    { id: 'create_vendor_recommendations', label: 'Create Vendor Recommendations', category: 'Sourcing' },
+    { id: 'view_all_sourcing', label: 'View All Sourcing', category: 'Sourcing' },
+    { id: 'approve_sourcing', label: 'Approve Sourcing', category: 'Sourcing' },
+    { id: 'manage_sourcing_team', label: 'Manage Sourcing Team', category: 'Sourcing' },
+    { id: 'view_all_procurement', label: 'View All Procurement', category: 'Sourcing' },
+    { id: 'approve_procurement', label: 'Approve Procurement', category: 'Sourcing' },
+    { id: 'manage_division', label: 'Manage Division', category: 'Sourcing' },
+    { id: 'create_procurement_plan', label: 'Create Procurement Plan', category: 'Sourcing' },
+    { id: 'view_all_reports', label: 'View All Reports', category: 'System' },
+    { id: 'view_department_reports', label: 'View Department Reports', category: 'Approval' },
+    { id: 'view_division_reports', label: 'View Division Reports', category: 'Approval' },
+    { id: 'view_site_reports', label: 'View Site Reports', category: 'Approval' },
+    { id: 'view_sourcing_reports', label: 'View Sourcing Reports', category: 'Sourcing' },
+    { id: 'view_procurement_reports', label: 'View Procurement Reports', category: 'Sourcing' },
+  ] ;
 
 // ==================== GENERATE ALL ROLES ====================
 

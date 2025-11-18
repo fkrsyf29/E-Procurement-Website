@@ -77,7 +77,7 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
   };
 
   const getMenuItems = () => {
-    const userRole = user.role.trim(); // Trim whitespace for safety
+    const userRole = (user.roleName || 'Unknown Role').trim();
     
     // Check role-based access
     const isAdmin = userRole === 'Administrator';

@@ -40,7 +40,8 @@ export default function App() {
     console.log('   - Total proposals:', proposals.length);
     console.log('   - Proposal IDs:', proposals.map(p => p.id).join(', '));
   }, [proposals]);
-  const [roles, setRoles] = useState<RoleDefinition[]>(defaultRoles);
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [vendorRecommendations, setVendorRecommendations] = useState<VendorRecommendation[]>(mockVendorRecommendations);
   const [materials, setMaterials] = useState<Material[]>(getMaterials());
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -431,7 +432,7 @@ export default function App() {
           proposals={proposals}
         />;
       case 'users':
-        return <UserManagement availableRoles={roles} onNavigateToRoleManagement={() => setCurrentPage('role-management')} />;
+        return <UserManagement users={users} onUpdateUsers={setUsers} roles={roles} onNavigateToRoleManagement={() => setCurrentPage('role-management')} />;
       case 'role-management':
         return <RoleManagement roles={roles} onUpdateRoles={setRoles} />;
       case 'matrix-management':

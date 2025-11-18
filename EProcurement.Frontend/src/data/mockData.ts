@@ -4,21 +4,21 @@ import { Proposal, User, VendorRecommendation } from '../types';
 export const mockUsers: User[] = [
   // System & Leadership
   { 
-    id: '1', 
+    userID: '1', 
     username: 'admin', 
     password: 'admin123', 
     name: 'System Administrator', 
-    role: 'Administrator', 
+    roleName: 'Administrator', 
     email: 'admin@eproposal.com', 
     phone: '+62 812-1000-0001', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '2', 
+    userID: '2', 
     username: 'presdir', 
     password: 'presdir123', 
     name: 'Budi Santoso', 
-    role: 'President Director', 
+    roleName: 'President Director', 
     email: 'president@eproposal.com', 
     phone: '+62 812-1000-0002', 
     lastPasswordChange: '2025-11-07' 
@@ -26,11 +26,11 @@ export const mockUsers: User[] = [
 
   // Plant Department - JAHO
   { 
-    id: '3', 
+    userID: '3', 
     username: 'creator.plant.jaho', 
     password: 'creator123', 
     name: 'Ahmad Fauzi', 
-    role: 'Creator Plant Department JAHO', 
+    roleName: 'Creator Plant Department JAHO', 
     jobsite: 'JAHO', 
     department: 'Plant', 
     email: 'ahmad.fauzi@eproposal.com', 
@@ -38,11 +38,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '4', 
+    userID: '4', 
     username: 'uh.plant.jaho', 
     password: 'unithead123', 
     name: 'Siti Nurhaliza', 
-    role: 'Unit Head Plant Department JAHO', 
+    roleName: 'Unit Head Plant Department JAHO', 
     jobsite: 'JAHO', 
     department: 'Plant', 
     email: 'siti.nurhaliza@eproposal.com', 
@@ -50,11 +50,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '5', 
+    userID: '5', 
     username: 'sh.plant.jaho', 
     password: 'sectionhead123', 
     name: 'Budi Rahardjo', 
-    role: 'Section Head Plant Department JAHO', 
+    roleName: 'Section Head Plant Department JAHO', 
     jobsite: 'JAHO', 
     department: 'Plant', 
     email: 'budi.rahardjo@eproposal.com', 
@@ -62,11 +62,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '6', 
+    userID: '6', 
     username: 'dh.plant.jaho', 
     password: 'depthead123', 
     name: 'Dewi Kartika', 
-    role: 'Department Head Plant Department JAHO', 
+    roleName: 'Department Head Plant Department JAHO', 
     jobsite: 'JAHO', 
     department: 'Plant', 
     email: 'dewi.kartika@eproposal.com', 
@@ -74,11 +74,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '7', 
+    userID: '7', 
     username: 'mgr.plant.jaho', 
     password: 'manager123', 
     name: 'Eko Prasetyo', 
-    role: 'Manager Plant Department JAHO', 
+    roleName: 'Manager Plant Department JAHO', 
     jobsite: 'JAHO', 
     department: 'Plant', 
     email: 'eko.prasetyo@eproposal.com', 
@@ -88,11 +88,11 @@ export const mockUsers: User[] = [
 
   // IT Department - SERA
   { 
-    id: '8', 
+    userID: '8', 
     username: 'creator.it.sera', 
     password: 'creator123', 
     name: 'Rizki Ramadhan', 
-    role: 'Creator IT Department SERA', 
+    roleName: 'Creator IT Department SERA', 
     jobsite: 'SERA', 
     department: 'IT', 
     email: 'rizki.ramadhan@eproposal.com', 
@@ -100,11 +100,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '9', 
+    userID: '9', 
     username: 'uh.it.sera', 
     password: 'unithead123', 
     name: 'Maya Sari', 
-    role: 'Unit Head IT Department SERA', 
+    roleName: 'Unit Head IT Department SERA', 
     jobsite: 'SERA', 
     department: 'IT', 
     email: 'maya.sari@eproposal.com', 
@@ -112,11 +112,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '10', 
+    userID: '10', 
     username: 'sh.it.sera', 
     password: 'sectionhead123', 
     name: 'Agus Setiawan', 
-    role: 'Section Head IT Department SERA', 
+    roleName: 'Section Head IT Department SERA', 
     jobsite: 'SERA', 
     department: 'IT', 
     email: 'agus.setiawan@eproposal.com', 
@@ -124,11 +124,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '11', 
+    userID: '11', 
     username: 'dh.it.sera', 
     password: 'depthead123', 
     name: 'Dian Pramudya', 
-    role: 'Department Head IT Department SERA', 
+    roleName: 'Department Head IT Department SERA', 
     jobsite: 'SERA', 
     department: 'IT', 
     email: 'dian.pramudya@eproposal.com', 
@@ -136,11 +136,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '12', 
+    userID: '12', 
     username: 'mgr.it.sera', 
     password: 'manager123', 
     name: 'Fitri Handayani', 
-    role: 'Manager IT Department SERA', 
+    roleName: 'Manager IT Department SERA', 
     jobsite: 'SERA', 
     department: 'IT', 
     email: 'fitri.handayani@eproposal.com', 
@@ -150,11 +150,11 @@ export const mockUsers: User[] = [
 
   // Finance Department - MACO HAULING
   { 
-    id: '13', 
+    userID: '13', 
     username: 'creator.finance.maco', 
     password: 'creator123', 
     name: 'Linda Wijaya', 
-    role: 'Creator Finance Department MACO HAULING', 
+    roleName: 'Creator Finance Department MACO HAULING', 
     jobsite: 'MACO HAULING', 
     department: 'Finance', 
     email: 'linda.wijaya@eproposal.com', 
@@ -162,11 +162,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '14', 
+    userID: '14', 
     username: 'dh.finance.maco', 
     password: 'depthead123', 
     name: 'Hendra Kusuma', 
-    role: 'Department Head Finance Department MACO HAULING', 
+    roleName: 'Department Head Finance Department MACO HAULING', 
     jobsite: 'MACO HAULING', 
     department: 'Finance', 
     email: 'hendra.kusuma@eproposal.com', 
@@ -176,11 +176,11 @@ export const mockUsers: User[] = [
 
   // Logistic Department - ADMO MINING
   { 
-    id: '15', 
+    userID: '15', 
     username: 'creator.logistic.admo', 
     password: 'creator123', 
     name: 'Yudi Hartono', 
-    role: 'Creator Logistic Department ADMO MINING', 
+    roleName: 'Creator Logistic Department ADMO MINING', 
     jobsite: 'ADMO MINING', 
     department: 'Logistic', 
     email: 'yudi.hartono@eproposal.com', 
@@ -188,11 +188,11 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '16', 
+    userID: '16', 
     username: 'mgr.logistic.admo', 
     password: 'manager123', 
     name: 'Ratna Sari', 
-    role: 'Manager Logistic Department ADMO MINING', 
+    roleName: 'Manager Logistic Department ADMO MINING', 
     jobsite: 'ADMO MINING', 
     department: 'Logistic', 
     email: 'ratna.sari@eproposal.com', 
@@ -203,11 +203,11 @@ export const mockUsers: User[] = [
   // Additional Creators for Planner Testing
   // Plant Department - ADMO MINING
   { 
-    id: '40', 
+    userID: '40', 
     username: 'creator.plant.admo.mining', 
     password: 'creator123', 
     name: 'Wawan Setiawan', 
-    role: 'Creator Plant Department ADMO MINING', 
+    roleName: 'Creator Plant Department ADMO MINING', 
     jobsite: 'ADMO MINING', 
     department: 'Plant', 
     email: 'wawan.setiawan@eproposal.com', 
@@ -217,11 +217,11 @@ export const mockUsers: User[] = [
   
   // Plant Department - ADMO HAULING
   { 
-    id: '41', 
+    userID: '41', 
     username: 'creator.plant.admo.hauling', 
     password: 'creator123', 
     name: 'Indah Permata', 
-    role: 'Creator Plant Department ADMO HAULING', 
+    roleName: 'Creator Plant Department ADMO HAULING', 
     jobsite: 'ADMO HAULING', 
     department: 'Plant', 
     email: 'indah.permata@eproposal.com', 
@@ -231,11 +231,11 @@ export const mockUsers: User[] = [
   
   // Plant Department - SERA
   { 
-    id: '42', 
+    userID: '42', 
     username: 'creator.plant.sera', 
     password: 'creator123', 
     name: 'Gunawan Santoso', 
-    role: 'Creator Plant Department SERA', 
+    roleName: 'Creator Plant Department SERA', 
     jobsite: 'SERA', 
     department: 'Plant', 
     email: 'gunawan.santoso@eproposal.com', 
@@ -245,11 +245,11 @@ export const mockUsers: User[] = [
   
   // Plant Department - NARO
   { 
-    id: '43', 
+    userID: '43', 
     username: 'creator.plant.naro', 
     password: 'creator123', 
     name: 'Dewi Lestari', 
-    role: 'Creator Plant Department NARO', 
+    roleName: 'Creator Plant Department NARO', 
     jobsite: 'NARO', 
     department: 'Plant', 
     email: 'dewi.lestari@eproposal.com', 
@@ -259,11 +259,11 @@ export const mockUsers: User[] = [
   
   // Plant Department - MACO MINING
   { 
-    id: '44', 
+    userID: '44', 
     username: 'creator.plant.maco.mining', 
     password: 'creator123', 
     name: 'Budi Cahyono', 
-    role: 'Creator Plant Department MACO MINING', 
+    roleName: 'Creator Plant Department MACO MINING', 
     jobsite: 'MACO MINING', 
     department: 'Plant', 
     email: 'budi.cahyono@eproposal.com', 
@@ -273,11 +273,11 @@ export const mockUsers: User[] = [
   
   // Plant Department - MACO HAULING
   { 
-    id: '45', 
+    userID: '45', 
     username: 'creator.plant.maco.hauling', 
     password: 'creator123', 
     name: 'Siti Rahayu', 
-    role: 'Creator Plant Department MACO HAULING', 
+    roleName: 'Creator Plant Department MACO HAULING', 
     jobsite: 'MACO HAULING', 
     department: 'Plant', 
     email: 'siti.rahayu@eproposal.com', 
@@ -287,44 +287,44 @@ export const mockUsers: User[] = [
 
   // Division Heads
   { 
-    id: '17', 
+    userID: '17', 
     username: 'divhead.plant', 
     password: 'divhead123', 
     name: 'Susanto Wibowo', 
-    role: 'Plant Division Head', 
+    roleName: 'Plant Division Head', 
     department: 'Plant', 
     email: 'susanto.wibowo@eproposal.com', 
     phone: '+62 812-3001-0001', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '18', 
+    userID: '18', 
     username: 'divhead.it', 
     password: 'divhead123', 
     name: 'Andri Wijaya', 
-    role: 'IT Division Head', 
+    roleName: 'IT Division Head', 
     department: 'IT', 
     email: 'andri.wijaya@eproposal.com', 
     phone: '+62 812-3001-0002', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '19', 
+    userID: '19', 
     username: 'divhead.finance', 
     password: 'divhead123', 
     name: 'Diana Kusuma', 
-    role: 'Finance Division Head', 
+    roleName: 'Finance Division Head', 
     department: 'Finance', 
     email: 'diana.kusuma@eproposal.com', 
     phone: '+62 812-3001-0003', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '20', 
+    userID: '20', 
     username: 'divhead.logistic', 
     password: 'divhead123', 
     name: 'Hari Santoso', 
-    role: 'Logistic Division Head', 
+    roleName: 'Logistic Division Head', 
     department: 'Logistic', 
     email: 'hari.santoso@eproposal.com', 
     phone: '+62 812-3001-0004', 
@@ -333,22 +333,22 @@ export const mockUsers: User[] = [
 
   // Directors
   { 
-    id: '21', 
+    userID: '21', 
     username: 'dir.plant', 
     password: 'director123', 
     name: 'Ir. Bambang Suryanto', 
-    role: 'Plant Director', 
+    roleName: 'Plant Director', 
     department: 'Plant', 
     email: 'bambang.suryanto@eproposal.com', 
     phone: '+62 812-4001-0001', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '22', 
+    userID: '22', 
     username: 'dir.finance', 
     password: 'director123', 
     name: 'Dra. Sri Mulyani', 
-    role: 'Finance Director', 
+    roleName: 'Finance Director', 
     department: 'Finance', 
     email: 'sri.mulyani@eproposal.com', 
     phone: '+62 812-4001-0002', 
@@ -357,31 +357,31 @@ export const mockUsers: User[] = [
 
   // Chief Operations
   { 
-    id: '23', 
+    userID: '23', 
     username: 'co.admo', 
     password: 'chiefop123', 
     name: 'Ir. Wijaya Kusuma', 
-    role: 'Chief Operation ADMO', 
+    roleName: 'Chief Operation ADMO', 
     email: 'wijaya.kusuma@eproposal.com', 
     phone: '+62 812-5001-0001', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '24', 
+    userID: '24', 
     username: 'co.sera', 
     password: 'chiefop123', 
     name: 'Ir. Hadi Pranoto', 
-    role: 'Chief Operation SERA', 
+    roleName: 'Chief Operation SERA', 
     email: 'hadi.pranoto@eproposal.com', 
     phone: '+62 812-5001-0002', 
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '25', 
+    userID: '25', 
     username: 'co.maco', 
     password: 'chiefop123', 
     name: 'Ir. Rudi Hermawan', 
-    role: 'Chief Operation MACO', 
+    roleName: 'Chief Operation MACO', 
     email: 'rudi.hermawan@eproposal.com', 
     phone: '+62 812-5001-0003', 
     lastPasswordChange: '2025-11-07' 
@@ -389,11 +389,11 @@ export const mockUsers: User[] = [
 
   // Sourcing Team - Planner (HO Only)
   { 
-    id: '28', 
+    userID: '28', 
     username: 'planner', 
     password: 'planner123', 
     name: 'Andi Saputra', 
-    role: 'Planner', 
+    roleName: 'Planner', 
     jobsite: 'HO',
     department: 'Procurement',
     email: 'andi.saputra@eproposal.com', 
@@ -404,11 +404,11 @@ export const mockUsers: User[] = [
   // Sourcing Team - Buyers by Jobsite
   // Buyer JAHO
   { 
-    id: '26', 
+    userID: '26', 
     username: 'buyer.jaho', 
     password: 'buyer123', 
     name: 'Tommy Wijaya', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'JAHO',
     department: 'Procurement',
     email: 'tommy.wijaya@eproposal.com', 
@@ -418,11 +418,11 @@ export const mockUsers: User[] = [
   
   // Buyer SERA
   { 
-    id: '31', 
+    userID: '31', 
     username: 'buyer.sera', 
     password: 'buyer123', 
     name: 'Dedi Kurniawan', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'SERA',
     department: 'Procurement',
     email: 'dedi.kurniawan@eproposal.com', 
@@ -432,11 +432,11 @@ export const mockUsers: User[] = [
   
   // Buyer ADMO MINING
   { 
-    id: '32', 
+    userID: '32', 
     username: 'buyer.admo.mining', 
     password: 'buyer123', 
     name: 'Sari Wulandari', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'ADMO MINING',
     department: 'Procurement',
     email: 'sari.wulandari@eproposal.com', 
@@ -446,11 +446,11 @@ export const mockUsers: User[] = [
   
   // Buyer ADMO HAULING
   { 
-    id: '33', 
+    userID: '33', 
     username: 'buyer.admo.hauling', 
     password: 'buyer123', 
     name: 'Fandi Pratama', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'ADMO HAULING',
     department: 'Procurement',
     email: 'fandi.pratama@eproposal.com', 
@@ -460,11 +460,11 @@ export const mockUsers: User[] = [
   
   // Buyer NARO
   { 
-    id: '34', 
+    userID: '34', 
     username: 'buyer.naro', 
     password: 'buyer123', 
     name: 'Rina Melati', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'NARO',
     department: 'Procurement',
     email: 'rina.melati@eproposal.com', 
@@ -474,11 +474,11 @@ export const mockUsers: User[] = [
   
   // Buyer MACO MINING
   { 
-    id: '35', 
+    userID: '35', 
     username: 'buyer.maco.mining', 
     password: 'buyer123', 
     name: 'Bambang Sutejo', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'MACO MINING',
     department: 'Procurement',
     email: 'bambang.sutejo@eproposal.com', 
@@ -488,11 +488,11 @@ export const mockUsers: User[] = [
   
   // Buyer MACO HAULING
   { 
-    id: '36', 
+    userID: '36', 
     username: 'buyer.maco.hauling', 
     password: 'buyer123', 
     name: 'Hendra Wijaya', 
-    role: 'Buyer', 
+    roleName: 'Buyer', 
     jobsite: 'MACO HAULING',
     department: 'Procurement',
     email: 'hendra.wijaya@eproposal.com', 
@@ -502,11 +502,11 @@ export const mockUsers: User[] = [
 
   // Sourcing Team - Sourcing (JAHO Only)
   { 
-    id: '27', 
+    userID: '27', 
     username: 'sourcing.jaho', 
     password: 'sourcing123', 
     name: 'Emma Kusuma', 
-    role: 'Sourcing', 
+    roleName: 'Sourcing', 
     jobsite: 'JAHO',
     department: 'Procurement',
     email: 'emma.kusuma@eproposal.com', 
@@ -516,11 +516,11 @@ export const mockUsers: User[] = [
 
   // Sourcing Management
   { 
-    id: '29', 
+    userID: '29', 
     username: 'sourcing.depthead', 
     password: 'sourcingdh123', 
     name: 'Rini Susilowati', 
-    role: 'Sourcing Department Head', 
+    roleName: 'Sourcing Department Head', 
     jobsite: 'JAHO',
     department: 'Procurement',
     email: 'rini.susilowati@eproposal.com', 
@@ -528,16 +528,568 @@ export const mockUsers: User[] = [
     lastPasswordChange: '2025-11-07' 
   },
   { 
-    id: '30', 
+    userID: '30', 
     username: 'procurement.divhead', 
     password: 'procdiv123', 
     name: 'Hendra Gunawan', 
-    role: 'Procurement Division Head', 
+    roleName: 'Procurement Division Head', 
     email: 'hendra.gunawan@eproposal.com', 
     phone: '+62 812-6001-0005', 
     lastPasswordChange: '2025-11-07' 
   },
 ];
+
+export const mapApiUserToDefinition = (apiUser: any): User => ({
+  userID: apiUser.userID,                                            
+  username: apiUser.username,
+  password: apiUser.password,
+  name: apiUser.name,
+  roleName: apiUser.roleName,
+  jobsite: apiUser.jobsite ?? '',
+  department: apiUser.department ?? '',
+  email: apiUser.email ?? '',
+  phone: apiUser.phone ?? '',
+  lastPasswordChange: apiUser.lastPasswordChange
+    ? apiUser.lastPasswordChange.split('T')[0]
+    : undefined
+});
+
+export const FALLBACK_USERS = [
+    { 
+      userID: '1', 
+      username: 'admin', 
+      password: 'admin123', 
+      name: 'System Administrator', 
+      roleName: 'Administrator', 
+      email: 'admin@eproposal.com', 
+      phone: '+62 812-1000-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '2', 
+      username: 'presdir', 
+      password: 'presdir123', 
+      name: 'Budi Santoso', 
+      roleName: 'President Director', 
+      email: 'president@eproposal.com', 
+      phone: '+62 812-1000-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Plant Department - JAHO
+    { 
+      userID: '3', 
+      username: 'creator.plant.jaho', 
+      password: 'creator123', 
+      name: 'Ahmad Fauzi', 
+      roleName: 'Creator Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'ahmad.fauzi@eproposal.com', 
+      phone: '+62 812-2001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '4', 
+      username: 'uh.plant.jaho', 
+      password: 'unithead123', 
+      name: 'Siti Nurhaliza', 
+      roleName: 'Unit Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'siti.nurhaliza@eproposal.com', 
+      phone: '+62 812-2001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '5', 
+      username: 'sh.plant.jaho', 
+      password: 'sectionhead123', 
+      name: 'Budi Rahardjo', 
+      roleName: 'Section Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'budi.rahardjo@eproposal.com', 
+      phone: '+62 812-2001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '6', 
+      username: 'dh.plant.jaho', 
+      password: 'depthead123', 
+      name: 'Dewi Kartika', 
+      roleName: 'Department Head Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'dewi.kartika@eproposal.com', 
+      phone: '+62 812-2001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '7', 
+      username: 'mgr.plant.jaho', 
+      password: 'manager123', 
+      name: 'Eko Prasetyo', 
+      roleName: 'Manager Plant Department JAHO', 
+      jobsite: 'JAHO', 
+      department: 'Plant', 
+      email: 'eko.prasetyo@eproposal.com', 
+      phone: '+62 812-2001-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // IT Department - SERA
+    { 
+      userID: '8', 
+      username: 'creator.it.sera', 
+      password: 'creator123', 
+      name: 'Rizki Ramadhan', 
+      roleName: 'Creator IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'rizki.ramadhan@eproposal.com', 
+      phone: '+62 812-2002-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '9', 
+      username: 'uh.it.sera', 
+      password: 'unithead123', 
+      name: 'Maya Sari', 
+      roleName: 'Unit Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'maya.sari@eproposal.com', 
+      phone: '+62 812-2002-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '10', 
+      username: 'sh.it.sera', 
+      password: 'sectionhead123', 
+      name: 'Agus Setiawan', 
+      roleName: 'Section Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'agus.setiawan@eproposal.com', 
+      phone: '+62 812-2002-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '11', 
+      username: 'dh.it.sera', 
+      password: 'depthead123', 
+      name: 'Dian Pramudya', 
+      roleName: 'Department Head IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'dian.pramudya@eproposal.com', 
+      phone: '+62 812-2002-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '12', 
+      username: 'mgr.it.sera', 
+      password: 'manager123', 
+      name: 'Fitri Handayani', 
+      roleName: 'Manager IT Department SERA', 
+      jobsite: 'SERA', 
+      department: 'IT', 
+      email: 'fitri.handayani@eproposal.com', 
+      phone: '+62 812-2002-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Finance Department - MACO HAULING
+    { 
+      userID: '13', 
+      username: 'creator.finance.maco', 
+      password: 'creator123', 
+      name: 'Linda Wijaya', 
+      roleName: 'Creator Finance Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Finance', 
+      email: 'linda.wijaya@eproposal.com', 
+      phone: '+62 812-2003-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '14', 
+      username: 'dh.finance.maco', 
+      password: 'depthead123', 
+      name: 'Hendra Kusuma', 
+      roleName: 'Department Head Finance Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Finance', 
+      email: 'hendra.kusuma@eproposal.com', 
+      phone: '+62 812-2003-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Logistic Department - ADMO MINING
+    { 
+      userID: '15', 
+      username: 'creator.logistic.admo', 
+      password: 'creator123', 
+      name: 'Yudi Hartono', 
+      roleName: 'Creator Logistic Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Logistic', 
+      email: 'yudi.hartono@eproposal.com', 
+      phone: '+62 812-2004-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '16', 
+      username: 'mgr.logistic.admo', 
+      password: 'manager123', 
+      name: 'Ratna Sari', 
+      roleName: 'Manager Logistic Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Logistic', 
+      email: 'ratna.sari@eproposal.com', 
+      phone: '+62 812-2004-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Additional Creators for Planner Testing
+    // Plant Department - ADMO MINING
+    { 
+      userID: '40', 
+      username: 'creator.plant.admo.mining', 
+      password: 'creator123', 
+      name: 'Wawan Setiawan', 
+      roleName: 'Creator Plant Department ADMO MINING', 
+      jobsite: 'ADMO MINING', 
+      department: 'Plant', 
+      email: 'wawan.setiawan@eproposal.com', 
+      phone: '+62 812-2005-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - ADMO HAULING
+    { 
+      userID: '41', 
+      username: 'creator.plant.admo.hauling', 
+      password: 'creator123', 
+      name: 'Indah Permata', 
+      roleName: 'Creator Plant Department ADMO HAULING', 
+      jobsite: 'ADMO HAULING', 
+      department: 'Plant', 
+      email: 'indah.permata@eproposal.com', 
+      phone: '+62 812-2006-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - SERA
+    { 
+      userID: '42', 
+      username: 'creator.plant.sera', 
+      password: 'creator123', 
+      name: 'Gunawan Santoso', 
+      roleName: 'Creator Plant Department SERA', 
+      jobsite: 'SERA', 
+      department: 'Plant', 
+      email: 'gunawan.santoso@eproposal.com', 
+      phone: '+62 812-2007-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - NARO
+    { 
+      userID: '43', 
+      username: 'creator.plant.naro', 
+      password: 'creator123', 
+      name: 'Dewi Lestari', 
+      roleName: 'Creator Plant Department NARO', 
+      jobsite: 'NARO', 
+      department: 'Plant', 
+      email: 'dewi.lestari@eproposal.com', 
+      phone: '+62 812-2008-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - MACO MINING
+    { 
+      userID: '44', 
+      username: 'creator.plant.maco.mining', 
+      password: 'creator123', 
+      name: 'Budi Cahyono', 
+      roleName: 'Creator Plant Department MACO MINING', 
+      jobsite: 'MACO MINING', 
+      department: 'Plant', 
+      email: 'budi.cahyono@eproposal.com', 
+      phone: '+62 812-2009-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Plant Department - MACO HAULING
+    { 
+      userID: '45', 
+      username: 'creator.plant.maco.hauling', 
+      password: 'creator123', 
+      name: 'Siti Rahayu', 
+      roleName: 'Creator Plant Department MACO HAULING', 
+      jobsite: 'MACO HAULING', 
+      department: 'Plant', 
+      email: 'siti.rahayu@eproposal.com', 
+      phone: '+62 812-2010-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Division Heads
+    { 
+      userID: '17', 
+      username: 'divhead.plant', 
+      password: 'divhead123', 
+      name: 'Susanto Wibowo', 
+      roleName: 'Plant Division Head', 
+      department: 'Plant', 
+      email: 'susanto.wibowo@eproposal.com', 
+      phone: '+62 812-3001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '18', 
+      username: 'divhead.it', 
+      password: 'divhead123', 
+      name: 'Andri Wijaya', 
+      roleName: 'IT Division Head', 
+      department: 'IT', 
+      email: 'andri.wijaya@eproposal.com', 
+      phone: '+62 812-3001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '19', 
+      username: 'divhead.finance', 
+      password: 'divhead123', 
+      name: 'Diana Kusuma', 
+      roleName: 'Finance Division Head', 
+      department: 'Finance', 
+      email: 'diana.kusuma@eproposal.com', 
+      phone: '+62 812-3001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '20', 
+      username: 'divhead.logistic', 
+      password: 'divhead123', 
+      name: 'Hari Santoso', 
+      roleName: 'Logistic Division Head', 
+      department: 'Logistic', 
+      email: 'hari.santoso@eproposal.com', 
+      phone: '+62 812-3001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Directors
+    { 
+      userID: '21', 
+      username: 'dir.plant', 
+      password: 'director123', 
+      name: 'Ir. Bambang Suryanto', 
+      roleName: 'Plant Director', 
+      department: 'Plant', 
+      email: 'bambang.suryanto@eproposal.com', 
+      phone: '+62 812-4001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '22', 
+      username: 'dir.finance', 
+      password: 'director123', 
+      name: 'Dra. Sri Mulyani', 
+      roleName: 'Finance Director', 
+      department: 'Finance', 
+      email: 'sri.mulyani@eproposal.com', 
+      phone: '+62 812-4001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Chief Operations
+    { 
+      userID: '23', 
+      username: 'co.admo', 
+      password: 'chiefop123', 
+      name: 'Ir. Wijaya Kusuma', 
+      roleName: 'Chief Operation ADMO', 
+      email: 'wijaya.kusuma@eproposal.com', 
+      phone: '+62 812-5001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '24', 
+      username: 'co.sera', 
+      password: 'chiefop123', 
+      name: 'Ir. Hadi Pranoto', 
+      roleName: 'Chief Operation SERA', 
+      email: 'hadi.pranoto@eproposal.com', 
+      phone: '+62 812-5001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '25', 
+      username: 'co.maco', 
+      password: 'chiefop123', 
+      name: 'Ir. Rudi Hermawan', 
+      roleName: 'Chief Operation MACO', 
+      email: 'rudi.hermawan@eproposal.com', 
+      phone: '+62 812-5001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Planner (HO Only)
+    { 
+      userID: '28', 
+      username: 'planner', 
+      password: 'planner123', 
+      name: 'Andi Saputra', 
+      roleName: 'Planner', 
+      jobsite: 'HO',
+      department: 'Procurement',
+      email: 'andi.saputra@eproposal.com', 
+      phone: '+62 812-6001-0003', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Buyers by Jobsite
+    // Buyer JAHO
+    { 
+      userID: '26', 
+      username: 'buyer.jaho', 
+      password: 'buyer123', 
+      name: 'Tommy Wijaya', 
+      roleName: 'Buyer', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'tommy.wijaya@eproposal.com', 
+      phone: '+62 812-6001-0001', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer SERA
+    { 
+      userID: '31', 
+      username: 'buyer.sera', 
+      password: 'buyer123', 
+      name: 'Dedi Kurniawan', 
+      roleName: 'Buyer', 
+      jobsite: 'SERA',
+      department: 'Procurement',
+      email: 'dedi.kurniawan@eproposal.com', 
+      phone: '+62 812-6001-0006', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer ADMO MINING
+    { 
+      userID: '32', 
+      username: 'buyer.admo.mining', 
+      password: 'buyer123', 
+      name: 'Sari Wulandari', 
+      roleName: 'Buyer', 
+      jobsite: 'ADMO MINING',
+      department: 'Procurement',
+      email: 'sari.wulandari@eproposal.com', 
+      phone: '+62 812-6001-0007', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer ADMO HAULING
+    { 
+      userID: '33', 
+      username: 'buyer.admo.hauling', 
+      password: 'buyer123', 
+      name: 'Fandi Pratama', 
+      roleName: 'Buyer', 
+      jobsite: 'ADMO HAULING',
+      department: 'Procurement',
+      email: 'fandi.pratama@eproposal.com', 
+      phone: '+62 812-6001-0008', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer NARO
+    { 
+      userID: '34', 
+      username: 'buyer.naro', 
+      password: 'buyer123', 
+      name: 'Rina Melati', 
+      roleName: 'Buyer', 
+      jobsite: 'NARO',
+      department: 'Procurement',
+      email: 'rina.melati@eproposal.com', 
+      phone: '+62 812-6001-0009', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer MACO MINING
+    { 
+      userID: '35', 
+      username: 'buyer.maco.mining', 
+      password: 'buyer123', 
+      name: 'Bambang Sutejo', 
+      roleName: 'Buyer', 
+      jobsite: 'MACO MINING',
+      department: 'Procurement',
+      email: 'bambang.sutejo@eproposal.com', 
+      phone: '+62 812-6001-0010', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    
+    // Buyer MACO HAULING
+    { 
+      userID: '36', 
+      username: 'buyer.maco.hauling', 
+      password: 'buyer123', 
+      name: 'Hendra Wijaya', 
+      roleName: 'Buyer', 
+      jobsite: 'MACO HAULING',
+      department: 'Procurement',
+      email: 'hendra.wijaya@eproposal.com', 
+      phone: '+62 812-6001-0011', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Team - Sourcing (JAHO Only)
+    { 
+      userID: '27', 
+      username: 'sourcing.jaho', 
+      password: 'sourcing123', 
+      name: 'Emma Kusuma', 
+      roleName: 'Sourcing', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'emma.kusuma@eproposal.com', 
+      phone: '+62 812-6001-0002', 
+      lastPasswordChange: '2025-11-07' 
+    },
+
+    // Sourcing Management
+    { 
+      userID: '29', 
+      username: 'sourcing.depthead', 
+      password: 'sourcingdh123', 
+      name: 'Rini Susilowati', 
+      roleName: 'Sourcing Department Head', 
+      jobsite: 'JAHO',
+      department: 'Procurement',
+      email: 'rini.susilowati@eproposal.com', 
+      phone: '+62 812-6001-0004', 
+      lastPasswordChange: '2025-11-07' 
+    },
+    { 
+      userID: '30', 
+      username: 'procurement.divhead', 
+      password: 'procdiv123', 
+      name: 'Hendra Gunawan', 
+      roleName: 'Procurement Division Head', 
+      email: 'hendra.gunawan@eproposal.com', 
+      phone: '+62 812-6001-0005', 
+      lastPasswordChange: '2025-11-07' 
+    },
+  ];
 
 // Mock proposals - Complete Workflow Demo from Draft to Approved
 export const mockProposals: Proposal[] = [

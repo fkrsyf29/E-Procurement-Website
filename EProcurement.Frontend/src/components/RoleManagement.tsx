@@ -19,32 +19,19 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './ui/alert-dialog';
-import { RoleDefinition, getRoleStatistics, ROLE_CONFIG, mapApiRoleToDefinition, defaultRoles } from '../data/rolesData';
-import { ApprovalRole } from '../types';
+import { getRoleStatistics, ROLE_CONFIG, defaultRoles } from '../data/rolesData';
+import { RoleDefinition, ApprovalRole, Permissions } from '../types';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 
-const API_BASE = 'https://localhost:7201/api';
+import { fetchApiRoles } from '../services/roleApi';
+import { fetchApiPermissions } from '../services/permissionApi';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL; 
 
 interface RoleManagementProps {
   roles: RoleDefinition[];
   onUpdateRoles: (roles: RoleDefinition[]) => void;
-}
-
-interface PermissionFromApi {
-  permissionID: number;
-  code: string;
-  name: string;
-  description: string | null;
-  permissionCategoryID: number;
-  category: string;
-  isActive: boolean;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string | null;
-  updatedBy: string | null;
-  deletedAt: string | null;
-  deletedBy: string | null;
 }
 
 const ROLE_CATEGORIES: RoleDefinition['category'][] = ['System', 'Approval', 'Sourcing', 'Custom'];
@@ -61,48 +48,6 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
   const [availablePermissions, setAvailablePermissions] = useState<
     { id: string; label: string; category: string }[]
   >([]);
-
-  const FALLBACK_PERMISSIONS = [
-    { id: 'manage_users', label: 'Manage Users', category: 'System' },
-    { id: 'manage_roles', label: 'Manage Roles', category: 'System' },
-    { id: 'manage_system', label: 'Manage System Data', category: 'System' },
-    { id: 'manage_data', label: 'Manage Master Data', category: 'System' },
-    { id: 'approve_all', label: 'Approve All Levels', category: 'Approval' },
-    { id: 'view_all', label: 'View All Proposals', category: 'System' },
-    { id: 'edit_all', label: 'Edit All Proposals', category: 'System' },
-    { id: 'create_proposal', label: 'Create Proposals', category: 'Creator' },
-    { id: 'view_own_proposals', label: 'View Own Proposals', category: 'Creator' },
-    { id: 'edit_draft_proposals', label: 'Edit Draft Proposals', category: 'Creator' },
-    { id: 'view_proposals', label: 'View Proposals', category: 'Approval' },
-    { id: 'approve_unit_level', label: 'Approve Unit Level', category: 'Approval' },
-    { id: 'approve_section_level', label: 'Approve Section Level', category: 'Approval' },
-    { id: 'approve_department_level', label: 'Approve Department Level', category: 'Approval' },
-    { id: 'approve_manager_level', label: 'Approve Manager Level', category: 'Approval' },
-    { id: 'approve_division_level', label: 'Approve Division Level', category: 'Approval' },
-    { id: 'approve_operation_level', label: 'Approve Operation Level', category: 'Approval' },
-    { id: 'approve_director_level', label: 'Approve Director Level', category: 'Approval' },
-    { id: 'approve_president_level', label: 'Approve President Level', category: 'Approval' },
-    { id: 'reject_proposals', label: 'Reject Proposals', category: 'Approval' },
-    { id: 'view_approved_proposals', label: 'View Approved Proposals', category: 'Sourcing' },
-    { id: 'review_vendors', label: 'Review Vendors', category: 'Sourcing' },
-    { id: 'manage_sourcing', label: 'Manage Sourcing', category: 'Sourcing' },
-    { id: 'upload_documents', label: 'Upload Documents', category: 'Sourcing' },
-    { id: 'create_vendor_recommendations', label: 'Create Vendor Recommendations', category: 'Sourcing' },
-    { id: 'view_all_sourcing', label: 'View All Sourcing', category: 'Sourcing' },
-    { id: 'approve_sourcing', label: 'Approve Sourcing', category: 'Sourcing' },
-    { id: 'manage_sourcing_team', label: 'Manage Sourcing Team', category: 'Sourcing' },
-    { id: 'view_all_procurement', label: 'View All Procurement', category: 'Sourcing' },
-    { id: 'approve_procurement', label: 'Approve Procurement', category: 'Sourcing' },
-    { id: 'manage_division', label: 'Manage Division', category: 'Sourcing' },
-    { id: 'create_procurement_plan', label: 'Create Procurement Plan', category: 'Sourcing' },
-    { id: 'view_all_reports', label: 'View All Reports', category: 'System' },
-    { id: 'view_department_reports', label: 'View Department Reports', category: 'Approval' },
-    { id: 'view_division_reports', label: 'View Division Reports', category: 'Approval' },
-    { id: 'view_site_reports', label: 'View Site Reports', category: 'Approval' },
-    { id: 'view_sourcing_reports', label: 'View Sourcing Reports', category: 'Sourcing' },
-    { id: 'view_procurement_reports', label: 'View Procurement Reports', category: 'Sourcing' },
-  ] as const;
-
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -137,36 +82,11 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
         setLoading(true); // loading untuk seluruh komponen
 
         // 1. Fetch Roles
-        const rolesRes = await fetch(`${API_BASE}/Role`);
-        let mappedRoles: RoleDefinition[] = defaultRoles; // fallback
-
-        if (rolesRes.ok) {
-          const rolesData = await rolesRes.json();
-          mappedRoles = rolesData.map(mapApiRoleToDefinition);
-        } else {
-          console.warn('Gagal fetch roles, pakai default');
-          toast.error('Gagal ambil data role, menggunakan data default');
-        }
-
+        const mappedRoles: RoleDefinition[] = await fetchApiRoles();
+        
         // 2. Fetch Permissions
-        const permRes = await fetch(`${API_BASE}/Permission`);
-        let permissionsList: { id: string; label: string; category: string }[] = FALLBACK_PERMISSIONS;
-
-        if (permRes.ok) {
-          const permData: PermissionFromApi[] = await permRes.json();
-          permissionsList = permData
-            .filter(p => p.isActive)
-            .map(p => ({
-              id: p.code,
-              label: p.name,
-              category: p.category || 'Uncategorized',
-            }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-        } else {
-          console.warn('Gagal fetch permissions, pakai fallback');
-          toast.error('Gagal memuat permission, menggunakan data default');
-        }
-
+        const permissionsList : Permissions[] = await fetchApiPermissions();
+        
         // Hanya update state kalau component masih mounted
         if (isMounted) {
           setRoles(mappedRoles);
@@ -177,7 +97,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
 
       } catch (err) {
         if (isMounted) {
-          toast.error('Koneksi ke server gagal');
+          console.error('Koneksi ke server gagal:', err);
           setRoles(defaultRoles);
           onUpdateRoles(defaultRoles);
           setAvailablePermissions(FALLBACK_PERMISSIONS);
@@ -188,7 +108,6 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
 
     fetchData();
 
-    // Cleanup kalau component unmount sebelum selesai
     return () => {
       isMounted = false;
     };
