@@ -6,7 +6,7 @@ import { Switch } from './ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, Database, AlertCircle } from 'lucide-react';
 import {
   ReferenceDataItem,

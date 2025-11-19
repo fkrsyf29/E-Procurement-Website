@@ -2,7 +2,7 @@
 
 import { User, UserRole, Jobsite, Department } from '../types';
 import { FALLBACK_USERS, mapApiUserToDefinition } from '../data/mockData'; 
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 // Definisikan base URL API Anda di sini
 const API_BASE = import.meta.env.VITE_API_BASE_URL; 

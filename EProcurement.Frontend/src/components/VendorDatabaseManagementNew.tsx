@@ -23,7 +23,7 @@ import {
   DialogFooter 
 } from './ui/dialog';
 import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { VendorRecord, vendorDatabase } from '../data/vendorDatabase_NEW';
 import { categoryHierarchy, SubClassification } from '../data/categoryHierarchy';
 import { getActiveExternalBrands, getActiveKBLICodes } from '../data/systemReferenceData';

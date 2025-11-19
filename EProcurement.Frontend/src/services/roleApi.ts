@@ -2,7 +2,7 @@
 
 import { RoleDefinition, UserRole, Jobsite, Department } from '../types';
 import { defaultRoles, mapApiRoleToDefinition } from '../data/rolesData'; 
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 // Definisikan base URL API Anda di sini
 const API_BASE = import.meta.env.VITE_API_BASE_URL; 

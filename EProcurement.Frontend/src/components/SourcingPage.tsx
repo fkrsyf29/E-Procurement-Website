@@ -8,7 +8,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { User, VendorRecommendation, VendorRecommendationStatus, Proposal, AddedVendorDetail } from '../types';
 import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { formatDate } from '../utils/formatters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getVendorsBySubClassification, getVendorsBySubClassificationName } from '../data/vendorDatabase';

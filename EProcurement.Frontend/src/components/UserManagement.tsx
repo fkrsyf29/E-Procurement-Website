@@ -27,7 +27,7 @@ import {
   getRoleStatistics,
 } from '../data/rolesData';
 import { User, UserRole, Jobsite, Department } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { fetchApiUsers } from '../services/userApi';
 
 const jobsites: Jobsite[] = [
