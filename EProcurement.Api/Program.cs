@@ -1,10 +1,11 @@
+using EProcurement.Api.Authentication;
 using EProcurement.Api.Config;
+using EProcurement.Api.Data;
+using EProcurement.Api.Data.TypeHandlers;
+using EProcurement.Api.Repositories.Implementations;
+using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.Services.Implementations;
 using EProcurement.Api.Services.Interfaces;
-using EProcurement.Api.Data;
-using EProcurement.Api.Repositories.Interfaces;
-using EProcurement.Api.Repositories.Implementations;
-using EProcurement.Api.Data.TypeHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,7 @@ builder.Services.AddCors(options =>
 // CONFIG (AppSettings / SOAP / dll)
 // ================================================
 builder.Services.Configure<SoapConfig>(builder.Configuration.GetSection("SOAP"));
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // ================================================
 // DEPENDENCY INJECTION — SERVICES (Business Logic)

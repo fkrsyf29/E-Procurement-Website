@@ -208,13 +208,13 @@ export function getApprovalPathFromMatrix(
   const approvalHistory: ApprovalHistory[] = matrix.approvalPath
     .map((step, index) => {
       // EXCEPTION: For Chief Operation role, use procurement jobsite instead of creator's
-      const isChiefOpStep = step.role === 'Chief Operation Site';
+      const isChiefOpStep = step.roleName === 'Chief Operation Site';
       const jobsiteForRole = (isChiefOpStep && procurementJobsite) 
         ? procurementJobsite 
         : jobsite;
       
       const roleName = mapRoleCodeToRoleName(
-        step.role, 
+        step.roleName, 
         department, 
         jobsiteForRole,
         isChiefOpStep // Flag to indicate this is procurement jobsite for entity mapping
@@ -261,21 +261,21 @@ export function getFirstApprovalStatus(
   const firstStep = path[0];
   
   // Determine status based on first step role
-  if (firstStep.role.includes('Unit Head')) {
+  if (firstStep.roleName.includes('Unit Head')) {
     return 'On Unit Head Approval';
-  } else if (firstStep.role.includes('Section Head')) {
+  } else if (firstStep.roleName.includes('Section Head')) {
     return 'On Section Head Approval';
-  } else if (firstStep.role.includes('Department Head')) {
+  } else if (firstStep.roleName.includes('Department Head')) {
     return 'On Department Head Approval';
-  } else if (firstStep.role.includes('Manager')) {
+  } else if (firstStep.roleName.includes('Manager')) {
     return 'On Manager Approval';
-  } else if (firstStep.role.includes('Division Head')) {
+  } else if (firstStep.roleName.includes('Division Head')) {
     return 'On Division Head Approval';
-  } else if (firstStep.role.includes('Director') && !firstStep.role.includes('President')) {
+  } else if (firstStep.roleName.includes('Director') && !firstStep.roleName.includes('President')) {
     return 'On Director Approval';
-  } else if (firstStep.role.includes('Chief Operation')) {
+  } else if (firstStep.roleName.includes('Chief Operation')) {
     return 'On Chief Operation Approval';
-  } else if (firstStep.role.includes('President Director')) {
+  } else if (firstStep.roleName.includes('President Director')) {
     return 'On President Director Approval';
   }
   
@@ -331,7 +331,7 @@ export function initializeProposalHistory(
         id: `h${Date.now() + 2}`,
         stage: firstApproval.stage,
         approver: '',
-        role: firstApproval.role,
+        role: firstApproval.roleName,
         action: 'Pending',
         date: undefined,
         comment: undefined
@@ -386,7 +386,7 @@ export function getNextApprovalStep(
     const status = mapStepNameToStatus(nextStep.stage || '', approvedCount + 1);
     
     return {
-      role: nextStep.role || '',
+      role: nextStep.roleName || '',
       status
     };
   }

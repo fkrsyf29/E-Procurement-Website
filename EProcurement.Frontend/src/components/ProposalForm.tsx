@@ -93,8 +93,8 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
   const allDepartments = getActiveDepartments() as Department[];
   
   // Filter based on user role
-  const jobsites = getAllowedJobsites(user.role, allJobsites);
-  const departments = getAllowedDepartments(user.role, allDepartments);
+  const jobsites = getAllowedJobsites(user.roleName, allJobsites);
+  const departments = getAllowedDepartments(user.roleName, allDepartments);
   
   const workLocationOptions = getActiveWorkLocations();
   const contractTypeOptions = getActiveContractTypes();

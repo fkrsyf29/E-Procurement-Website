@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Toaster } from './components/ui/sonner';
 import { Login } from './components/Login';
 import { ForgotPassword } from './components/ForgotPassword';
@@ -26,6 +26,7 @@ import { getMaterials, addMaterial, updateMaterial, deleteMaterial, bulkAddMater
 import { User, Proposal, ApprovalMatrix, VendorRecommendation, Material } from './types';
 import { RoleDefinition } from './data/rolesData';
 import { initializeProposalHistory, getFirstApprovalStatus } from './utils/approvalHelper';
+import { fetchCurrentUser } from './services/userApi';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -33,6 +34,45 @@ export default function App() {
   // Combine mockProposals with testProposals for vendor recommendation testing
   const [proposals, setProposals] = useState<Proposal[]>([...mockProposals, ...testProposals]);
   const [approvalMatrices, setApprovalMatrices] = useState<ApprovalMatrix[]>(approvalMatrixData);
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [vendorRecommendations, setVendorRecommendations] = useState<VendorRecommendation[]>(mockVendorRecommendations);
+  const [materials, setMaterials] = useState<Material[]>(getMaterials());
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  const handleLogin = useCallback((user: User) => {
+      setCurrentUser(user);
+      setCurrentPage('dashboard');
+  }, [setCurrentUser, setCurrentPage]);
+
+  const handleLogout = useCallback(() => {
+        setCurrentUser(null);
+        setCurrentPage('dashboard');
+        localStorage.removeItem('authToken');
+    }, [setCurrentUser, setCurrentPage]);
+
+  useEffect(() => {
+        const checkSession = async () => {
+            const token = localStorage.getItem('authToken');
+            console.log('token ->', token);
+            if (token) {
+                const user = await fetchCurrentUser(token);
+                
+                if (user) {
+                    console.log('✅ [APP] Token valid. Sesi dipulihkan.');
+                    
+                    handleLogin(user);
+                } else {
+                    console.log('❌ [APP] Token tidak valid/expired. Menghapus sesi.');
+                    localStorage.removeItem('authToken');
+                }
+            }
+            setIsCheckingSession(false);
+        };
+        
+        checkSession();
+    }, [handleLogin]);
 
   // ✅ DEBUG: Log when proposals state changes
   useEffect(() => {
@@ -40,11 +80,7 @@ export default function App() {
     console.log('   - Total proposals:', proposals.length);
     console.log('   - Proposal IDs:', proposals.map(p => p.id).join(', '));
   }, [proposals]);
-  const [roles, setRoles] = useState<RoleDefinition[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [vendorRecommendations, setVendorRecommendations] = useState<VendorRecommendation[]>(mockVendorRecommendations);
-  const [materials, setMaterials] = useState<Material[]>(getMaterials());
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
 
   // ✅ CRITICAL: Sync materials from localStorage on mount and storage events
   useEffect(() => {
@@ -65,16 +101,6 @@ export default function App() {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
-
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    setCurrentPage('dashboard');
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentPage('dashboard');
-  };
 
   const handleSaveProposal = (proposalData: any, isDraft: boolean) => {
     console.log('💾 [APP] handleSaveProposal called');
@@ -116,7 +142,7 @@ export default function App() {
               // Initialize new approval history
               newHistory = initializeProposalHistory(
                 currentUser?.name || p.creator,
-                currentUser?.role || 'Creator',
+                currentUser?.roleName || 'Creator',
                 false, // Not a draft - it's a resubmission
                 proposalData.amount,
                 currentUser?.department || proposalData.department,
@@ -143,7 +169,7 @@ export default function App() {
               // Initialize approval history
               newHistory = initializeProposalHistory(
                 currentUser?.name || p.creator,
-                currentUser?.role || 'Creator',
+                currentUser?.roleName || 'Creator',
                 false, // Not a draft - it's being submitted
                 proposalData.amount,
                 currentUser?.department || proposalData.department,
@@ -214,7 +240,7 @@ export default function App() {
     console.log('      • ID:', currentUser?.id);
     console.log('      • Username:', currentUser?.username);
     console.log('      • Name:', currentUser?.name);
-    console.log('      • Role:', currentUser?.role);
+    console.log('      • Role:', currentUser?.roleName);
     console.log('      • Jobsite:', currentUser?.jobsite);
     console.log('      • Department:', currentUser?.department);
     
@@ -237,7 +263,7 @@ export default function App() {
     // Pass procurement jobsite for Chief Operation exception
     const history = initializeProposalHistory(
       currentUser?.name || '',
-      currentUser?.role || 'Creator',
+      currentUser?.roleName || 'Creator',
       isDraft,
       proposalData.amount,
       creatorDepartment || proposalData.department,
@@ -462,6 +488,14 @@ export default function App() {
         return <Dashboard proposals={proposals} user={currentUser} onUpdateProposal={handleUpdateProposal} />;
     }
   };
+
+  if (isCheckingSession) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+              <p className="text-lg font-medium text-blue-600">Loading Session...</p> 
+          </div>
+      );
+  }
 
   if (!currentUser) {
     if (showForgotPassword) {

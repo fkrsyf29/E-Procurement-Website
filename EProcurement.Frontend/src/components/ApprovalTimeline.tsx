@@ -12,12 +12,12 @@ interface ApprovalTimelineProps {
 // Helper function to get user name based on role
 function getUserNameByRole(role: string, jobsite?: string, department?: string): string {
   // Try exact role match first
-  let user = mockUsers.find(u => u.role === role);
+  let user = mockUsers.find(u => u.roleName === role);
   
   // If not found, try to match by role pattern and context
   if (!user && jobsite && department) {
     user = mockUsers.find(u => 
-      u.role === role && 
+      u.roleName === role && 
       u.jobsite === jobsite && 
       u.department === department
     );
@@ -28,7 +28,7 @@ function getUserNameByRole(role: string, jobsite?: string, department?: string):
     // Extract key parts from role name
     const roleLower = role.toLowerCase();
     user = mockUsers.find(u => {
-      const userRoleLower = u.role.toLowerCase();
+      const userRoleLower = u.roleName.toLowerCase();
       // Check if roles match closely
       return userRoleLower.includes(roleLower) || roleLower.includes(userRoleLower);
     });
@@ -170,7 +170,7 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
           {timelineHistory.map((item, index) => {
             const isCurrentPending = index === currentPendingIndex && item.action === 'Pending';
             const userName = getUserNameByRole(
-              item.role || '', 
+              item.roleName || '', 
               proposal?.jobsite, 
               proposal?.department
             );
@@ -199,7 +199,7 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
                       </div>
                       
                       {/* Role display */}
-                      <p className="text-sm" style={{ color: '#007BFF', fontWeight: '600' }}>{item.role}</p>
+                      <p className="text-sm" style={{ color: '#007BFF', fontWeight: '600' }}>{item.roleName}</p>
                       
                       {/* Current pending - show awaiting message */}
                       {isCurrentPending && (
@@ -207,11 +207,11 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
                           <p className="text-xs text-gray-600 mb-1">⏳ Awaiting approval from:</p>
                           {userName ? (
                             <p className="text-sm" style={{ color: '#000000', fontWeight: '600' }}>
-                              {userName} ({item.role})
+                              {userName} ({item.roleName})
                             </p>
                           ) : (
                             <p className="text-sm" style={{ color: '#000000', fontWeight: '600' }}>
-                              {item.role}
+                              {item.roleName}
                             </p>
                           )}
                         </div>

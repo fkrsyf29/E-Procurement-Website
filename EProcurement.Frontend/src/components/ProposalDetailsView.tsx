@@ -268,7 +268,7 @@ export function ProposalDetailsView({
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-blue-600" />
           <span className="text-sm text-gray-700">
-            Approval Required: <span className="font-medium">{user.role}</span>
+            Approval Required: <span className="font-medium">{user.roleName}</span>
           </span>
         </div>
         
@@ -371,7 +371,7 @@ export function ProposalDetailsView({
                       <span className="text-gray-600 text-xs">Approval:</span>
                       <p className="mt-0.5">
                         {proposal.approvers && proposal.approvers.length > 0 
-                          ? proposal.approvers.map(a => a.role).join(' → ')
+                          ? proposal.approvers.map(a => a.roleName).join(' → ')
                           : 'No approvers assigned'}
                       </p>
                     </div>

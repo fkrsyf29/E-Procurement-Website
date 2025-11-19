@@ -55,7 +55,7 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
     // Buyer only sees proposals from their OWN jobsite
     // Planner (HO) sees ALL proposals
     // Sourcing (JAHO) sees ALL proposals
-    if (user.role === 'Buyer') {
+    if (user.roleName === 'Buyer') {
       // Buyer sees only proposals from their jobsite
       return approved.filter(p => {
         const creatorJobsite = p.creatorJobsite || p.jobsite;
@@ -567,7 +567,7 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
       proposalTitle: selectedProposal.title,
       requestedBy: user.id,
       requestedByName: user.name,
-      requestedByRole: user.role,
+      requestedByRole: user.roleName,
       requestDate: new Date().toISOString(),
       status: 'Pending',
       category: selectedProposal.category,

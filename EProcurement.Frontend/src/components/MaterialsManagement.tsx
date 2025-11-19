@@ -122,7 +122,7 @@ export function MaterialsManagement({
     failedItems: Array<{ row: number; material: string; plant: string; reason: string }>;
   } | null>(null);
   
-  const isAdmin = user.role === 'Administrator';
+  const isAdmin = user.roleName === 'Administrator';
   
   // Get all sub-classifications from Category Management
   const allSubClassifications = useMemo(() => getAllSubClassificationsFlat(), []);

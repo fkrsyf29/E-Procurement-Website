@@ -36,7 +36,7 @@ interface MyApprovalsProps {
 
 export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsProps) {
   console.log('🔄 [MY APPROVALS RENDER] Component rendering');
-  console.log('🔄 [MY APPROVALS RENDER] User:', user.name, user.role);
+  console.log('🔄 [MY APPROVALS RENDER] User:', user.name, user.roleName);
   console.log('🔄 [MY APPROVALS RENDER] Proposals count:', proposals.length);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +49,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [showBudgetPreview, setShowBudgetPreview] = useState(false);
 
-  const isAdmin = user.role === 'Administrator';
+  const isAdmin = user.roleName === 'Administrator';
 
   // Get approval stage based on user role
   const getApprovalStage = (role: string): ProposalStatus | 'all' | null => {
@@ -170,7 +170,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     console.log(`🔍 [CAN APPROVE START] Checking proposal ${proposal.proposalNo}`);
     console.log(`🔍 [CAN APPROVE START] Proposal ID: ${proposal.id}`);
     console.log(`🔍 [CAN APPROVE START] Status: ${proposal.status}`);
-    console.log(`🔍 [CAN APPROVE START] User: ${user.name} | Role: ${user.role}`);
+    console.log(`🔍 [CAN APPROVE START] User: ${user.name} | Role: ${user.roleName}`);
     
     // Admin can approve everything
     if (isAdmin) {
@@ -187,8 +187,8 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     // Try to get from history first (preferred if pending entry exists)
     let requiredRole = null;
     const currentPendingEntry = proposal.history.find(h => h.action === 'Pending');
-    if (currentPendingEntry && currentPendingEntry.role) {
-      requiredRole = currentPendingEntry.role.toString();
+    if (currentPendingEntry && currentPendingEntry.roleName) {
+      requiredRole = currentPendingEntry.roleName.toString();
       console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Required role from pending entry:`, requiredRole);
     } else {
       // Fall back to deriving from status
@@ -202,7 +202,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     }
     
     // Role matching - case insensitive
-    const userRoleLower = user.role.toLowerCase().trim();
+    const userRoleLower = user.roleName.toLowerCase().trim();
     const requiredRoleLower = requiredRole.toLowerCase().trim();
     
     console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - User role: "${userRoleLower}" | Required: "${requiredRoleLower}"`);
@@ -256,7 +256,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
 
   // Filter proposals pending user's approval
   const pendingApprovals = useMemo(() => {
-    const stage = getApprovalStage(user.role);
+    const stage = getApprovalStage(user.roleName);
     if (!stage) return [];
     
     // Admin can see all pending proposals (not Draft, not Approved, not Rejected)
@@ -279,7 +279,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
       // Must be able to approve this specific proposal
       return canUserApproveProposal(p);
     });
-  }, [user.role, user.jobsite, user.department, proposals, isAdmin]);
+  }, [user.roleName, user.jobsite, user.department, proposals, isAdmin]);
 
   // Get unique creators for filter
   const uniqueCreators = useMemo(() => {
@@ -447,7 +447,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     }
     
     console.log('✅ [CONFIRM ACTION] All validations passed, proceeding with action:', actionType);
-    console.log('📊 [APPROVAL DEBUG] Current User:', user.name, '| Role:', user.role);
+    console.log('📊 [APPROVAL DEBUG] Current User:', user.name, '| Role:', user.roleName);
     console.log('📊 [APPROVAL DEBUG] Proposal:', actionProposal.proposalNo, '| Current Status:', actionProposal.status);
     console.log('📊 [APPROVAL DEBUG] Creator Jobsite:', actionProposal.creatorJobsite, '| Creator Dept:', actionProposal.creatorDepartment);
 
@@ -460,7 +460,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         id: `h${Date.now()}`,
         stage: getStageName(actionProposal.status),
         approver: user.name,
-        role: user.role,
+        role: user.roleName,
         action: 'Approved' as const,
         date: new Date().toISOString(),
         comment: comment.trim() || undefined,
@@ -497,7 +497,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
             id: `h${Date.now() + 1}`,
             stage: getStageName(nextStatus),
             approver: '',
-            role: nextStep.role,
+            role: nextStep.roleName,
             action: 'Pending' as const,
           };
           updatedHistory.push(nextPendingEntry);
@@ -535,7 +535,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         id: `h${Date.now()}`,
         stage: getStageName(actionProposal.status),
         approver: user.name,
-        role: user.role,
+        role: user.roleName,
         action: 'Rejected' as const,
         date: new Date().toISOString(),
         comment: comment.trim(),
@@ -619,7 +619,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
           id: `h${Date.now() + 1}`,
           stage: getStageName(nextStatus),
           approver: '',
-          role: nextStep.role,
+          role: nextStep.roleName,
           action: 'Pending' as const,
         });
       }
@@ -688,7 +688,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         </div>
         <div className="p-3 rounded-lg border border-gray-200" style={{ backgroundColor: '#F0F0F0' }}>
           <p className="text-sm mb-1" style={{ color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: '600' }}>My Role</p>
-          <p style={{ fontSize: '18px', color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: 'bold', marginTop: '4px' }}>{user.role}</p>
+          <p style={{ fontSize: '18px', color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: 'bold', marginTop: '4px' }}>{user.roleName}</p>
         </div>
         <div className="p-3 rounded-lg border border-gray-200" style={{ backgroundColor: '#F0F0F0' }}>
           <p className="text-sm mb-1" style={{ color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: '600' }}>My Scope</p>
@@ -702,7 +702,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         <div className="p-3 rounded-lg border border-gray-200" style={{ backgroundColor: '#F0F0F0' }}>
           <p className="text-sm mb-1" style={{ color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: '600' }}>Approval Stage</p>
           <p style={{ fontSize: '16px', color: '#000000', fontFamily: 'Arial, sans-serif', fontWeight: 'bold', marginTop: '4px' }}>
-            {isAdmin ? 'All Stages' : getApprovalStage(user.role)?.replace('On ', '')}
+            {isAdmin ? 'All Stages' : getApprovalStage(user.roleName)?.replace('On ', '')}
           </p>
         </div>
       </div>
@@ -733,7 +733,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
             <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5"></div>
             <div>
               <h4 className="text-sm text-gray-900">
-                Outstanding Approvals for {user.role}
+                Outstanding Approvals for {user.roleName}
               </h4>
               <p className="text-xs text-gray-600 mt-1">
                 Showing only proposals pending your approval
@@ -831,7 +831,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
                       <p className="text-lg mb-2">No pending approvals for your role</p>
                       {!isAdmin && (
                         <p className="text-sm">
-                          You will see proposals here when they reach your approval stage ({user.role})
+                          You will see proposals here when they reach your approval stage ({user.roleName})
                           {user.jobsite && user.department && ` for ${user.department} - ${user.jobsite}`}
                         </p>
                       )}

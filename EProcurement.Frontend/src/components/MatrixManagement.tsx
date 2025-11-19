@@ -419,7 +419,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
   const filteredCategories = filterHierarchy(categories);
   
   // Check if user is admin
-  if (user.role !== 'Administrator') {
+  if (user.roleName !== 'Administrator') {
     return (
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

@@ -9,7 +9,7 @@ import { User } from '../types';
  * Check if user is Administrator (super user with full access)
  */
 export function isAdministrator(user: User | null | undefined): boolean {
-  return user?.role === 'Administrator';
+  return user?.roleName === 'Administrator';
 }
 
 /**
@@ -23,7 +23,7 @@ export function canApprove(user: User | null | undefined): boolean {
   if (isAdministrator(user)) return true;
   
   // Check if role includes approval keywords
-  const role = user.role;
+  const role = user.roleName;
   return (
     role.includes('Unit Head') ||
     role.includes('Section Head') ||
@@ -48,7 +48,7 @@ export function canCreateProposal(user: User | null | undefined): boolean {
   if (isAdministrator(user)) return true;
   
   // Check if role includes creator
-  return user.role.includes('Creator');
+  return user.roleName.includes('Creator');
 }
 
 /**
@@ -102,7 +102,7 @@ export function canAccessSourcing(user: User | null | undefined): boolean {
   if (isAdministrator(user)) return true;
   
   // Sourcing team members
-  const role = user.role;
+  const role = user.roleName;
   return (
     role === 'Buyer' ||
     role === 'Planner' ||

@@ -48,9 +48,9 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
   const [supportingDocuments, setSupportingDocuments] = useState<Array<{ name: string; size: number; type: string; uploadDate: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isApprover = user.role === 'Sourcing Department Head' || user.role === 'Procurement Division Head';
-  const isReviewer = user.role === 'Planner' || user.role === 'Buyer';
-  const isSourcingTeam = user.role === 'Sourcing' || user.role === 'Buyer' || user.role === 'Planner';
+  const isApprover = user.roleName === 'Sourcing Department Head' || user.roleName === 'Procurement Division Head';
+  const isReviewer = user.roleName === 'Planner' || user.roleName === 'Buyer';
+  const isSourcingTeam = user.roleName === 'Sourcing' || user.roleName === 'Buyer' || user.roleName === 'Planner';
 
   // Vendor table functions
   const addVendorRow = () => {
@@ -193,23 +193,23 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
 
   // Filter recommendations based on user role
   const getRecommendationsForUser = () => {
-    if (user.role === 'Administrator') {
+    if (user.roleName === 'Administrator') {
       return vendorRecommendations;
     }
     
-    if (user.role === 'Sourcing Department Head') {
+    if (user.roleName === 'Sourcing Department Head') {
       return vendorRecommendations.filter(r => 
         r.status === 'Waiting Dept Head Approval'
       );
     }
     
-    if (user.role === 'Procurement Division Head') {
+    if (user.roleName === 'Procurement Division Head') {
       return vendorRecommendations.filter(r => 
         r.status === 'Waiting Division Head Approval'
       );
     }
     
-    if (user.role === 'Planner') {
+    if (user.roleName === 'Planner') {
       // ✅ PLANNER (HO) - Sees ALL vendor requests from all Buyers
       return vendorRecommendations.filter(r => {
         // ✅ Exclude Completed status
@@ -225,7 +225,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       });
     }
     
-    if (user.role === 'Buyer') {
+    if (user.roleName === 'Buyer') {
       // ✅ BUYER - Sees requests from their jobsite only
       return vendorRecommendations.filter(r => {
         // ✅ Exclude Completed status
@@ -290,7 +290,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     }
 
     return filtered;
-  }, [searchTerm, filterStatus, sortField, sortDirection, user.role, vendorRecommendations]);
+  }, [searchTerm, filterStatus, sortField, sortDirection, user.roleName, vendorRecommendations]);
 
   const getStatusBadge = (status: VendorRecommendationStatus) => {
     const styles: Record<VendorRecommendationStatus, { bg: string; text: string; icon: any }> = {
@@ -483,7 +483,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         description: `${totalVendors} vendor(s) sent to Sourcing Department Head for review (${recommendedVendors.length} recommended + ${validAdditionalVendors.length} additional)`,
       });
     } else if (actionType === 'approve') {
-      const isDeptHead = user.role === 'Sourcing Department Head';
+      const isDeptHead = user.roleName === 'Sourcing Department Head';
       const updates: Partial<VendorRecommendation> = isDeptHead ? {
         status: 'Waiting Division Head Approval',
         deptHeadApprovedBy: user.id,
@@ -560,8 +560,8 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         toast.error('Please provide review comments');
         return;
       }
-      const isPlanner = user.role === 'Planner';
-      const isBuyer = user.role === 'Buyer';
+      const isPlanner = user.roleName === 'Planner';
+      const isBuyer = user.roleName === 'Buyer';
       
       // ✅ PLANNER = BUYER (SAME ROLE) - Both Accept → Completed + Confirmed
       // Update vendor recommendation with reviewer-specific fields
@@ -587,7 +587,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       
       console.log('═══════════════════════════════════════════════════════');
       console.log('🎯 [REVIEW ACTION] Planner/Buyer accepting vendor recommendation');
-      console.log('👤 [REVIEW ACTION] User Role:', user.role);
+      console.log('👤 [REVIEW ACTION] User Role:', user.roleName);
       console.log('📋 [REVIEW ACTION] Proposal ID:', selectedRecommendation.proposalId);
       console.log('🔹 [REVIEW ACTION] Recommended Vendors:', selectedRecommendation.recommendedVendors?.length || 0);
       console.log('🔹 [REVIEW ACTION] Additional Vendors:', selectedRecommendation.addedVendorsDetails?.length || 0);
@@ -607,7 +607,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         vendorRecommendation: updatedVendorRec
       };
         
-      console.log(`✅ [${user.role.toUpperCase()} ACCEPT] Vendor recommendation accepted`);
+      console.log(`✅ [${user.roleName.toUpperCase()} ACCEPT] Vendor recommendation accepted`);
       console.log('📦 [ACCEPT] Sourcing Documents status → "Confirmed"');
       console.log('📦 [ACCEPT] Vendor Recommendation status → "Completed"');
       console.log('📦 [ACCEPT] Recommended vendors:', proposalUpdates.recommendedVendors?.length);
@@ -842,7 +842,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
                         )}
                         
                         {/* Approver Actions */}
-                        {user.role === 'Sourcing Department Head' && rec.status === 'Waiting Dept Head Approval' && (
+                        {user.roleName === 'Sourcing Department Head' && rec.status === 'Waiting Dept Head Approval' && (
                           <>
                             <Button
                               variant="outline"
@@ -862,7 +862,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
                             </Button>
                           </>
                         )}
-                        {user.role === 'Procurement Division Head' && rec.status === 'Waiting Division Head Approval' && (
+                        {user.roleName === 'Procurement Division Head' && rec.status === 'Waiting Division Head Approval' && (
                           <>
                             <Button
                               variant="outline"
@@ -884,7 +884,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
                         )}
                         
                         {/* Planner Review */}
-                        {user.role === 'Planner' && rec.status === 'Under Planner Review' && (
+                        {user.roleName === 'Planner' && rec.status === 'Under Planner Review' && (
                           <>
                             <Button
                               variant="outline"
@@ -906,7 +906,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
                         )}
                         
                         {/* Buyer Review */}
-                        {user.role === 'Buyer' && rec.status === 'Under Buyer Review' && (
+                        {user.roleName === 'Buyer' && rec.status === 'Under Buyer Review' && (
                           <>
                             <Button
                               variant="outline"
@@ -1384,7 +1384,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
           {selectedRecommendation && (
             <div className="mt-6 pt-4 border-t border-gray-200">
               {/* Sourcing Department Head Actions */}
-              {user.role === 'Sourcing Department Head' && selectedRecommendation.status === 'Waiting Dept Head Approval' && (
+              {user.roleName === 'Sourcing Department Head' && selectedRecommendation.status === 'Waiting Dept Head Approval' && (
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
@@ -1411,7 +1411,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
               )}
               
               {/* Procurement Division Head Actions */}
-              {user.role === 'Procurement Division Head' && selectedRecommendation.status === 'Waiting Division Head Approval' && (
+              {user.roleName === 'Procurement Division Head' && selectedRecommendation.status === 'Waiting Division Head Approval' && (
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
@@ -1438,7 +1438,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
               )}
               
               {/* Planner Review Actions */}
-              {user.role === 'Planner' && selectedRecommendation.status === 'Under Planner Review' && (
+              {user.roleName === 'Planner' && selectedRecommendation.status === 'Under Planner Review' && (
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
@@ -1465,7 +1465,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
               )}
               
               {/* Buyer Review Actions */}
-              {user.role === 'Buyer' && selectedRecommendation.status === 'Under Buyer Review' && (
+              {user.roleName === 'Buyer' && selectedRecommendation.status === 'Under Buyer Review' && (
                 <div className="flex gap-3 justify-end">
                   <Button
                     variant="outline"
@@ -1492,10 +1492,10 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
               )}
               
               {/* Info message when no actions available */}
-              {!((user.role === 'Sourcing Department Head' && selectedRecommendation.status === 'Waiting Dept Head Approval') ||
-                 (user.role === 'Procurement Division Head' && selectedRecommendation.status === 'Waiting Division Head Approval') ||
-                 (user.role === 'Planner' && selectedRecommendation.status === 'Under Planner Review') ||
-                 (user.role === 'Buyer' && selectedRecommendation.status === 'Under Buyer Review')) && (
+              {!((user.roleName === 'Sourcing Department Head' && selectedRecommendation.status === 'Waiting Dept Head Approval') ||
+                 (user.roleName === 'Procurement Division Head' && selectedRecommendation.status === 'Waiting Division Head Approval') ||
+                 (user.roleName === 'Planner' && selectedRecommendation.status === 'Under Planner Review') ||
+                 (user.roleName === 'Buyer' && selectedRecommendation.status === 'Under Buyer Review')) && (
                 <div className="text-sm text-gray-500 text-center py-2">
                   {selectedRecommendation.status === 'Completed' && '✓ This vendor recommendation has been completed'}
                   {selectedRecommendation.status === 'Accepted' && '✅ This vendor recommendation has been accepted'}
@@ -1522,7 +1522,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
               {actionType === 'submit-approval' && 'Submit for Approval'}
               {actionType === 'approve' && 'Approve Vendor Recommendation'}
               {actionType === 'reject' && 'Reject / Request Revision'}
-              {actionType === 'review' && `${user.role} Review`}
+              {actionType === 'review' && `${user.roleName} Review`}
             </DialogTitle>
             <DialogDescription>
               {actionType === 'start' && 'Assign this vendor recommendation to yourself'}

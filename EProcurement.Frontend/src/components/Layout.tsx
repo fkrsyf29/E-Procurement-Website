@@ -323,7 +323,7 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm" style={{ color: '#000000', fontWeight: '500' }}>{user.name}</p>
-                <p className="text-xs" style={{ color: '#000000' }}>{user.role}</p>
+                <p className="text-xs" style={{ color: '#000000' }}>{user.roleName}</p>
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} style={{ color: '#000000' }} />
             </button>

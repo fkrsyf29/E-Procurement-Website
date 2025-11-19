@@ -27,7 +27,23 @@ namespace EProcurement.Api.Controllers
         {
             var result = await _service.GetByIdAsync(UserId);
             if (result == null) return NotFound();
-            return Ok(result);
+            return Ok(new
+            {
+                success = true,
+                user = result
+            });
+        }
+
+        [HttpGet("name/{UserName}")]
+        public async Task<IActionResult> GetByName(string UserName)
+        {
+            var result = await _service.GetByNameAsync(UserName);
+            if (result == null) return NotFound();
+            return Ok(new
+            {
+                success = true,
+                user = result
+            });
         }
 
         [HttpPost]

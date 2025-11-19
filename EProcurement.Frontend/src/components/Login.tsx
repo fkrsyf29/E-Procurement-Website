@@ -6,6 +6,7 @@ import { FileText } from 'lucide-react';
 import { mockUsers } from '../data/mockData';
 import { User } from '../types';
 import logoImage from 'figma:asset/904487f40e518b88e2b9435d33aa8cfa6557436d.png';
+import { loginUser } from '../services/userApi';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -16,25 +17,29 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    const user = mockUsers.find(u => u.username === username);
-    
-    if (!user) {
-      setError('Invalid username or password');
-      return;
-    }
-    
-    if (user.password !== password) {
-      setError('Invalid username or password');
-      return;
-    }
-    
-    onLogin(user);
-  };
+    try {
+      const { token, user } = await loginUser(username, password);
+      console.log('✅ Token dari loginUser:', token.substring(0, 15) + '...'); // Log token
+      
+      // 🔑 Hapus duplikasi if(token) - Token dijamin ada atau error sudah dilempar
+      localStorage.setItem('authToken', token); 
+      
+      onLogin(user);
+    } catch (err) {
+      console.error('Login API Error:', err);
+      setError(err instanceof Error ? err.message : 'Login gagal. Cek kredensial Anda.');
+
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e88e5] via-[#42a5f5] to-[#64b5f6] flex items-center justify-center p-4 relative overflow-hidden">

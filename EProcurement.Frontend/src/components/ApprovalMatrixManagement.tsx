@@ -387,7 +387,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                 </Select>
 
                 <Select
-                  value={step.role}
+                  value={step.roleName}
                   onValueChange={(value) => updateApprovalStep(index, 'role', value)}
                 >
                   <SelectTrigger className="flex-1">
@@ -585,9 +585,9 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                           <span
                             key={idx}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700 border border-gray-300"
-                            title={`${step.stepName}: ${step.role}`}
+                            title={`${step.stepName}: ${step.roleName}`}
                           >
-                            {step.stepNumber}. {step.role}
+                            {step.stepNumber}. {step.roleName}
                           </span>
                         ))}
                       </div>

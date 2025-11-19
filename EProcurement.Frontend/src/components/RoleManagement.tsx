@@ -240,7 +240,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
     const updatedRoles = roles.map(role =>
       role.id === selectedRole.id
         ? {
-            ...role,
+            ...roleName,
             name: formData.name!,
             description: formData.description!,
             permissions: formData.permissions || [],
@@ -277,7 +277,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
       if (role.id === roleId) {
         const newStatus = !role.isActive;
         toast.success(`Role ${newStatus ? 'activated' : 'deactivated'}: ${role.name}`);
-        return { ...role, isActive: newStatus, updatedDate: new Date().toISOString().split('T')[0] };
+        return { ...roleName, isActive: newStatus, updatedDate: new Date().toISOString().split('T')[0] };
       }
       return role;
     });
@@ -296,7 +296,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
       return;
     }
     setSelectedRole(role);
-    setFormData({ ...role });
+    setFormData({ ...roleName });
     setIsEditDialogOpen(true);
   };
 

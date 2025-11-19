@@ -7,7 +7,10 @@ namespace EProcurement.Api.Repositories.Interfaces
     {
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<UserDto?> GetByIdAsync(string UserId);
+        Task<UserDto?> GetByNameAsync(string UserName);
         Task<UserInsertResult> InsertAsync(UserCreateRequest req);
         Task<UserUpdateResult> UpdateAsync(UserUpdateRequest req);
+        Task SetRefreshTokenAsync(string userId, string refreshToken, DateTime expiryDate);
+        Task<UserDto?> GetByRefreshTokenAsync(string refreshToken);
     }
 }
