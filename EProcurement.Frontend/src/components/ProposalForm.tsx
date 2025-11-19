@@ -157,7 +157,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
   const [activeTab, setActiveTab] = useState('general');
   
   // Draft Management
-  const DRAFT_STORAGE_KEY = `eproposal_draft_${user.id}`;
+  const DRAFT_STORAGE_KEY = `eproposal_draft_${user.userID}`;
   const [hasDraft, setHasDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string>('');
   
@@ -1386,7 +1386,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
         {/* Department (Plant) - SHOWN FIRST */}
         <div className="space-y-1.5">
           <Label htmlFor="department">Department (Plant) *</Label>
-          <Select value={department} onValueChange={(value) => setDepartment(value as Department)}>
+          <Select value={department} onValueChange={(value: string) => setDepartment(value as Department)}>
             <SelectTrigger>
               <SelectValue placeholder="Select department" />
             </SelectTrigger>
@@ -1401,7 +1401,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
         {/* Jobsite - SHOWN AFTER DEPARTMENT */}
         <div className="space-y-1.5">
           <Label htmlFor="jobsite">Jobsite *</Label>
-          <Select value={jobsite} onValueChange={(value) => setJobsite(value as Jobsite)}>
+          <Select value={jobsite} onValueChange={(value: string) => setJobsite(value as Jobsite)}>
             <SelectTrigger>
               <SelectValue placeholder="Select jobsite" />
             </SelectTrigger>
@@ -1461,7 +1461,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
           <Label htmlFor="category">Category *</Label>
           <Select 
             value="" 
-            onValueChange={(value) => {
+            onValueChange={(value: string) => {
               const category = categoryHierarchy.find(c => c.code === value);
               if (category) handleCategoryToggle(category);
             }}
@@ -1507,7 +1507,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
             <Label htmlFor="classification">Classification *</Label>
             <Select 
               value="" 
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 const classification = availableClassifications.find(c => c.code === value);
                 if (classification) handleClassificationToggle(classification);
               }}
@@ -1554,7 +1554,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
             <Label htmlFor="subClassification">Sub-Classification *</Label>
             <Select 
               value="" 
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 const subClassification = availableSubClassifications.find(s => s.code === value);
                 if (subClassification) handleSubClassificationToggle(subClassification);
               }}
@@ -1665,7 +1665,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
             <Checkbox
               id="fundingBudget"
               checked={fundingBudget}
-              onCheckedChange={(checked) => setFundingBudget(checked as boolean)}
+              onCheckedChange={(checked: boolean) => setFundingBudget(checked as boolean)}
             />
             <label htmlFor="fundingBudget" className="text-sm cursor-pointer">
               Budget
@@ -1675,7 +1675,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
             <Checkbox
               id="fundingNonBudget"
               checked={fundingNonBudget}
-              onCheckedChange={(checked) => setFundingNonBudget(checked as boolean)}
+              onCheckedChange={(checked: boolean) => setFundingNonBudget(checked as boolean)}
             />
             <label htmlFor="fundingNonBudget" className="text-sm cursor-pointer">
               Non-Budget
@@ -2001,7 +2001,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
                   <Checkbox
                     id={`matrix-${condition.code}`}
                     checked={matrixConditionValues[condition.code] || false}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(checked: boolean) => {
                       setMatrixConditionValues({
                         ...matrixConditionValues,
                         [condition.code]: checked as boolean,
@@ -2148,7 +2148,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
                 <Checkbox
                   id={`tor-${item.id}`}
                   checked={item.enabled}
-                  onCheckedChange={(checked) => updateTORItem(index, 'enabled', checked as boolean)}
+                  onCheckedChange={(checked: boolean) => updateTORItem(index, 'enabled', checked as boolean)}
                   disabled={item.id === 'KBLI' && selectedSubClassifications.length > 0}
                 />
                 <label htmlFor={`tor-${item.id}`} className="cursor-pointer flex items-center gap-2">
@@ -2416,7 +2416,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
                 <Checkbox
                   id={`ter-${item.id}`}
                   checked={item.enabled}
-                  onCheckedChange={(checked) => updateTERItem(index, 'enabled', checked as boolean)}
+                  onCheckedChange={(checked : boolean) => updateTERItem(index, 'enabled', checked as boolean)}
                 />
                 <label htmlFor={`ter-${item.id}`} className="cursor-pointer">
                   {item.label}

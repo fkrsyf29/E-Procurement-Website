@@ -18,8 +18,8 @@ import { Proposal } from '../types';
 
 interface AdminApprovalActionsProps {
   proposal: Proposal;
-  onApprove: (role: string, comments: string) => void;
-  onReject: (role: string, comments: string) => void;
+  onApprove: (roleName: string, comments: string) => void;
+  onReject: (roleName: string, comments: string) => void;
 }
 
 const APPROVAL_ROLES = [

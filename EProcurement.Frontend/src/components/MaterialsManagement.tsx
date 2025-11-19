@@ -809,7 +809,7 @@ export function MaterialsManagement({
               <Label>Base Unit of Measure <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.baseUnitOfMeasure}
-                onValueChange={(value) => setFormData({ ...formData, baseUnitOfMeasure: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, baseUnitOfMeasure: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select UoM" />
@@ -825,7 +825,7 @@ export function MaterialsManagement({
               <Label>External Brand <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.extMaterialGroup}
-                onValueChange={(value) => setFormData({ ...formData, extMaterialGroup: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, extMaterialGroup: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select brand" />
@@ -841,7 +841,7 @@ export function MaterialsManagement({
               <Label>Valuation Class</Label>
               <Select
                 value={formData.valuationClass}
-                onValueChange={(value) => setFormData({ ...formData, valuationClass: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, valuationClass: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select valuation class" />
@@ -857,7 +857,7 @@ export function MaterialsManagement({
               <Label>Material Group</Label>
               <Select
                 value={formData.materialGroup}
-                onValueChange={(value) => setFormData({ ...formData, materialGroup: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, materialGroup: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select material group" />
@@ -883,7 +883,7 @@ export function MaterialsManagement({
               <Label>Sub-Classification</Label>
               <Select
                 value={formData.subClassification}
-                onValueChange={(value) => setFormData({ ...formData, subClassification: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, subClassification: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sub-classification" />
@@ -904,7 +904,7 @@ export function MaterialsManagement({
               <Label>Jobsite <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.jobsite}
-                onValueChange={(value) => setFormData({ ...formData, jobsite: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, jobsite: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select jobsite" />
@@ -1060,7 +1060,7 @@ export function MaterialsManagement({
               <Label>Base Unit of Measure <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.baseUnitOfMeasure}
-                onValueChange={(value) => setFormData({ ...formData, baseUnitOfMeasure: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, baseUnitOfMeasure: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select UoM" />
@@ -1076,7 +1076,7 @@ export function MaterialsManagement({
               <Label>External Brand <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.extMaterialGroup}
-                onValueChange={(value) => setFormData({ ...formData, extMaterialGroup: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, extMaterialGroup: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select brand" />
@@ -1092,7 +1092,7 @@ export function MaterialsManagement({
               <Label>Valuation Class</Label>
               <Select
                 value={formData.valuationClass}
-                onValueChange={(value) => setFormData({ ...formData, valuationClass: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, valuationClass: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select valuation class" />
@@ -1108,7 +1108,7 @@ export function MaterialsManagement({
               <Label>Material Group</Label>
               <Select
                 value={formData.materialGroup}
-                onValueChange={(value) => setFormData({ ...formData, materialGroup: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, materialGroup: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select material group" />
@@ -1134,7 +1134,7 @@ export function MaterialsManagement({
               <Label>Sub-Classification</Label>
               <Select
                 value={formData.subClassification}
-                onValueChange={(value) => setFormData({ ...formData, subClassification: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, subClassification: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sub-classification" />
@@ -1155,7 +1155,7 @@ export function MaterialsManagement({
               <Label>Jobsite <span className="text-red-600">*</span></Label>
               <Select
                 value={formData.jobsite}
-                onValueChange={(value) => setFormData({ ...formData, jobsite: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, jobsite: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select jobsite" />

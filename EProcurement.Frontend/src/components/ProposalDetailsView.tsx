@@ -319,7 +319,7 @@ export function ProposalDetailsView({
         </div>
 
         {/* 3-Tab Structure */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'general' | 'tor' | 'ter')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'general' | 'tor' | 'ter')} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="general">
               1. General Information

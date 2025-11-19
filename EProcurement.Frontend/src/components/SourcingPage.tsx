@@ -428,7 +428,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     if (actionType === 'start') {
       onUpdateVendorRecommendation(selectedRecommendation.id, {
         status: 'In Progress',
-        assignedTo: user.id,
+        assignedTo: user.userID,
         assignedToName: user.name,
         startedDate: new Date().toISOString()
       });
@@ -486,13 +486,13 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       const isDeptHead = user.roleName === 'Sourcing Department Head';
       const updates: Partial<VendorRecommendation> = isDeptHead ? {
         status: 'Waiting Division Head Approval',
-        deptHeadApprovedBy: user.id,
+        deptHeadApprovedBy: user.userID,
         deptHeadApprovedByName: user.name,
         deptHeadApprovedDate: new Date().toISOString(),
         deptHeadComments: actionNotes
       } : {
         status: selectedRecommendation.requestedByRole === 'Planner' ? 'Under Planner Review' : 'Under Buyer Review',
-        divHeadApprovedBy: user.id,
+        divHeadApprovedBy: user.userID,
         divHeadApprovedByName: user.name,
         divHeadApprovedDate: new Date().toISOString(),
         divHeadComments: actionNotes
@@ -566,7 +566,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       // ✅ PLANNER = BUYER (SAME ROLE) - Both Accept → Completed + Confirmed
       // Update vendor recommendation with reviewer-specific fields
       const updates: Partial<VendorRecommendation> = isPlanner ? {
-        plannerReviewedBy: user.id,
+        plannerReviewedBy: user.userID,
         plannerReviewedByName: user.name,
         plannerReviewDate: new Date().toISOString(),
         plannerDecision: 'Approved',
@@ -574,7 +574,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         status: 'Completed',  // ✅ Planner Accept → Completed (FINAL!)
         completedDate: new Date().toISOString()
       } : {
-        buyerReviewedBy: user.id,
+        buyerReviewedBy: user.userID,
         buyerReviewedByName: user.name,
         buyerReviewDate: new Date().toISOString(),
         buyerDecision: 'Approved',

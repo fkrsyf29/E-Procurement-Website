@@ -360,7 +360,7 @@ export function initializeProposalHistory(
  */
 export function getNextApprovalStep(
   proposal: Proposal
-): { role: string; status: string } | null {
+): { roleName: string; status: string } | null {
   // Use creator's jobsite and department if available, fallback to proposal's
   const creatorJobsite = proposal.creatorJobsite || proposal.jobsite;
   const department = proposal.creatorDepartment || proposal.department;

@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface ApprovalMatrixManagementProps {
   matrices: ApprovalMatrix[];
@@ -292,7 +292,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
           <Label htmlFor="department">Department *</Label>
           <Select
             value={formData.department}
-            onValueChange={(value) => setFormData({ ...formData, department: value as Department })}
+            onValueChange={(value: string) => setFormData({ ...formData, department: value as Department })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select department" />
@@ -309,7 +309,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
           <Label htmlFor="jobsite">Jobsite *</Label>
           <Select
             value={formData.jobsite}
-            onValueChange={(value) => setFormData({ ...formData, jobsite: value as Jobsite })}
+            onValueChange={(value: string) => setFormData({ ...formData, jobsite: value as Jobsite })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select jobsite" />
@@ -374,7 +374,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                 
                 <Select
                   value={step.stepName}
-                  onValueChange={(value) => updateApprovalStep(index, 'stepName', value)}
+                  onValueChange={(value: string) => updateApprovalStep(index, 'stepName', value)}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue />
@@ -388,7 +388,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
 
                 <Select
                   value={step.roleName}
-                  onValueChange={(value) => updateApprovalStep(index, 'role', value)}
+                  onValueChange={(value: string) => updateApprovalStep(index, 'role', value)}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue />

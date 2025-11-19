@@ -79,7 +79,7 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
     username: '',
     name: '',
     password: '',
-    role: '' as UserRole | '',
+    roleName: '' as UserRole | '',
     jobsite: '' as Jobsite | '',
     department: '' as Department | '',
     email: '',
@@ -611,20 +611,20 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                   </tr>
                 ) : (
     paginatedUsers.map((user) => (
-      <tr key={user.id} className="hover:bg-gray-50">
+      <tr key={user.userID} className="hover:bg-gray-50">
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
         <td className="px-6 py-4 whitespace-nowrap text-sm">
           <div className="flex items-center gap-2">
             <code className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">
-              {showPasswords[user.id] ? user.password : '••••••••'}
+              {showPasswords[user.userID] ? user.password : '••••••••'}
             </code>
             <button
-              onClick={() => togglePasswordVisibility(user.id)}
+              onClick={() => togglePasswordVisibility(user.userID)}
               className="text-gray-500 hover:text-gray-700"
-              title={showPasswords[user.id] ? 'Hide password' : 'Show password'}
+              title={showPasswords[user.userID] ? 'Hide password' : 'Show password'}
             >
-              {showPasswords[user.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPasswords[user.userID] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </td>
@@ -830,7 +830,7 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                 <Label htmlFor="department">Department</Label>
                 <Select 
                   value={formData.department} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, department: value as Department }))}
+                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value as Department }))}
                 >
                   <SelectTrigger id="department">
                     <SelectValue placeholder="Select department (optional)" />
@@ -847,7 +847,7 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                 <Label htmlFor="jobsite">Jobsite</Label>
                 <Select 
                   value={formData.jobsite} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, jobsite: value as Jobsite }))}
+                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, jobsite: value as Jobsite }))}
                 >
                   <SelectTrigger id="jobsite">
                     <SelectValue placeholder="Select jobsite (optional)" />

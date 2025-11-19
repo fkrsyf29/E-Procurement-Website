@@ -565,7 +565,7 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
       proposalId: selectedProposal.id,
       proposalNo: selectedProposal.proposalNo,
       proposalTitle: selectedProposal.title,
-      requestedBy: user.id,
+      requestedBy: user.userID,
       requestedByName: user.name,
       requestedByRole: user.roleName,
       requestDate: new Date().toISOString(),

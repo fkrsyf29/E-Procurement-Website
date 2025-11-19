@@ -153,6 +153,8 @@ export interface Proposal {
   // TOR Specifications for Vendor Matching (NEW - Nov 12, 2025)
   kbliCodes?: string[]; // Multiple KBLI codes from TOR
   brandSpecifications?: string[]; // Multiple brands from TOR
+
+  approvers?:string
 }
 
 export interface ApprovalHistory {
@@ -160,7 +162,7 @@ export interface ApprovalHistory {
   stage?: string;
   approver?: string;
   by?: string; // Alternative to approver
-  role?: string | UserRole;
+  roleName?: string | UserRole;
   action?: 'Approved' | 'Rejected' | 'Pending' | 'Created' | 'Submitted';
   comment?: string;
   comments?: string; // Alternative to comment
@@ -232,7 +234,7 @@ export type ApprovalRole =
 export interface ApprovalStep {
   stepNumber: number;
   stepName: string; // e.g., "Verificator", "Viewer 1", "Viewer 2", "Approval 1", "Approval 2"
-  role: ApprovalRole;
+  roleName: ApprovalRole;
 }
 
 export interface ApprovalMatrix {

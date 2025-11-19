@@ -41,6 +41,8 @@ export interface VendorRecord {
   email?: string;
   address?: string;
   website?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   
   // Capabilities - MAIN FEATURE
   capabilities: VendorCapability;

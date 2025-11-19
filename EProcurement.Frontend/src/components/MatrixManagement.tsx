@@ -724,7 +724,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                       <Checkbox
                         id="showInTOR"
                         checked={showInTOR}
-                        onCheckedChange={(checked) => setShowInTOR(checked as boolean)}
+                        onCheckedChange={(checked: boolean) => setShowInTOR(checked as boolean)}
                       />
                       <label htmlFor="showInTOR" className="cursor-pointer">
                         Show in TOR (Terms of Reference)
@@ -734,7 +734,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                       <Checkbox
                         id="showInTER"
                         checked={showInTER}
-                        onCheckedChange={(checked) => setShowInTER(checked as boolean)}
+                        onCheckedChange={(checked: boolean) => setShowInTER(checked as boolean)}
                       />
                       <label htmlFor="showInTER" className="cursor-pointer">
                         Show in TER (Technical Evaluation Requirements)
@@ -758,7 +758,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                             <Checkbox
                               id={`tor-${def.code}`}
                               checked={torItemStates[def.code] || false}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={(checked: boolean) => {
                                 setTorItemStates({
                                   ...torItemStates,
                                   [def.code]: checked as boolean,
@@ -790,7 +790,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                             <Checkbox
                               id={`ter-${def.code}`}
                               checked={terItemStates[def.code] || false}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={(checked: boolean) => {
                                 setTerItemStates({
                                   ...terItemStates,
                                   [def.code]: checked as boolean,
