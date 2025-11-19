@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { User } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, FileText, Cog } from 'lucide-react';
 import {
   TORItemDefinition,

@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 import { User, Proposal, TORItem, TERItem, VendorRecommendation } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ApprovalTimeline } from './ApprovalTimeline';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { formatDate, formatCurrency, formatCurrencyNoCommas, formatNumberWithSeparator, parseDate } from '../utils/formatters';
 import { VendorRecord } from '../data/vendorDatabase_NEW';
 import { getRecommendedVendors as getVendorRecommendations } from '../utils/vendorRecommendation';

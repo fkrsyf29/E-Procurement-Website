@@ -4,7 +4,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { ArrowLeft, Mail, Key, CheckCircle } from 'lucide-react';
 import { mockUsers } from '../data/mockData';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import logoImage from 'figma:asset/904487f40e518b88e2b9435d33aa8cfa6557436d.png';
 
 interface ForgotPasswordProps {

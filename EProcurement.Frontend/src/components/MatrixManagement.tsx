@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { User } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Save, X, Settings, ChevronRight, ChevronDown } from 'lucide-react';
 import { MatrixEntry, getAllMatrixEntries, createMatrixEntry, updateMatrixEntry, deleteMatrixEntry } from '../data/torterMatrix';
 import { getActiveTORDefinitions, getActiveTERDefinitions } from '../data/torterItemDefinitions';

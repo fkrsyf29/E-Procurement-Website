@@ -21,7 +21,7 @@ import { ApprovalTimeline } from './ApprovalTimeline';
 import { AdminApprovalActions } from './AdminApprovalActions';
 import { ProposalDetailsView } from './ProposalDetailsView';
 import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { formatDate, parseDate } from '../utils/formatters';
 import { getNextApprovalStep, isWorkflowComplete } from '../utils/approvalHelper';
 

@@ -6,7 +6,7 @@ import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Material, BudgetItem } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { formatNumberWithSeparator } from '../utils/formatters';
 
 interface BudgetItemSelectionProps {

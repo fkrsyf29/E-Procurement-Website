@@ -18,7 +18,7 @@ import { Proposal, User } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ApprovalTimeline } from './ApprovalTimeline';
 import { formatDate, formatNumberWithSeparator } from '../utils/formatters';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { getKBLIDisplay } from '../data/systemReferenceData';
 
 interface ProposalDetailsViewProps {

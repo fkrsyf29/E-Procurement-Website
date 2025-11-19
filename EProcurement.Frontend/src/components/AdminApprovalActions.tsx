@@ -13,7 +13,7 @@ import {
 } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { CheckCircle, XCircle, Shield, AlertTriangle, Info } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Proposal } from '../types';
 
 interface AdminApprovalActionsProps {

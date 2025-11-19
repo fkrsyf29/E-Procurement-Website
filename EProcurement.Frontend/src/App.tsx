@@ -24,7 +24,7 @@ import { approvalMatrixData } from './data/approvalMatrix';
 import { defaultRoles } from './data/rolesData';
 import { getMaterials, addMaterial, updateMaterial, deleteMaterial, bulkAddMaterials } from './data/materialsData';
 import { User, Proposal, ApprovalMatrix, VendorRecommendation, Material } from './types';
-import { RoleDefinition } from './data/rolesData';
+import { RoleDefinition } from './types/role'
 import { initializeProposalHistory, getFirstApprovalStatus } from './utils/approvalHelper';
 import { fetchCurrentUser } from './services/userApi';
 
@@ -237,7 +237,7 @@ export default function App() {
     // ✅ CREATE NEW PROPOSAL
     console.log('➕ [APP] Creating new proposal');
     console.log('   - 🔍 CURRENT USER INFO:');
-    console.log('      • ID:', currentUser?.id);
+    console.log('      • ID:', currentUser?.userID);
     console.log('      • Username:', currentUser?.username);
     console.log('      • Name:', currentUser?.name);
     console.log('      • Role:', currentUser?.roleName);
@@ -289,7 +289,7 @@ export default function App() {
       department: proposalData.department, // Procurement department
       workLocation: proposalData.workLocation,
       creator: currentUser?.name || '',
-      creatorId: currentUser?.id || '',
+      creatorId: currentUser?.userID || '',
       creatorJobsite: creatorJobsite, // Creator's jobsite - for approval routing
       creatorDepartment: creatorDepartment, // Creator's department - for approval routing
       amount: proposalData.amount,

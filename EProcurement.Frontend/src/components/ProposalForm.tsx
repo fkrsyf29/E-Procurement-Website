@@ -7,7 +7,7 @@ import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { User, Proposal, Jobsite, Department, Material, BudgetItem } from '../types';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Upload, X, FileText, Eye, Info, FileSpreadsheet, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { categoryHierarchy, workLocations, Category, Classification, SubClassification } from '../data/categoryHierarchy';
 import { generateProposalNumber, isProposalNumberUnique } from '../utils/proposalNumber';
