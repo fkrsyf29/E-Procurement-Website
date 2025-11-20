@@ -17,7 +17,7 @@ namespace EProcurement.Api.Repositories.Implementations
 
         public async Task<IEnumerable<PermissionDto>> GetAllAsync()
         {
-            return await QueryAsync<PermissionDto>(PermissionQueries.GetAll);
+            return await QueryAsync<PermissionDto>(JobsiteQueries.GetAll);
         }
     }
 }

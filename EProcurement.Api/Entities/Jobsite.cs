@@ -2,7 +2,7 @@
 {
     public class Jobsite
     {
-        public int Id { get; set; }
+        public int JobsiteId { get; set; }
         public string Code { get; set; }
         public string Name { get; set; }
         public bool IsActive { get; set; }

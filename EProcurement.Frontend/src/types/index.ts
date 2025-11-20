@@ -1,4 +1,4 @@
-// Type definitions for the e-Proposal system
+// ./types/index.ts
 
 export type UserRole = 
   | 'Administrator'
@@ -35,25 +35,25 @@ export type ProposalStatus =
   | 'Approved'
   | 'Rejected';
 
-export type Jobsite = 
-  | 'ADMO MINING'
-  | 'ADMO HAULING'
-  | 'SERA'
-  | 'MACO MINING'
-  | 'MACO HAULING'
-  | 'JAHO'
-  | 'NARO';
+// export type Jobsite = 
+//   | 'ADMO MINING'
+//   | 'ADMO HAULING'
+//   | 'SERA'
+//   | 'MACO MINING'
+//   | 'MACO HAULING'
+//   | 'JAHO'
+//   | 'NARO';
 
-export type Department =
-  | 'Plant'
-  | 'Logistic'
-  | 'HR'
-  | 'GA'
-  | 'SHE'
-  | 'Finance'
-  | 'Production'
-  | 'Engineering'
-  | 'IT';
+// export type Department =
+//   | 'Plant'
+//   | 'Logistic'
+//   | 'HR'
+//   | 'GA'
+//   | 'SHE'
+//   | 'Finance'
+//   | 'Production'
+//   | 'Engineering'
+//   | 'IT';
 
 export interface User {
   userID: string;
@@ -61,8 +61,8 @@ export interface User {
   password: string;
   name: string;
   roleName: UserRole;
-  jobsite?: Jobsite;
-  department?: Department;
+  jobsite?: Jobsites;
+  department?: Departments;
   email?: string;
   phone?: string;
   lastPasswordChange?: string;
@@ -84,13 +84,13 @@ export interface Proposal {
   tor: string;
   ter: string;
   vendorList: string[];
-  jobsite: Jobsite; // Procurement jobsite (where the work will be done)
-  department: Department;
+  jobsite: Jobsites; // Procurement jobsite (where the work will be done)
+  department: Departments;
   workLocation?: string;
   creator: string;
   creatorId: string;
-  creatorJobsite?: Jobsite; // Creator's jobsite - used for approval routing
-  creatorDepartment?: Department; // Creator's department - used for approval routing
+  creatorJobsite?: Jobsites; // Creator's jobsite - used for approval routing
+  creatorDepartment?: Departments; // Creator's department - used for approval routing
   creatorGroup?: string; // e.g., "Creator plant Development"
   amount: number;
   estimatedCost?: number; // Same as amount, for display purposes
@@ -220,27 +220,27 @@ export interface BudgetItem {
 }
 
 // Approval Matrix Types
-export type ApprovalRole =
-  | 'UH User'
-  | 'SH User'
-  | 'Manager Site'
-  | 'DH User'
-  | 'DIV User'
-  | 'Chief Operation Site'
-  | 'Dir User'
-  | 'President Director'
-  | 'Chief Operational Site';
+// export type ApprovalRole =
+//   | 'UH User'
+//   | 'SH User'
+//   | 'Manager Site'
+//   | 'DH User'
+//   | 'DIV User'
+//   | 'Chief Operation Site'
+//   | 'Dir User'
+//   | 'President Director'
+//   | 'Chief Operational Site';
 
 export interface ApprovalStep {
   stepNumber: number;
   stepName: string; // e.g., "Verificator", "Viewer 1", "Viewer 2", "Approval 1", "Approval 2"
-  roleName: ApprovalRole;
+  roleName: ApprovalRoles;
 }
 
 export interface ApprovalMatrix {
   id: string;
-  department: Department;
-  jobsite: Jobsite;
+  department: Departments;
+  jobsite: Jobsites;
   amountMin: number;
   amountMax: number | null; // null means infinity
   group: string; // e.g., "Creator plant Development"
@@ -392,3 +392,128 @@ export interface ProposalMaterialItem {
   estimatedTotalPrice?: number;
   remarks?: string;
 }
+
+export interface Permission { 
+    id: string; 
+    label: string; 
+    category: string 
+}
+
+export interface PermissionFromApi {
+  permissionID: number;
+  code: string;
+  name: string;
+  description: string | null;
+  permissionCategoryID: number;
+  category: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface Departments { 
+    departmentID: string; 
+    code: string; 
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface Jobsites { 
+    jobsiteID: string; 
+    code: string; 
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface ApprovalRoles { 
+    approvalRoleID: string; 
+    code: string; 
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface RoleCategories { 
+    roleCategoryID: string; 
+    code: string; 
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface PermissionCategories { 
+    permissionCategoryID: string; 
+    code: string; 
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    createdBy: string;
+}
+
+export interface ApiRole {
+  roleID: number;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  approvalRole: string | null;
+  canApprove: boolean;
+  canCreate: boolean;
+  canView: boolean;
+  isActive: boolean;
+  isSystemGenerated: boolean;
+  permissionId: number[];
+  permission: string[];
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+
+export interface RoleDefinition {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  canApprove: boolean;
+  canCreate: boolean;
+  canView: boolean;
+  category: RoleCategories;
+  isActive: boolean;
+  isSystemGenerated: boolean; // True for auto-generated roles, false for custom roles
+  createdDate: string;
+  updatedDate?: string;
+  relatedApprovalRole?: string; // Maps to ApprovalRole in approval matrix
+}
+
+export interface apiUser {
+  userID: number;
+  username: string;
+  password: string;
+  name: string;
+  roleName: string;
+  jobsite: string | null;
+  department: string | null;
+  email: string | null;
+  phone: string | null;
+  lastPasswordChange: string;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+}
+

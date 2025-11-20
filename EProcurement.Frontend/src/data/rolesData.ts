@@ -367,8 +367,8 @@ export const mapApiRoleToDefinition = (apiRole: any): RoleDefinition => ({
 });
 
 export const mapApiPermissionToDefinition  = (PermissionFromApi: any): Permission => ({
-  id: PermissionFromApi.permissionID,                                            // pakai code sebagai id (string)
-  label: PermissionFromApi.name,
+  permissionID: PermissionFromApi.permissionID,                                            // pakai code sebagai id (string)
+  name: PermissionFromApi.name,
   category: PermissionFromApi.category,
 });
 

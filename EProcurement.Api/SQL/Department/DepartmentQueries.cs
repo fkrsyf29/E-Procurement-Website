@@ -2,6 +2,6 @@
 {
     public static class DepartmentQueries
     {
-        public const string GetAll = @"EXEC Department_GetAll";
+        public const string GetAll = @"EXEC sp_Department_GetAll";
     }
 }

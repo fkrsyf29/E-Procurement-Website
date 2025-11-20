@@ -1,4 +1,4 @@
-// src/services/userApi.ts
+// src/services/permissionApi.ts
 
 import { Permission} from '../types';
 import { FALLBACK_PERMISSIONS,mapApiPermissionToDefinition } from '../data/rolesData'; 

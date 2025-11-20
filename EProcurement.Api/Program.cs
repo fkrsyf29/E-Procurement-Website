@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("https://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -41,7 +41,12 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 // ================================================
 builder.Services.AddScoped<ISsoService, SsoService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IJobsiteService, JobsiteService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IApprovalRoleService, ApprovalRoleService>();
+builder.Services.AddScoped<IPermissionCategoryService, PermissionCategoryService>();
+builder.Services.AddScoped<IRoleCategoryService, RoleCategoryService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // ================================================
@@ -53,7 +58,12 @@ builder.Services.AddSingleton<DbConnectionFactory>();
 
 // Repository Specific
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IJobsiteRepository, JobsiteRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IPermissionCategoryRepository, PermissionCategoryRepository>();
+builder.Services.AddScoped<IRoleCategoryRepository, RoleCategoryRepository>();
+builder.Services.AddScoped<IApprovalRoleRepository, ApprovalRoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Base Dapper Repositories (Generic)

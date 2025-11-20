@@ -45,9 +45,9 @@ namespace EProcurement.Api.Controllers
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true, // Melindungi dari XSS
-                Secure = true,   // Wajib HTTPS
-                SameSite = SameSiteMode.Strict, // Perlindungan CSRF
-                Expires = DateTimeOffset.UtcNow.AddDays(7) // Contoh 7 hari
+                Secure = true,   // Wajib HTTPS = true
+                SameSite = SameSiteMode.Strict, // Perlindungan CSRF = .Strict
+                Expires = DateTimeOffset.Now.AddDays(7) // Contoh 7 hari
             };
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
 
@@ -87,7 +87,7 @@ namespace EProcurement.Api.Controllers
 
             var newRefreshToken = await _userService.GenerateRefreshToken(user.UserID.ToString());
 
-            var cookieOptions = new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict, Expires = DateTimeOffset.UtcNow.AddDays(7) };
+            var cookieOptions = new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict, Expires = DateTimeOffset.Now.AddDays(7) };
             Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);
 
             return Ok(new

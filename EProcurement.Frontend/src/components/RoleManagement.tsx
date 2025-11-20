@@ -20,14 +20,18 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './ui/alert-dialog';
 import { getRoleStatistics, ROLE_CONFIG, defaultRoles } from '../data/rolesData';
-import { RoleDefinition, ApprovalRole, Permissions } from '../types';
+import { ApprovalRoles, Departments, Jobsites, RoleDefinition,Permission,RoleCategories,PermissionCategories  } from '../types';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 
 import { fetchApiRoles } from '../services/roleApi';
 import { fetchApiPermissions } from '../services/permissionApi';
+import { fetchApiDepartment } from '../services/departmentApi';
+import { fetchApiJobsite } from '../services/jobsiteApi';
+import { fetchApiApprovalRole } from '../services/approvalRoleApi';
+import { fetchApiRoleCategory } from '../services/roleCategoryApi';
+import { fetchApiPermissionCategory } from '../services/permissionCategoryApi';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL; 
 
 interface RoleManagementProps {
   roles: RoleDefinition[];
@@ -46,7 +50,27 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
   const [loading, setLoading] = useState(true);
 
   const [availablePermissions, setAvailablePermissions] = useState<
-    { id: string; label: string; category: string }[]
+    { permissionID: string; name: string; category: string }[]
+  >([]);
+
+  const [availableDepartments, setAvailableDepartments] = useState<
+    { departmentID: string; name: string }[]
+  >([]);
+
+  const [availableJobsites, setAvailableJobsites] = useState<
+    { jobsiteID: string; name: string }[]
+  >([]);
+
+  const [availableRoleCategories, setAvailableRoleCategories] = useState<
+    { roleCategoryID: string; name: string }[]
+  >([]);
+
+  const [availablePermissionCategories, setAvailablePermissionCategories] = useState<
+    { permissionCategoryID: string; name: string }[]
+  >([]);
+
+  const [availableApprovalRoles, setAvailableApprovalRoles] = useState<
+    { approvalRoleID: string; name: string }[]
   >([]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +93,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
     canApprove: false,
     canCreate: false,
     canView: true,
-    category: 'Custom',
+    category: undefined,
     isActive: true,
     relatedApprovalRole: undefined,
   });
@@ -85,13 +109,24 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
         const mappedRoles: RoleDefinition[] = await fetchApiRoles();
         
         // 2. Fetch Permissions
-        const permissionsList : Permissions[] = await fetchApiPermissions();
+        const permissionsList : Permission[] = await fetchApiPermissions();
+
+        const departmentList : Departments[] = await fetchApiDepartment();
+        const jobsiteList : Jobsites[] = await fetchApiJobsite();
+        const approvalRoleList : ApprovalRoles [] = await fetchApiApprovalRole();
+        const roleCategoryList : RoleCategories[] = await fetchApiRoleCategory();
+        const permissionCategoryList : PermissionCategories[] = await fetchApiPermissionCategory();
         
         // Hanya update state kalau component masih mounted
         if (isMounted) {
           setRoles(mappedRoles);
           onUpdateRoles(mappedRoles);
           setAvailablePermissions(permissionsList);
+          setAvailableDepartments(departmentList);
+          setAvailableJobsites(jobsiteList);
+          setAvailableApprovalRoles(approvalRoleList);
+          setAvailablePermissionCategories(permissionCategoryList);
+          setAvailableRoleCategories(roleCategoryList);
           setLoading(false);
         }
 
@@ -101,6 +136,8 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
           setRoles(defaultRoles);
           onUpdateRoles(defaultRoles);
           setAvailablePermissions(FALLBACK_PERMISSIONS);
+          setAvailableDepartments([]);
+          setAvailableJobsites([]);
           setLoading(false);
         }
       }
@@ -162,7 +199,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
   const resetForm = () => {
     setFormData({
       name: '', description: '', permissions: [], canApprove: false,
-      canCreate: false, canView: true, category: 'Custom', isActive: true,
+      canCreate: false, canView: true, category: undefined, isActive: true,
       relatedApprovalRole: undefined,
     });
   };
@@ -346,22 +383,22 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <Users className="w-5 h-5 text-blue-600 mb-2" />
                 <p className="text-sm text-blue-800">Total Roles</p>
-                <p className="text-2xl text-blue-900 mt-1">{stats.totalRoles}</p>
+                <p className="text-2xl text-blue-900 mt-1">{roles.length}</p>
               </div>
               <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
                 <CheckCircle className="w-5 h-5 text-teal-600 mb-2" />
                 <p className="text-sm text-teal-800">Active Roles</p>
-                <p className="text-2xl text-teal-900 mt-1">{stats.activeRoles}</p>
+                <p className="text-2xl text-teal-900 mt-1">{roles.filter(r => r.isActive).length}</p>
               </div>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <ShieldCheck className="w-5 h-5 text-purple-600 mb-2" />
                 <p className="text-sm text-purple-800">Approval Roles</p>
-                <p className="text-2xl text-purple-900 mt-1">{stats.byCategory.Approval}</p>
+                <p className="text-2xl text-purple-900 mt-1">{roles.filter(r => r.category === "Approval").length}</p>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <Users className="w-5 h-5 text-orange-600 mb-2" />
                 <p className="text-sm text-orange-800">Custom Roles</p>
-                <p className="text-2xl text-orange-900 mt-1">{stats.byCategory.Custom}</p>
+                <p className="text-2xl text-orange-900 mt-1">{roles.filter(r => r.category === "Custom").length}</p>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <Lock className="w-5 h-5 text-gray-600 mb-2" />
@@ -375,12 +412,20 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
               <p className="text-sm text-gray-700 mb-2"><strong>System Configuration:</strong></p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600">Departments ({ROLE_CONFIG.departments.length}):</p>
-                  <p className="text-gray-900">{ROLE_CONFIG.departments.join(', ')}</p>
+                  <p className="text-gray-600">Departments ({availableDepartments.length}):</p>
+                  <p className="text-gray-900">
+                    {availableDepartments
+                      .map(dept => dept.name)
+                      .join(', ')}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Jobsites ({ROLE_CONFIG.jobsites.length}):</p>
-                  <p className="text-gray-900">{ROLE_CONFIG.jobsites.join(', ')}</p>
+                  <p className="text-gray-600">Jobsites ({availableJobsites.length}):</p>
+                  <p className="text-gray-900">
+                    {availableJobsites
+                      .map(jobs => jobs.name)
+                      .join(', ')}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-600">Chief Operations ({ROLE_CONFIG.chiefOperations.length}):</p>
@@ -413,9 +458,14 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {ROLE_CATEGORIES.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
+                      {availableRoleCategories.map((role) => ( 
+                        <SelectItem 
+                          key={role.roleCategoryID}        // 
+                          value={role.name}      // 
+                        >
+                          {role.name}                      
+                      </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -613,8 +663,13 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROLE_CATEGORIES.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        {availableRoleCategories.map((role) => ( 
+                            <SelectItem 
+                              key={role.roleCategoryID} 
+                              value={role.name} 
+                            >
+                              {role.name} 
+                            </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -623,22 +678,29 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                   <div>
                     <Label htmlFor="approvalRole">Related Approval Role (Optional)</Label>
                     <Select 
-                      value={formData.relatedApprovalRole || 'none'} 
-                      onValueChange={(value) => setFormData({ 
-                        ...formData, 
-                        relatedApprovalRole: value === 'none' ? undefined : value as ApprovalRole 
-                      })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Related Role</SelectItem>
-                        {APPROVAL_ROLES.map(role => (
-                          <SelectItem key={role} value={role}>{role}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        value={formData.relatedApprovalRole || 'none'} 
+                        onValueChange={(value) => setFormData({ 
+                          ...formData, 
+                          relatedApprovalRole: value === 'none' ? undefined : value as ApprovalRole 
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Approval Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Related Role</SelectItem>
+                          
+                          {availableApprovalRoles.map((roleName) => ( 
+                            <SelectItem 
+                              key={roleName.approvalRoleID} 
+                              value={roleName.name} 
+                            >
+                              {roleName.name} 
+                            </SelectItem>
+                          ))}
+                          
+                        </SelectContent>
+                      </Select>
                   </div>
                 </div>
 
@@ -670,39 +732,55 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                 </div>
 
                 <div>
-                  <Label className="mb-2 block">Permissions</Label>
-                  <div className="border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
-                    <div className="space-y-3">
-                      {['System', 'Creator', 'Approval', 'Sourcing'].map(category => {
-                        const categoryPerms = availablePermissions.filter(p => p.category === category);
-                        if (categoryPerms.length === 0) return null;
+    <Label className="mb-2 block">Permissions</Label>
+    <div className="border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+    <div className="space-y-3">
+        
+        {availablePermissionCategories.map(categoryObject => {
+            const categoryName = categoryObject.name; 
+            const categoryPerms = availablePermissions.filter(
+                (p) => {
+                    const matches = p.category && p.category.toLowerCase() === categoryName.toLowerCase();
+                    if (!p.category) {
+                    }
+                    return matches;
+                }
+            );
+
+            if (categoryPerms.length === 0) return null;
+            
+            return (
+                <div key={categoryName} className="space-y-2">
+                        {/* Header Kategori */}
+                        <p className="text-sm text-gray-700 font-medium border-b border-gray-100 pb-1">{categoryName}</p>
                         
-                        return (
-                          <div key={category} className="space-y-2">
-                            <p className="text-sm text-gray-700">{category}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {categoryPerms.map(perm => (
-                                <div key={perm.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={perm.id}
-                                    checked={(formData.permissions || []).includes(perm.id)}
-                                    onCheckedChange={() => togglePermission(perm.id)}
-                                  />
-                                  <Label htmlFor={perm.id} className="text-sm cursor-pointer">
-                                    {perm.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
+                        <div className="grid grid-cols-2 gap-2">
+                            {categoryPerms.map(perm => {
+                                const permissionIdStr = String(perm.permissionID); 
+                                
+                                return (
+                                    <div key={permissionIdStr} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={permissionIdStr}
+                                            checked={(formData.permissions || []).includes(permissionIdStr)}
+                                            onCheckedChange={() => togglePermission(permissionIdStr)}
+                                        />
+                                        <Label htmlFor={permissionIdStr} className="text-sm cursor-pointer">
+                                            {perm.name}
+                                        </Label>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    Selected: {(formData.permissions || []).length} permission{(formData.permissions || []).length !== 1 ? 's' : ''}
-                  </p>
-                </div>
+                );
+            })}
+        </div>
+    </div>
+    <p className="text-xs text-gray-600 mt-2">
+        Selected: {(formData.permissions || []).length} permission{(formData.permissions || []).length !== 1 ? 's' : ''}
+    </p>
+</div>
               </div>
 
               <DialogFooter>

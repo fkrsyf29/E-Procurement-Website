@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
+import fs from 'fs';
 
 export default defineConfig({
   plugins: [react()],
@@ -56,24 +57,14 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5138',
-        changeOrigin: true,
-        secure: false,
-        // Tambahkan ini agar Vite tahu ini proxy
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('[VITE PROXY] →', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('[VITE PROXY] ←', proxyRes.statusCode, req.url);
-          });
-          proxy.on('error', (err, req, res) => {
-            console.error('[VITE PROXY ERROR]', err);
-          });
-        }
-      }
+    https: {
+      key: fs.readFileSync('./localhost-key.pem'),
+      cert: fs.readFileSync('./localhost.pem'),
+    },
+    hmr: {
+      protocol: 'wss',
+      host: 'localhost',
+      port: 3000,
     }
   },
 });

@@ -1,4 +1,5 @@
-﻿using EProcurement.Api.Entities;
+﻿using EProcurement.Api.DTOs.Responses;
+using EProcurement.Api.Entities;
 using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.Services.Interfaces;
 
@@ -13,7 +14,7 @@ namespace EProcurement.Api.Services.Implementations
             _repo = repo;
         }
 
-        public async Task<IEnumerable<Department>> GetAllAsync()
+        public async Task<IEnumerable<DepartmentDto>> GetAllAsync()
         {
             return await _repo.GetAllAsync();
         }

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using EProcurement.Api.Data;
+using EProcurement.Api.DTOs.Responses;
 using EProcurement.Api.Entities;
 using EProcurement.Api.Repositories.Interfaces;
 using EProcurement.Api.SQL.Departments;
@@ -13,9 +14,9 @@ namespace EProcurement.Api.Repositories.Implementations
         {
         }
 
-        public async Task<IEnumerable<Department>> GetAllAsync()
+        public async Task<IEnumerable<DepartmentDto>> GetAllAsync()
         {
-            return await QueryAsync<Department>(DepartmentQueries.GetAll);
+            return await QueryAsync<DepartmentDto>(DepartmentQueries.GetAll);
         }
     }
 }

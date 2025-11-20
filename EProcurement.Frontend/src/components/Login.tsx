@@ -26,10 +26,7 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
 
     try {
       const { token, user } = await loginUser(username, password);
-      console.log('✅ Token dari loginUser:', token.substring(0, 15) + '...'); // Log token
-      
-      // 🔑 Hapus duplikasi if(token) - Token dijamin ada atau error sudah dilempar
-      localStorage.setItem('authToken', token); 
+      localStorage.setItem('authToken', token); 
       
       onLogin(user);
     } catch (err) {
@@ -126,19 +123,19 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
               <div className="space-y-1 text-xs">
                 <div>
                   <span className="text-gray-600">Admin:</span>{' '}
-                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">admin</span> / 
-                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">admin123</span>
+                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">dev36003</span> / 
+                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">dev36003</span>
                 </div>
-                <div>
+                {/* <div>
                   <span className="text-gray-600">President Dir:</span>{' '}
                   <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">presdir</span> / 
                   <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">presdir123</span>
-                </div>
+                </div> */}
               </div>
             </div>
 
             {/* Creators */}
-            <div className="p-2.5 bg-white rounded-lg border border-gray-200">
+            {/* <div className="p-2.5 bg-white rounded-lg border border-gray-200">
               <p className="text-xs uppercase tracking-wider mb-1.5" style={{ color: '#28A745', fontWeight: 'bold' }}>
                 CREATORS
               </p>
@@ -149,10 +146,10 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
                 <div className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">creator.finance.maco</div>
                 <div className="text-gray-500 italic text-[10px] mt-1">Password: creator123</div>
               </div>
-            </div>
+            </div> */}
 
             {/* Approvers */}
-            <div className="p-2.5 bg-white rounded-lg border border-gray-200">
+            {/* <div className="p-2.5 bg-white rounded-lg border border-gray-200">
               <p className="text-xs uppercase tracking-wider mb-1.5" style={{ color: '#FFC107', fontWeight: 'bold' }}>
                 APPROVERS
               </p>
@@ -175,10 +172,10 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
                 </div>
                 <div className="text-gray-500 italic text-[10px] mt-1">Passwords: unithead123, sectionhead123, depthead123, manager123</div>
               </div>
-            </div>
+            </div> */}
 
             {/* Division & Directors */}
-            <div className="p-2.5 bg-white rounded-lg border border-gray-200">
+            {/* <div className="p-2.5 bg-white rounded-lg border border-gray-200">
               <p className="text-xs uppercase tracking-wider mb-1.5" style={{ color: '#6F42C1', fontWeight: 'bold' }}>
                 DIVISION & DIRECTORS
               </p>
@@ -197,10 +194,10 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
                 </div>
                 <div className="text-gray-500 italic text-[10px] mt-1">Passwords: divhead123, director123, chiefop123</div>
               </div>
-            </div>
+            </div>*/}
 
             {/* Sourcing Team */}
-            <div className="p-2.5 bg-white rounded-lg border border-gray-200">
+            {/*<div className="p-2.5 bg-white rounded-lg border border-gray-200">
               <p className="text-xs uppercase tracking-wider mb-1.5" style={{ color: '#DC3545', fontWeight: 'bold' }}>
                 SOURCING TEAM
               </p>
@@ -221,10 +218,10 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
                   <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">planner123</span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Examples */}
-            <div className="p-2.5 bg-white rounded-lg border border-gray-200">
+            {/*<div className="p-2.5 bg-white rounded-lg border border-gray-200">
               <p className="text-xs uppercase tracking-wider mb-1.5" style={{ color: '#17A2B8', fontWeight: 'bold' }}>
                 EXAMPLES
               </p>
@@ -250,7 +247,7 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
                   <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">divhead123</span>
                 </div>
               </div>
-            </div>
+            </div>*/}
           </div>
         </div>
       </div>
