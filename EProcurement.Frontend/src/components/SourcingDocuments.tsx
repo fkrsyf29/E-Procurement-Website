@@ -161,87 +161,87 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
 
   // ✅ NEW: Extract KBLI codes from TOR items
   const extractKBLICodesFromTOR = (torItems?: TORItem[]): string[] => {
-    console.log('🔍 [KBLI EXTRACTION] Starting extraction...');
-    console.log('🔍 [KBLI EXTRACTION] TOR items:', torItems);
+   // console.log('🔍 [KBLI EXTRACTION] Starting extraction...');
+   // console.log('🔍 [KBLI EXTRACTION] TOR items:', torItems);
     
     if (!torItems || torItems.length === 0) {
-      console.log('⚠️ [KBLI EXTRACTION] No TOR items found!');
+     // console.log('⚠️ [KBLI EXTRACTION] No TOR items found!');
       return [];
     }
     
     const kbliCodes: string[] = [];
     const kbliItem = torItems.find(item => item.id === 'KBLI' && item.enabled);
     
-    console.log('🔍 [KBLI EXTRACTION] KBLI item found:', kbliItem);
-    console.log('🔍 [KBLI EXTRACTION] KBLI enabled?', kbliItem?.enabled);
-    console.log('🔍 [KBLI EXTRACTION] KBLI requirement value:', kbliItem?.requirement);
+   // console.log('🔍 [KBLI EXTRACTION] KBLI item found:', kbliItem);
+   // console.log('🔍 [KBLI EXTRACTION] KBLI enabled?', kbliItem?.enabled);
+   // console.log('🔍 [KBLI EXTRACTION] KBLI requirement value:', kbliItem?.requirement);
     
     if (kbliItem && kbliItem.requirement) {
-      console.log('🔍 [KBLI EXTRACTION] Raw requirement string:', kbliItem.requirement);
+     // console.log('🔍 [KBLI EXTRACTION] Raw requirement string:', kbliItem.requirement);
       
       // Parse comma-separated KBLI codes from requirement field
       // Handle both formats: "46499" and "46499-Description"
       const codes = kbliItem.requirement.split(',').map(c => {
         const trimmed = c.trim();
-        console.log('  📌 [KBLI EXTRACTION] Processing:', trimmed);
+       // console.log('  📌 [KBLI EXTRACTION] Processing:', trimmed);
         
         // Extract only the code part (before '-' if exists)
         const codePart = trimmed.split('-')[0].trim();
-        console.log('  ✅ [KBLI EXTRACTION] Extracted code:', codePart);
+       // console.log('  ✅ [KBLI EXTRACTION] Extracted code:', codePart);
         
         return codePart;
       }).filter(c => c);
       kbliCodes.push(...codes);
       
-      console.log('✅ [KBLI EXTRACTION] Final extracted codes:', kbliCodes);
+     // console.log('✅ [KBLI EXTRACTION] Final extracted codes:', kbliCodes);
     } else {
-      console.log('⚠️ [KBLI EXTRACTION] No KBLI requirement found or KBLI not enabled!');
+     // console.log('⚠️ [KBLI EXTRACTION] No KBLI requirement found or KBLI not enabled!');
     }
     
-    console.log('🔍 [KBLI EXTRACTION] Returning codes:', kbliCodes);
+   // console.log('🔍 [KBLI EXTRACTION] Returning codes:', kbliCodes);
     return kbliCodes;
   };
   
   // ✅ NEW: Extract brands from TOR items
   const extractBrandsFromTOR = (torItems?: TORItem[]): string[] => {
-    console.log('🔍 [BRAND EXTRACTION] Starting extraction...');
-    console.log('🔍 [BRAND EXTRACTION] TOR items:', torItems);
+   // console.log('🔍 [BRAND EXTRACTION] Starting extraction...');
+   // console.log('🔍 [BRAND EXTRACTION] TOR items:', torItems);
     
     if (!torItems || torItems.length === 0) {
-      console.log('⚠️ [BRAND EXTRACTION] No TOR items found!');
+     // console.log('⚠️ [BRAND EXTRACTION] No TOR items found!');
       return [];
     }
     
     const brands: string[] = [];
     const brandItem = torItems.find(item => item.id === 'brandSpec' && item.enabled);
     
-    console.log('🔍 [BRAND EXTRACTION] Brand item found:', brandItem);
-    console.log('🔍 [BRAND EXTRACTION] Brand enabled?', brandItem?.enabled);
-    console.log('🔍 [BRAND EXTRACTION] Brand requirement value:', brandItem?.requirement);
+   // console.log('🔍 [BRAND EXTRACTION] Brand item found:', brandItem);
+   // console.log('🔍 [BRAND EXTRACTION] Brand enabled?', brandItem?.enabled);
+   // console.log('🔍 [BRAND EXTRACTION] Brand requirement value:', brandItem?.requirement);
     
     if (brandItem && brandItem.requirement) {
-      console.log('🔍 [BRAND EXTRACTION] Raw requirement string:', brandItem.requirement);
+     // console.log('🔍 [BRAND EXTRACTION] Raw requirement string:', brandItem.requirement);
       
       // Parse comma-separated brands from requirement field
       // Handle both formats: "SKF" and "SKF-Premium Bearing"
       const brandList = brandItem.requirement.split(',').map(b => {
         const trimmed = b.trim();
-        console.log('  📌 [BRAND EXTRACTION] Processing:', trimmed);
+       // console.log('  📌 [BRAND EXTRACTION] Processing:', trimmed);
         
         // Extract only the brand name part (before '-' if exists)
         const brandPart = trimmed.split('-')[0].trim();
-        console.log('  ✅ [BRAND EXTRACTION] Extracted brand:', brandPart);
+       // console.log('  ✅ [BRAND EXTRACTION] Extracted brand:', brandPart);
         
         return brandPart;
       }).filter(b => b);
       brands.push(...brandList);
       
-      console.log('✅ [BRAND EXTRACTION] Final extracted brands:', brandList);
+     // console.log('✅ [BRAND EXTRACTION] Final extracted brands:', brandList);
     } else {
-      console.log('⚠️ [BRAND EXTRACTION] No brand requirement found or brand not enabled!');
+     // console.log('⚠️ [BRAND EXTRACTION] No brand requirement found or brand not enabled!');
     }
     
-    console.log('🔍 [BRAND EXTRACTION] Returning brands:', brands);
+   // console.log('🔍 [BRAND EXTRACTION] Returning brands:', brands);
     return brands;
   };
 
@@ -388,14 +388,14 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
 
   // When proposal is selected, fetch recommended vendors
   const handleViewProposal = (proposal: Proposal) => {
-    console.log('🚀 [VIEW PROPOSAL] Button clicked!');
-    console.log('📋 [VIEW PROPOSAL] Full proposal data:', proposal);
-    console.log('📋 [VIEW PROPOSAL] Proposal ID:', proposal.id);
-    console.log('📋 [VIEW PROPOSAL] Proposal No:', proposal.proposalNo);
-    console.log('📋 [VIEW PROPOSAL] Status:', proposal.status);
-    console.log('📋 [VIEW PROPOSAL] Vendor Confirmation Status:', proposal.vendorConfirmationStatus);
-    console.log('📋 [VIEW PROPOSAL] subClassification:', proposal.subClassification);
-    console.log('📋 [VIEW PROPOSAL] subClassifications array:', proposal.subClassifications);
+   // console.log('🚀 [VIEW PROPOSAL] Button clicked!');
+   // console.log('📋 [VIEW PROPOSAL] Full proposal data:', proposal);
+   // console.log('📋 [VIEW PROPOSAL] Proposal ID:', proposal.id);
+   // console.log('📋 [VIEW PROPOSAL] Proposal No:', proposal.proposalNo);
+   // console.log('📋 [VIEW PROPOSAL] Status:', proposal.status);
+   // console.log('📋 [VIEW PROPOSAL] Vendor Confirmation Status:', proposal.vendorConfirmationStatus);
+   // console.log('📋 [VIEW PROPOSAL] subClassification:', proposal.subClassification);
+   // console.log('📋 [VIEW PROPOSAL] subClassifications array:', proposal.subClassifications);
     
     setSelectedProposal(proposal);
     
@@ -404,27 +404,27 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
     const hasAdditionalVendors = proposal.additionalVendors && proposal.additionalVendors.length > 0;
     const hasVendorData = hasRecommendedVendors || hasAdditionalVendors;
     
-    console.log('───────────────────────────────────────────────────────');
-    console.log('🔍 [VENDOR DATA CHECK] Checking proposal vendor data...');
-    console.log('📦 [VENDOR DATA] proposal.recommendedVendors:', proposal.recommendedVendors);
-    console.log('📦 [VENDOR DATA] recommendedVendors count:', proposal.recommendedVendors?.length || 0);
-    console.log('📦 [VENDOR DATA] hasRecommendedVendors?', hasRecommendedVendors ? 'YES ✅' : 'NO ❌');
-    console.log('📦 [VENDOR DATA] proposal.additionalVendors:', proposal.additionalVendors);
-    console.log('📦 [VENDOR DATA] additionalVendors count:', proposal.additionalVendors?.length || 0);
-    console.log('📦 [VENDOR DATA] hasAdditionalVendors?', hasAdditionalVendors ? 'YES ✅' : 'NO ❌');
-    console.log('📦 [VENDOR DATA] Has ANY vendor data?', hasVendorData ? 'YES ✅' : 'NO ❌');
-    console.log('───────────────────────────────────────────────────────');
+   // console.log('───────────────────────────────────────────────────────');
+   // console.log('🔍 [VENDOR DATA CHECK] Checking proposal vendor data...');
+   // console.log('📦 [VENDOR DATA] proposal.recommendedVendors:', proposal.recommendedVendors);
+   // console.log('📦 [VENDOR DATA] recommendedVendors count:', proposal.recommendedVendors?.length || 0);
+   // console.log('📦 [VENDOR DATA] hasRecommendedVendors?', hasRecommendedVendors ? 'YES ✅' : 'NO ❌');
+   // console.log('📦 [VENDOR DATA] proposal.additionalVendors:', proposal.additionalVendors);
+   // console.log('📦 [VENDOR DATA] additionalVendors count:', proposal.additionalVendors?.length || 0);
+   // console.log('📦 [VENDOR DATA] hasAdditionalVendors?', hasAdditionalVendors ? 'YES ✅' : 'NO ❌');
+   // console.log('📦 [VENDOR DATA] Has ANY vendor data?', hasVendorData ? 'YES ✅' : 'NO ❌');
+   // console.log('───────────────────────────────────────────────────────');
     
     // If proposal already has vendor data from VendorRecommendation, use that
     // Otherwise, auto-fetch from database using new recommendation algorithm
     if (hasVendorData) {
-      console.log('✅ [VENDOR DATA] Using vendors from proposal (already saved during creation)');
-      console.log('✅ [VENDOR DATA] recommendedVendors count:', proposal.recommendedVendors?.length || 0);
-      console.log('✅ [VENDOR DATA] additionalVendors count:', proposal.additionalVendors?.length || 0);
+     // console.log('✅ [VENDOR DATA] Using vendors from proposal (already saved during creation)');
+     // console.log('✅ [VENDOR DATA] recommendedVendors count:', proposal.recommendedVendors?.length || 0);
+     // console.log('✅ [VENDOR DATA] additionalVendors count:', proposal.additionalVendors?.length || 0);
       // Don't fetch - vendors will be displayed from proposal.recommendedVendors and proposal.additionalVendors
       setAutoFetchedVendors([]); // Clear auto-fetch state since we'll use proposal data
     } else {
-      console.log('🔎 [VENDOR DATA] No vendor data in proposal - AUTO-FETCHING from database...');
+     // console.log('🔎 [VENDOR DATA] No vendor data in proposal - AUTO-FETCHING from database...');
       
       // ��� Extract KBLI codes and brands from TOR
       const kbliCodesFromTOR = extractKBLICodesFromTOR(proposal.torItems);
@@ -434,12 +434,12 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
       const kbliCodes = [...new Set([...(kbliCodesFromTOR || []), ...(proposal.kbliCodes || [])])];
       const brands = [...new Set([...(brandsFromTOR || []), ...(proposal.brandSpecifications || [])])];
       
-      console.log('[VENDOR AUTO-FETCH] KBLI from TOR:', kbliCodesFromTOR);
-      console.log('[VENDOR AUTO-FETCH] Brands from TOR:', brandsFromTOR);
-      console.log('[VENDOR AUTO-FETCH] Legacy KBLI:', proposal.kbliCodes);
-      console.log('[VENDOR AUTO-FETCH] Legacy Brands:', proposal.brandSpecifications);
-      console.log('[VENDOR AUTO-FETCH] Final KBLI codes:', kbliCodes);
-      console.log('[VENDOR AUTO-FETCH] Final Brands:', brands);
+     // console.log('[VENDOR AUTO-FETCH] KBLI from TOR:', kbliCodesFromTOR);
+     // console.log('[VENDOR AUTO-FETCH] Brands from TOR:', brandsFromTOR);
+     // console.log('[VENDOR AUTO-FETCH] Legacy KBLI:', proposal.kbliCodes);
+     // console.log('[VENDOR AUTO-FETCH] Legacy Brands:', proposal.brandSpecifications);
+     // console.log('[VENDOR AUTO-FETCH] Final KBLI codes:', kbliCodes);
+     // console.log('[VENDOR AUTO-FETCH] Final Brands:', brands);
       
       // Handle sub-classifications format (array or string)
       let subClassifications = proposal.subClassifications;
@@ -447,7 +447,7 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
       // Fallback: If no array, convert from string format
       if (!subClassifications || subClassifications.length === 0) {
         if (proposal.subClassification) {
-          console.log('⚠️ [VENDOR RECOMMENDATION] No subClassifications array, converting from string:', proposal.subClassification);
+         // console.log('⚠️ [VENDOR RECOMMENDATION] No subClassifications array, converting from string:', proposal.subClassification);
           
           // Parse string format: "M.01.02" or "M.01.02-Bearing" or multiple comma-separated
           const subClassString = proposal.subClassification;
@@ -469,13 +469,13 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
             };
           });
           
-          console.log('✅ [VENDOR RECOMMENDATION] Converted to array:', subClassifications);
+         // console.log('✅ [VENDOR RECOMMENDATION] Converted to array:', subClassifications);
         }
       }
       
-      console.log('📋 [VENDOR RECOMMENDATION] Sub-classifications:', subClassifications);
-      console.log('📋 [VENDOR RECOMMENDATION] KBLI codes from TOR:', kbliCodes);
-      console.log('📋 [VENDOR RECOMMENDATION] Brands from TOR:', brands);
+     // console.log('📋 [VENDOR RECOMMENDATION] Sub-classifications:', subClassifications);
+     // console.log('📋 [VENDOR RECOMMENDATION] KBLI codes from TOR:', kbliCodes);
+     // console.log('📋 [VENDOR RECOMMENDATION] Brands from TOR:', brands);
       
       // ✅ Use new recommendation algorithm with multiple KBLI and brand support
       const recommendations = getVendorRecommendations({
@@ -484,14 +484,14 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
         brands
       });
       
-      console.log('✅ [VENDOR RECOMMENDATION] Found recommendations:', recommendations.length);
-      console.log('✅ [VENDOR RECOMMENDATION] Details:', recommendations.map(r => ({
-        name: r.vendor.vendorName,
-        matchCount: r.matchDetails.matchCount,
-        subClassMatch: r.matchDetails.subClassificationMatch,
-        kbliMatch: r.matchDetails.kbliMatch,
-        brandMatch: r.matchDetails.brandMatch
-      })));
+     // console.log('✅ [VENDOR RECOMMENDATION] Found recommendations:', recommendations.length);
+     // console.log('✅ [VENDOR RECOMMENDATION] Details:', recommendations.map(r => ({
+      //   name: r.vendor.vendorName,
+      //   matchCount: r.matchDetails.matchCount,
+      //   subClassMatch: r.matchDetails.subClassificationMatch,
+      //   kbliMatch: r.matchDetails.kbliMatch,
+      //   brandMatch: r.matchDetails.brandMatch
+      // })));
       
       // Convert to VendorRecord format for display
       const vendors = recommendations.map(r => r.vendor);
@@ -556,9 +556,9 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
         email: v.email
       })) : undefined);
     
-    console.log('🔧 [REQUEST VENDORS] Including recommended vendors:', recommendedVendorsToInclude);
-    console.log('🔧 [REQUEST VENDORS] From proposal:', selectedProposal.recommendedVendors);
-    console.log('🔧 [REQUEST VENDORS] From auto-fetch state:', autoFetchedVendors);
+   // console.log('🔧 [REQUEST VENDORS] Including recommended vendors:', recommendedVendorsToInclude);
+   // console.log('🔧 [REQUEST VENDORS] From proposal:', selectedProposal.recommendedVendors);
+   // console.log('🔧 [REQUEST VENDORS] From auto-fetch state:', autoFetchedVendors);
     
     // Create vendor request
     const vendorRequest: Omit<VendorRecommendation, 'id'> = {
@@ -581,7 +581,7 @@ export function SourcingDocuments({ user, proposals, onUpdateProposal, onRequest
       recommendedVendors: recommendedVendorsToInclude // ✅ Include auto-fetched vendors
     };
     
-    console.log('🔧 [REQUEST VENDORS] Final vendor request:', vendorRequest);
+   // console.log('🔧 [REQUEST VENDORS] Final vendor request:', vendorRequest);
     
     // Call parent function to add vendor request
     onRequestVendors(vendorRequest);

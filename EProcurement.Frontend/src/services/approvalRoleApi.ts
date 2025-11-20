@@ -1,7 +1,7 @@
 // src/services/approvalRoleApi.ts
 
 import { toast } from 'sonner';
-import { ApprovalRole } from '../types';
+import { ApprovalRoles } from '../types';
 
 // Definisikan base URL API Anda di sini
 const API_BASE = import.meta.env.VITE_API_BASE_URL; 
@@ -10,7 +10,7 @@ if (!API_BASE) {
     console.error("VITE_API_BASE_URL is not defined in environment variables!");
 }
 
-export async function fetchApiApprovalRole(): Promise<ApprovalRole[] | null> {
+export async function fetchApiApprovalRole(): Promise<ApprovalRoles[] | null> {
   try {
     const response = await fetch(`${API_BASE}/ApprovalRole`);
 

@@ -138,9 +138,9 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
 
   // Fetch recommended vendors from database based on sub-classification CODE
   const fetchRecommendedVendors = (subClassificationCode: string) => {
-    console.log('🔍 [fetchRecommendedVendors] Fetching by CODE:', subClassificationCode);
+   // console.log('🔍 [fetchRecommendedVendors] Fetching by CODE:', subClassificationCode);
     const vendors = getVendorsBySubClassification(subClassificationCode);
-    console.log('✅ [fetchRecommendedVendors] Found vendors:', vendors.length);
+   // console.log('✅ [fetchRecommendedVendors] Found vendors:', vendors.length);
     const formattedVendors: AddedVendorDetail[] = vendors.map(v => ({
       vendorName: v.vendorName,
       contactPerson: v.contactPerson || '',
@@ -152,9 +152,9 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
   
   // Fetch recommended vendors from database based on sub-classification NAME (fallback)
   const fetchRecommendedVendorsByName = (subClassificationName: string) => {
-    console.log('🔍 [fetchRecommendedVendorsByName] Fetching by NAME:', subClassificationName);
+   // console.log('🔍 [fetchRecommendedVendorsByName] Fetching by NAME:', subClassificationName);
     const vendors = getVendorsBySubClassificationName(subClassificationName);
-    console.log('✅ [fetchRecommendedVendorsByName] Found vendors:', vendors.length);
+   // console.log('✅ [fetchRecommendedVendorsByName] Found vendors:', vendors.length);
     const formattedVendors: AddedVendorDetail[] = vendors.map(v => ({
       vendorName: v.vendorName,
       contactPerson: v.contactPerson || '',
@@ -324,7 +324,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     
     // ✅ FIX: Pre-populate sourcing notes when revising
     if (type === 'submit-approval' && rec.sourcingNotes) {
-      console.log('✅ [REVISE] Loading previously entered sourcing notes');
+     // console.log('✅ [REVISE] Loading previously entered sourcing notes');
       setActionNotes(rec.sourcingNotes);
     } else {
       setActionNotes('');
@@ -334,7 +334,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     // ✅ FIX: Pre-populate previously added vendors when revising
     if (type === 'submit-approval' && rec.addedVendorsDetails && rec.addedVendorsDetails.length > 0) {
       // Load existing additional vendors + add one empty row for new vendor
-      console.log('✅ [REVISE] Loading previously added vendors:', rec.addedVendorsDetails.length);
+     // console.log('✅ [REVISE] Loading previously added vendors:', rec.addedVendorsDetails.length);
       setVendorDetails([
         ...rec.addedVendorsDetails,
         { vendorName: '', contactPerson: '', phoneNumber: '', email: '' } // New empty row
@@ -346,7 +346,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     
     // ✅ FIX: Pre-populate previously uploaded supporting documents when revising
     if (type === 'submit-approval' && rec.supportingDocuments && rec.supportingDocuments.length > 0) {
-      console.log('✅ [REVISE] Loading previously uploaded documents:', rec.supportingDocuments.length);
+     // console.log('✅ [REVISE] Loading previously uploaded documents:', rec.supportingDocuments.length);
       setSupportingDocuments(rec.supportingDocuments);
     } else {
       // Reset supporting documents (new submission)
@@ -355,22 +355,22 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
     
     // Fetch recommended vendors when opening submit-approval dialog
     if (type === 'submit-approval') {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🔍 [SOURCING PAGE] Opening Submit for Approval Dialog');
-      console.log('📋 [SOURCING PAGE] Status:', rec.status);
+     // console.log('═══════════════════════════════════════════════════════');
+     // console.log('🔍 [SOURCING PAGE] Opening Submit for Approval Dialog');
+     // console.log('📋 [SOURCING PAGE] Status:', rec.status);
       
       // ✅ FIX: If revising, load previously recommended vendors first
       if (rec.recommendedVendors && rec.recommendedVendors.length > 0) {
-        console.log('✅ [REVISE] Loading previously recommended vendors:', rec.recommendedVendors.length);
+       // console.log('✅ [REVISE] Loading previously recommended vendors:', rec.recommendedVendors.length);
         setRecommendedVendors(rec.recommendedVendors);
       } else {
         // Fetch recommended vendors from database (first time submission)
         const proposal = proposals.find(p => p.id === rec.proposalId);
         
-        console.log('🔍 [SOURCING PAGE] Fetching vendors for Submit for Approval');
-        console.log('📋 [SOURCING PAGE] Proposal:', proposal?.proposalNo);
-        console.log('📋 [SOURCING PAGE] subClassification:', proposal?.subClassification);
-        console.log('📋 [SOURCING PAGE] subClassifications array:', proposal?.subClassifications);
+       // console.log('🔍 [SOURCING PAGE] Fetching vendors for Submit for Approval');
+       // console.log('📋 [SOURCING PAGE] Proposal:', proposal?.proposalNo);
+       // console.log('📋 [SOURCING PAGE] subClassification:', proposal?.subClassification);
+       // console.log('📋 [SOURCING PAGE] subClassifications array:', proposal?.subClassifications);
         
         if (proposal) {
           // Try to get code from array first (new format)
@@ -380,7 +380,7 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
             codes = proposal.subClassifications
               .map((sc: any) => sc.code)
               .filter((c: string) => c);
-            console.log('✅ [SOURCING PAGE] Extracted codes from array:', codes);
+           // console.log('✅ [SOURCING PAGE] Extracted codes from array:', codes);
           }
           
           // If no codes from array, try string subClassification
@@ -388,11 +388,11 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
             // Check if it's a code (contains dot) or name
             if (proposal.subClassification.includes('.')) {
               codes = [proposal.subClassification];
-              console.log('✅ [SOURCING PAGE] Using code from string:', codes);
+             // console.log('✅ [SOURCING PAGE] Using code from string:', codes);
             } else {
               // It's a name, we need to use name-based search
-              console.log('⚠️ [SOURCING PAGE] subClassification is NAME format:', proposal.subClassification);
-              console.log('⚠️ [SOURCING PAGE] Will use name-based vendor search');
+             // console.log('⚠️ [SOURCING PAGE] subClassification is NAME format:', proposal.subClassification);
+             // console.log('⚠️ [SOURCING PAGE] Will use name-based vendor search');
             }
           }
           
@@ -400,23 +400,23 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
           if (codes.length > 0) {
             // Use first code for now (can be enhanced to support multiple)
             const code = codes[0];
-            console.log('🔎 [SOURCING PAGE] Fetching vendors for code:', code);
+           // console.log('🔎 [SOURCING PAGE] Fetching vendors for code:', code);
             fetchRecommendedVendors(code);
           } else if (proposal.subClassification) {
             // Fallback: Try fetching by name
-            console.log('🔎 [SOURCING PAGE] Fetching vendors by NAME:', proposal.subClassification);
+           // console.log('🔎 [SOURCING PAGE] Fetching vendors by NAME:', proposal.subClassification);
             fetchRecommendedVendorsByName(proposal.subClassification);
           } else {
-            console.log('❌ [SOURCING PAGE] No codes or names found - cannot fetch vendors');
+           // console.log('❌ [SOURCING PAGE] No codes or names found - cannot fetch vendors');
             setRecommendedVendors([]);
           }
         } else {
-          console.log('❌ [SOURCING PAGE] Proposal not found!');
+         // console.log('❌ [SOURCING PAGE] Proposal not found!');
           setRecommendedVendors([]);
         }
       }
       
-      console.log('═══════════════════════════════════════════════════════');
+     // console.log('═══════════════════════════════════════════════════════');
     }
     
     setActionDialogOpen(true);
@@ -502,11 +502,11 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       // ✅ FIX NOV 12: Copy vendor data to Proposal when Proc Div Head approves
       // This ensures Planner/Buyer can see vendors BEFORE accepting
       if (!isDeptHead) {
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('🔄 [PROC DIV HEAD APPROVE] Copying vendor data to proposal');
-        console.log('📋 [VENDOR COPY] Proposal ID:', selectedRecommendation.proposalId);
-        console.log('📋 [VENDOR COPY] Recommended Vendors:', selectedRecommendation.recommendedVendors?.length || 0);
-        console.log('📋 [VENDOR COPY] Additional Vendors:', selectedRecommendation.addedVendorsDetails?.length || 0);
+       // console.log('═══════════════════════════════════════════════════════');
+       // console.log('🔄 [PROC DIV HEAD APPROVE] Copying vendor data to proposal');
+       // console.log('📋 [VENDOR COPY] Proposal ID:', selectedRecommendation.proposalId);
+       // console.log('📋 [VENDOR COPY] Recommended Vendors:', selectedRecommendation.recommendedVendors?.length || 0);
+       // console.log('📋 [VENDOR COPY] Additional Vendors:', selectedRecommendation.addedVendorsDetails?.length || 0);
         
         const updatedVendorRec = {
           ...selectedRecommendation,
@@ -521,9 +521,9 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         
         onUpdateProposal(selectedRecommendation.proposalId, proposalUpdates);
         
-        console.log('✅ [VENDOR COPY] Vendor data copied to proposal successfully');
-        console.log('✅ [VENDOR COPY] Planner/Buyer can now view vendors in Sourcing Documents');
-        console.log('═══════════════════════════════════════════════════════');
+       // console.log('✅ [VENDOR COPY] Vendor data copied to proposal successfully');
+       // console.log('✅ [VENDOR COPY] Planner/Buyer can now view vendors in Sourcing Documents');
+       // console.log('═══════════════════════════════════════════════════════');
       }
       
       toast.success(`Approved by ${isDeptHead ? 'Dept Head' : 'Division Head'}`, {
@@ -585,12 +585,12 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
       
       onUpdateVendorRecommendation(selectedRecommendation.id, updates);
       
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🎯 [REVIEW ACTION] Planner/Buyer accepting vendor recommendation');
-      console.log('👤 [REVIEW ACTION] User Role:', user.roleName);
-      console.log('📋 [REVIEW ACTION] Proposal ID:', selectedRecommendation.proposalId);
-      console.log('🔹 [REVIEW ACTION] Recommended Vendors:', selectedRecommendation.recommendedVendors?.length || 0);
-      console.log('🔹 [REVIEW ACTION] Additional Vendors:', selectedRecommendation.addedVendorsDetails?.length || 0);
+     // console.log('═══════════════════════════════════════════════════════');
+     // console.log('🎯 [REVIEW ACTION] Planner/Buyer accepting vendor recommendation');
+     // console.log('👤 [REVIEW ACTION] User Role:', user.roleName);
+     // console.log('📋 [REVIEW ACTION] Proposal ID:', selectedRecommendation.proposalId);
+     // console.log('🔹 [REVIEW ACTION] Recommended Vendors:', selectedRecommendation.recommendedVendors?.length || 0);
+     // console.log('🔹 [REVIEW ACTION] Additional Vendors:', selectedRecommendation.addedVendorsDetails?.length || 0);
       
       // ✅ Both Planner and Buyer Accept → Sourcing Documents "Confirmed" + Vendor Rec "Completed"
       const updatedVendorRec = {
@@ -607,16 +607,16 @@ export function SourcingPage({ user, vendorRecommendations, onUpdateVendorRecomm
         vendorRecommendation: updatedVendorRec
       };
         
-      console.log(`✅ [${user.roleName.toUpperCase()} ACCEPT] Vendor recommendation accepted`);
-      console.log('📦 [ACCEPT] Sourcing Documents status → "Confirmed"');
-      console.log('📦 [ACCEPT] Vendor Recommendation status → "Completed"');
-      console.log('📦 [ACCEPT] Recommended vendors:', proposalUpdates.recommendedVendors?.length);
-      console.log('📦 [ACCEPT] Additional vendors:', proposalUpdates.additionalVendors?.length);
-      console.log('📋 [ACCEPT] Will disappear from Buyer/Planner table');
+     // console.log(`✅ [${user.roleName.toUpperCase()} ACCEPT] Vendor recommendation accepted`);
+     // console.log('📦 [ACCEPT] Sourcing Documents status → "Confirmed"');
+     // console.log('📦 [ACCEPT] Vendor Recommendation status → "Completed"');
+     // console.log('📦 [ACCEPT] Recommended vendors:', proposalUpdates.recommendedVendors?.length);
+     // console.log('📦 [ACCEPT] Additional vendors:', proposalUpdates.additionalVendors?.length);
+     // console.log('📋 [ACCEPT] Will disappear from Buyer/Planner table');
       
       onUpdateProposal(selectedRecommendation.proposalId, proposalUpdates);
       
-      console.log('═══════════════════════════════════════════════════════');
+     // console.log('═══════════════════════════════════════════════════════');
       
       toast.success(`${isPlanner ? 'Planner' : 'Buyer'} review submitted`, {
         description: 'Vendor process completed!',

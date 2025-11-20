@@ -35,9 +35,9 @@ interface MyApprovalsProps {
 }
 
 export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsProps) {
-  console.log('🔄 [MY APPROVALS RENDER] Component rendering');
-  console.log('🔄 [MY APPROVALS RENDER] User:', user.name, user.roleName);
-  console.log('🔄 [MY APPROVALS RENDER] Proposals count:', proposals.length);
+ // console.log('🔄 [MY APPROVALS RENDER] Component rendering');
+ // console.log('🔄 [MY APPROVALS RENDER] User:', user.name, user.roleName);
+ // console.log('🔄 [MY APPROVALS RENDER] Proposals count:', proposals.length);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCreator, setFilterCreator] = useState<string>('all');
@@ -166,21 +166,21 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
 
   // Check if user can approve this specific proposal
   const canUserApproveProposal = (proposal: Proposal): boolean => {
-    console.log(`\n🔍 [CAN APPROVE START] =================================`);
-    console.log(`🔍 [CAN APPROVE START] Checking proposal ${proposal.proposalNo}`);
-    console.log(`🔍 [CAN APPROVE START] Proposal ID: ${proposal.id}`);
-    console.log(`🔍 [CAN APPROVE START] Status: ${proposal.status}`);
-    console.log(`🔍 [CAN APPROVE START] User: ${user.name} | Role: ${user.roleName}`);
+   // console.log(`\n🔍 [CAN APPROVE START] =================================`);
+   // console.log(`🔍 [CAN APPROVE START] Checking proposal ${proposal.proposalNo}`);
+   // console.log(`🔍 [CAN APPROVE START] Proposal ID: ${proposal.id}`);
+   // console.log(`🔍 [CAN APPROVE START] Status: ${proposal.status}`);
+   // console.log(`🔍 [CAN APPROVE START] User: ${user.name} | Role: ${user.roleName}`);
     
     // Admin can approve everything
     if (isAdmin) {
-      console.log(`✅ [CAN APPROVE] ${proposal.proposalNo} - Admin can approve all`);
+     // console.log(`✅ [CAN APPROVE] ${proposal.proposalNo} - Admin can approve all`);
       return true;
     }
     
     // Check if proposal is in a status that can be approved
     if (proposal.status === 'Draft' || proposal.status === 'Approved' || proposal.status === 'Rejected') {
-      console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - Status is ${proposal.status}, cannot approve`);
+     // console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - Status is ${proposal.status}, cannot approve`);
       return false;
     }
     
@@ -189,15 +189,15 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     const currentPendingEntry = proposal.history.find(h => h.action === 'Pending');
     if (currentPendingEntry && currentPendingEntry.roleName) {
       requiredRole = currentPendingEntry.roleName.toString();
-      console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Required role from pending entry:`, requiredRole);
+     // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Required role from pending entry:`, requiredRole);
     } else {
       // Fall back to deriving from status
       requiredRole = getRequiredApproverRole(proposal);
-      console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Required role from status (${proposal.status}):`, requiredRole);
+     // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Required role from status (${proposal.status}):`, requiredRole);
     }
     
     if (!requiredRole) {
-      console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - No required role found`);
+     // console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - No required role found`);
       return false;
     }
     
@@ -205,17 +205,17 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     const userRoleLower = user.roleName.toLowerCase().trim();
     const requiredRoleLower = requiredRole.toLowerCase().trim();
     
-    console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - User role: "${userRoleLower}" | Required: "${requiredRoleLower}"`);
+   // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - User role: "${userRoleLower}" | Required: "${requiredRoleLower}"`);
     
     // Check if roles match
     const roleMatches = userRoleLower === requiredRoleLower;
     
     if (!roleMatches) {
-      console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - Role mismatch`);
+     // console.log(`❌ [CAN APPROVE] ${proposal.proposalNo} - Role mismatch`);
       return false;
     }
     
-    console.log(`✅ [CAN APPROVE] ${proposal.proposalNo} - Role matches!`);
+   // console.log(`✅ [CAN APPROVE] ${proposal.proposalNo} - Role matches!`);
     
     // IMPORTANT: Use CREATOR's jobsite and department for approval routing
     // EXCEPTION: Chief Operation uses PROCUREMENT jobsite
@@ -225,32 +225,32 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
       : (proposal.creatorJobsite || proposal.jobsite); // Use creator's jobsite for others
     const proposalDepartment = proposal.creatorDepartment || proposal.department;
     
-    console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Jobsite check: User="${user.jobsite}" | Proposal="${proposalJobsite}"`);
-    console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Dept check: User="${user.department}" | Proposal="${proposalDepartment}"`);
+   // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Jobsite check: User="${user.jobsite}" | Proposal="${proposalJobsite}"`);
+   // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Dept check: User="${user.department}" | Proposal="${proposalDepartment}"`);
     
     // For site-specific roles (with jobsite and department), also check context
     if (user.jobsite && user.department) {
       const canApprove = proposalJobsite === user.jobsite && proposalDepartment === user.department;
-      console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Site-specific role check: ${canApprove}`);
+     // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Site-specific role check: ${canApprove}`);
       return canApprove;
     }
     
     // For Chief Operation (jobsite but no department), only check jobsite
     if (user.jobsite && !user.department && isChiefOperation) {
       const canApprove = proposalJobsite === user.jobsite;
-      console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Chief Operation check: ${canApprove}`);
+     // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Chief Operation check: ${canApprove}`);
       return canApprove;
     }
     
     // For division/director level roles (no specific jobsite), only check department
     if (user.department && !user.jobsite) {
       const canApprove = proposalDepartment === user.department;
-      console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Division/Director check: ${canApprove}`);
+     // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Division/Director check: ${canApprove}`);
       return canApprove;
     }
     
     // For top-level roles (President Director, Sourcing/Procurement heads), no restriction
-    console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Top-level role: TRUE`);
+   // console.log(`🔍 [CAN APPROVE] ${proposal.proposalNo} - Top-level role: TRUE`);
     return true;
   };
 
@@ -289,40 +289,40 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
 
   // DEBUG: Log when proposals change
   useEffect(() => {
-    console.log('\n🔄 [PROPOSALS UPDATED] =================================');
-    console.log('🔄 [PROPOSALS UPDATED] Total proposals:', proposals.length);
-    console.log('🔄 [PROPOSALS UPDATED] Proposals array reference changed');
+   // console.log('\n🔄 [PROPOSALS UPDATED] =================================');
+   // console.log('🔄 [PROPOSALS UPDATED] Total proposals:', proposals.length);
+   // console.log('🔄 [PROPOSALS UPDATED] Proposals array reference changed');
     const pending = proposals.filter(p => p.status !== 'Draft' && p.status !== 'Approved' && p.status !== 'Rejected');
-    console.log('🔄 [PROPOSALS UPDATED] Pending proposals:', pending.map(p => `${p.proposalNo} (${p.status})`));
+   // console.log('🔄 [PROPOSALS UPDATED] Pending proposals:', pending.map(p => `${p.proposalNo} (${p.status})`));
   }, [proposals]);
 
   // DEBUG: Log when filtered approvals change
   useEffect(() => {
-    console.log('\n🔄 [FILTERED UPDATED] =================================');
-    console.log('🔄 [FILTERED UPDATED] Pending approvals count:', pendingApprovals.length);
-    console.log('🔄 [FILTERED UPDATED] Proposals:', pendingApprovals.map(p => `${p.proposalNo} (${p.status})`));
+   // console.log('\n🔄 [FILTERED UPDATED] =================================');
+   // console.log('🔄 [FILTERED UPDATED] Pending approvals count:', pendingApprovals.length);
+   // console.log('🔄 [FILTERED UPDATED] Proposals:', pendingApprovals.map(p => `${p.proposalNo} (${p.status})`));
   }, [pendingApprovals]);
 
   // DEBUG: Log when actionProposal changes
   useEffect(() => {
     if (actionProposal) {
-      console.log('\n🎯 [ACTION PROPOSAL CHANGED] =================================');
-      console.log('🎯 [ACTION PROPOSAL] Proposal:', actionProposal.proposalNo);
-      console.log('🎯 [ACTION PROPOSAL] ID:', actionProposal.id);
-      console.log('🎯 [ACTION PROPOSAL] Status:', actionProposal.status);
-      console.log('🎯 [ACTION PROPOSAL] Action Type:', actionType);
+     // console.log('\n🎯 [ACTION PROPOSAL CHANGED] =================================');
+     // console.log('🎯 [ACTION PROPOSAL] Proposal:', actionProposal.proposalNo);
+     // console.log('🎯 [ACTION PROPOSAL] ID:', actionProposal.id);
+     // console.log('🎯 [ACTION PROPOSAL] Status:', actionProposal.status);
+     // console.log('🎯 [ACTION PROPOSAL] Action Type:', actionType);
     }
   }, [actionProposal, actionType]);
   
   // DEBUG: Log when selectedProposal changes
   useEffect(() => {
     if (selectedProposal) {
-      console.log('\n📄 [SELECTED PROPOSAL CHANGED] =================================');
-      console.log('📄 [SELECTED PROPOSAL] Proposal:', selectedProposal.proposalNo);
-      console.log('📄 [SELECTED PROPOSAL] ID:', selectedProposal.id);
-      console.log('📄 [SELECTED PROPOSAL] Status:', selectedProposal.status);
+     // console.log('\n📄 [SELECTED PROPOSAL CHANGED] =================================');
+     // console.log('📄 [SELECTED PROPOSAL] Proposal:', selectedProposal.proposalNo);
+     // console.log('📄 [SELECTED PROPOSAL] ID:', selectedProposal.id);
+     // console.log('📄 [SELECTED PROPOSAL] Status:', selectedProposal.status);
     } else {
-      console.log('\n📄 [SELECTED PROPOSAL CLEARED] =================================');
+     // console.log('\n📄 [SELECTED PROPOSAL CLEARED] =================================');
     }
   }, [selectedProposal]);
 
@@ -395,31 +395,31 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
   }, [pendingApprovals, searchTerm, filterCreator, sortField, sortDirection]);
 
   const handleApprovalAction = (proposal: Proposal, action: 'approve' | 'reject') => {
-    console.log('\n✅ [APPROVAL ACTION] =================================');
-    console.log('✅ [APPROVAL ACTION] handleApprovalAction called');
-    console.log('✅ [APPROVAL ACTION] Proposal:', proposal?.proposalNo);
-    console.log('✅ [APPROVAL ACTION] Proposal ID:', proposal?.id);
-    console.log('✅ [APPROVAL ACTION] Proposal Status:', proposal?.status);
-    console.log('✅ [APPROVAL ACTION] Action:', action);
-    console.log('✅ [APPROVAL ACTION] Setting actionProposal state...');
+   // console.log('\n✅ [APPROVAL ACTION] =================================');
+   // console.log('✅ [APPROVAL ACTION] handleApprovalAction called');
+   // console.log('✅ [APPROVAL ACTION] Proposal:', proposal?.proposalNo);
+   // console.log('✅ [APPROVAL ACTION] Proposal ID:', proposal?.id);
+   // console.log('✅ [APPROVAL ACTION] Proposal Status:', proposal?.status);
+   // console.log('✅ [APPROVAL ACTION] Action:', action);
+   // console.log('✅ [APPROVAL ACTION] Setting actionProposal state...');
     setActionProposal(proposal);
     setActionType(action);
     setComment('');
   };
 
   const confirmAction = () => {
-    console.log('🎯 [CONFIRM ACTION] confirmAction called');
-    console.log('🎯 [CONFIRM ACTION] Action Proposal:', actionProposal?.proposalNo);
-    console.log('🎯 [CONFIRM ACTION] Action Type:', actionType);
+   // console.log('🎯 [CONFIRM ACTION] confirmAction called');
+   // console.log('🎯 [CONFIRM ACTION] Action Proposal:', actionProposal?.proposalNo);
+   // console.log('🎯 [CONFIRM ACTION] Action Type:', actionType);
     
     if (!actionProposal) {
-      console.log('❌ [CONFIRM ACTION] No action proposal - exiting');
+     // console.log('❌ [CONFIRM ACTION] No action proposal - exiting');
       return;
     }
     
     // Safety check: Don't allow approval/rejection of already approved or rejected proposals
     if (actionProposal.status === 'Approved') {
-      console.log('❌ [CONFIRM ACTION] Already approved - showing error');
+     // console.log('❌ [CONFIRM ACTION] Already approved - showing error');
       toast.error('This proposal has already been approved');
       // Clear all states
       setActionProposal(null);
@@ -430,7 +430,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     }
     
     if (actionProposal.status === 'Rejected') {
-      console.log('❌ [CONFIRM ACTION] Already rejected - showing error');
+     // console.log('❌ [CONFIRM ACTION] Already rejected - showing error');
       toast.error('This proposal has already been rejected');
       // Clear all states
       setActionProposal(null);
@@ -441,15 +441,15 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     }
     
     if (actionType === 'reject' && !comment.trim()) {
-      console.log('❌ [CONFIRM ACTION] Rejection requires comment - showing error');
+     // console.log('❌ [CONFIRM ACTION] Rejection requires comment - showing error');
       toast.error('Please provide a comment for rejection');
       return;
     }
     
-    console.log('✅ [CONFIRM ACTION] All validations passed, proceeding with action:', actionType);
-    console.log('📊 [APPROVAL DEBUG] Current User:', user.name, '| Role:', user.roleName);
-    console.log('📊 [APPROVAL DEBUG] Proposal:', actionProposal.proposalNo, '| Current Status:', actionProposal.status);
-    console.log('📊 [APPROVAL DEBUG] Creator Jobsite:', actionProposal.creatorJobsite, '| Creator Dept:', actionProposal.creatorDepartment);
+   // console.log('✅ [CONFIRM ACTION] All validations passed, proceeding with action:', actionType);
+   // console.log('📊 [APPROVAL DEBUG] Current User:', user.name, '| Role:', user.roleName);
+   // console.log('📊 [APPROVAL DEBUG] Proposal:', actionProposal.proposalNo, '| Current Status:', actionProposal.status);
+   // console.log('📊 [APPROVAL DEBUG] Creator Jobsite:', actionProposal.creatorJobsite, '| Creator Dept:', actionProposal.creatorDepartment);
 
     if (actionType === 'approve') {
       // CRITICAL FIX: Update history FIRST, then calculate next status
@@ -465,16 +465,16 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         date: new Date().toISOString(),
         comment: comment.trim() || undefined,
       };
-      console.log('📝 [HISTORY] New approval entry:', newHistoryEntry);
+     // console.log('📝 [HISTORY] New approval entry:', newHistoryEntry);
 
       // Step 2: Remove ALL pending entries (clean slate), then add approval entry
       const filteredHistory = actionProposal.history.filter(
         h => h.action !== 'Pending'
       );
-      console.log('🗑️  [HISTORY] Removed pending entries. Count before:', actionProposal.history.length, 'After:', filteredHistory.length);
+     // console.log('🗑️  [HISTORY] Removed pending entries. Count before:', actionProposal.history.length, 'After:', filteredHistory.length);
       
       const updatedHistory = [...filteredHistory, newHistoryEntry];
-      console.log('➕ [HISTORY] Added approval entry. Total count:', updatedHistory.length);
+     // console.log('➕ [HISTORY] Added approval entry. Total count:', updatedHistory.length);
       
       // Step 3: Create TEMPORARY updated proposal for next step calculation
       // This ensures getNextApprovalStep has the CURRENT approval in history
@@ -485,12 +485,12 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
       
       // Step 4: NOW calculate next status with UPDATED history
       const nextStatus = getNextStatus(proposalWithNewApproval);
-      console.log('🔄 [NEXT STATUS] Calculated next status:', nextStatus);
+     // console.log('🔄 [NEXT STATUS] Calculated next status:', nextStatus);
       
       // Step 5: If not final approval, add next pending entry
       if (nextStatus !== 'Approved') {
         const nextStep = getNextApprovalStep(proposalWithNewApproval);
-        console.log('⏭️  [NEXT STEP] Next approval step:', nextStep);
+       // console.log('⏭️  [NEXT STEP] Next approval step:', nextStep);
         
         if (nextStep) {
           const nextPendingEntry = {
@@ -501,11 +501,11 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
             action: 'Pending' as const,
           };
           updatedHistory.push(nextPendingEntry);
-          console.log('📝 [HISTORY] Added next pending entry:', nextPendingEntry);
-          console.log('📊 [HISTORY] Final history length:', updatedHistory.length);
+         // console.log('📝 [HISTORY] Added next pending entry:', nextPendingEntry);
+         // console.log('📊 [HISTORY] Final history length:', updatedHistory.length);
         }
       } else {
-        console.log('✅ [FINAL] This is the final approval - no next step');
+       // console.log('✅ [FINAL] This is the final approval - no next step');
       }
 
       // Update proposal
@@ -514,20 +514,20 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
         currentApprover: nextStatus === 'Approved' ? undefined : '',
         history: updatedHistory,
       };
-      console.log('💾 [UPDATE] Updating proposal with:', updates);
-      console.log('💾 [UPDATE] Proposal ID:', actionProposal.id);
-      console.log('💾 [UPDATE] Calling onUpdateProposal...');
+     // console.log('💾 [UPDATE] Updating proposal with:', updates);
+     // console.log('💾 [UPDATE] Proposal ID:', actionProposal.id);
+     // console.log('💾 [UPDATE] Calling onUpdateProposal...');
       
       onUpdateProposal(actionProposal.id, updates);
       
-      console.log('✅ [UPDATE] onUpdateProposal called successfully');
-      console.log('✅ [UPDATE] Proposal should now be updated in parent state');
+     // console.log('✅ [UPDATE] onUpdateProposal called successfully');
+     // console.log('✅ [UPDATE] Proposal should now be updated in parent state');
 
       toast.success('Proposal approved successfully!', {
         description: `Proposal ${actionProposal.proposalNo} moved to ${nextStatus}`,
       });
       
-      console.log('✅ [COMPLETE] Approval completed. Closing all dialogs and clearing states...');
+     // console.log('✅ [COMPLETE] Approval completed. Closing all dialogs and clearing states...');
       
     } else if (actionType === 'reject') {
       // Update history with rejection
@@ -542,23 +542,23 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
       };
 
       // Update proposal
-      console.log('💾 [UPDATE] Updating proposal with rejection');
-      console.log('💾 [UPDATE] Proposal ID:', actionProposal.id);
-      console.log('💾 [UPDATE] Calling onUpdateProposal...');
+     // console.log('💾 [UPDATE] Updating proposal with rejection');
+     // console.log('💾 [UPDATE] Proposal ID:', actionProposal.id);
+     // console.log('💾 [UPDATE] Calling onUpdateProposal...');
       
       onUpdateProposal(actionProposal.id, {
         status: 'Rejected',
         history: [...actionProposal.history, newHistoryEntry],
       });
       
-      console.log('✅ [UPDATE] onUpdateProposal called successfully');
-      console.log('✅ [UPDATE] Proposal should now be rejected in parent state');
+     // console.log('✅ [UPDATE] onUpdateProposal called successfully');
+     // console.log('✅ [UPDATE] Proposal should now be rejected in parent state');
 
       toast.error('Proposal rejected', {
         description: `Proposal ${actionProposal.proposalNo} has been rejected`,
       });
       
-      console.log('✅ [COMPLETE] Rejection completed. Closing all dialogs and clearing states...');
+     // console.log('✅ [COMPLETE] Rejection completed. Closing all dialogs and clearing states...');
     }
     
     // CRITICAL FIX: Close ALL dialogs and clear ALL states after approval/rejection
@@ -568,7 +568,7 @@ export function MyApprovals({ user, proposals, onUpdateProposal }: MyApprovalsPr
     setActionType(null);         // Clear action type  
     setComment('');              // Clear comment
     
-    console.log('🔒 [CLEANUP] All dialogs closed and states cleared');
+   // console.log('🔒 [CLEANUP] All dialogs closed and states cleared');
   };
 
   // Handle admin approval

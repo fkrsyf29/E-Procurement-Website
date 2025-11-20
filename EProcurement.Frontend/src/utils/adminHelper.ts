@@ -178,5 +178,5 @@ export function logAdminAction(
   };
   
   // In production, this would send to logging service
-  console.log('[ADMIN ACTION]', logEntry);
+ // console.log('[ADMIN ACTION]', logEntry);
 }

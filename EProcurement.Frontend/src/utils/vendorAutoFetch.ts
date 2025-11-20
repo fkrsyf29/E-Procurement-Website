@@ -75,7 +75,7 @@ function extractKBLICodesFromTOR(proposal: Proposal): string[] {
     kbliCodes.push(...codes);
   }
   
-  console.log('🔍 [VENDOR AUTO-FETCH] Extracted KBLI codes from TOR:', kbliCodes);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Extracted KBLI codes from TOR:', kbliCodes);
   
   return kbliCodes;
 }
@@ -105,7 +105,7 @@ function extractBrandsFromTOR(proposal: Proposal): string[] {
     brands.push(...brandList);
   }
   
-  console.log('🔍 [VENDOR AUTO-FETCH] Extracted brands from TOR:', brands);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Extracted brands from TOR:', brands);
   
   return brands;
 }
@@ -130,14 +130,14 @@ export function autoFetchVendors(
   const proposalKBLIs = proposal.kbliCodes || extractKBLICodesFromTOR(proposal);
   const proposalBrands = proposal.brandSpecifications || extractBrandsFromTOR(proposal);
   
-  console.log('🔍 [VENDOR AUTO-FETCH] Proposal:', proposal.proposalNo);
-  console.log('🔍 [VENDOR AUTO-FETCH] Sub-class:', proposalSubClass);
-  console.log('🔍 [VENDOR AUTO-FETCH] KBLI codes:', proposalKBLIs);
-  console.log('🔍 [VENDOR AUTO-FETCH] Brands:', proposalBrands);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Proposal:', proposal.proposalNo);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Sub-class:', proposalSubClass);
+ // console.log('🔍 [VENDOR AUTO-FETCH] KBLI codes:', proposalKBLIs);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Brands:', proposalBrands);
   
   // Filter to active vendors only
   const activeVendors = vendorDatabase.filter(v => v.isActive);
-  console.log('🔍 [VENDOR AUTO-FETCH] Active vendors in database:', activeVendors.length);
+ // console.log('🔍 [VENDOR AUTO-FETCH] Active vendors in database:', activeVendors.length);
   
   for (const vendor of activeVendors) {
     // 1. Check Sub-Classification (MUST match)
@@ -216,9 +216,9 @@ export function autoFetchVendors(
     return a.vendor.vendorName.localeCompare(b.vendor.vendorName);
   });
   
-  console.log('✅ [VENDOR AUTO-FETCH] Found', results.length, 'matching vendors');
+ // console.log('✅ [VENDOR AUTO-FETCH] Found', results.length, 'matching vendors');
   if (results.length > 0) {
-    console.log('✅ [VENDOR AUTO-FETCH] Top matches:', results.slice(0, 5).map(r => ({
+   // console.log('✅ [VENDOR AUTO-FETCH] Top matches:', results.slice(0, 5).map(r => ({
       name: r.vendor.vendorName,
       score: r.matchScore,
       details: r.matchDetails

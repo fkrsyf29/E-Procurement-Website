@@ -48,7 +48,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
 
     // Simulate sending email
     toast.success(`Verification code sent to ${user.email}`);
-    console.log(`VERIFICATION CODE: ${code}`); // For demo purposes
+   // console.log(`VERIFICATION CODE: ${code}`); // For demo purposes
     
     setStep('verify');
   };

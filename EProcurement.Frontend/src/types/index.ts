@@ -393,13 +393,7 @@ export interface ProposalMaterialItem {
   remarks?: string;
 }
 
-export interface Permission { 
-    id: string; 
-    label: string; 
-    category: string 
-}
-
-export interface PermissionFromApi {
+export interface Permission {
   permissionID: number;
   code: string;
   name: string;

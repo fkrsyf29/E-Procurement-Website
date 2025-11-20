@@ -20,50 +20,78 @@ import {
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { mockUsers, mapApiUserToDefinition } from '../data/mockData';
-import { 
-  RoleDefinition, 
-  getActiveRoles,
-  getRolesByCategory,
-  getRoleStatistics,
-} from '../data/rolesData';
-import { User, UserRole, Jobsite, Department } from '../types';
+import { RoleDefinition,Departments, Jobsites, User } from '../types';
 import { toast } from 'sonner';
-import { fetchApiUsers } from '../services/userApi';
-
-const jobsites: Jobsite[] = [
-  'ADMO MINING',
-  'ADMO HAULING',
-  'SERA',
-  'MACO MINING',
-  'MACO HAULING',
-  'JAHO',
-  'NARO',
-];
-
-const departments: Department[] = [
-  'Plant',
-  'Logistic',
-  'HR',
-  'GA',
-  'SHE',
-  'Finance',
-  'Production',
-  'Engineering',
-  'IT',
-];
 
 interface UserManagementProps {
   roles: RoleDefinition[];
   onNavigateToRoleManagement: () => void;
   users: User[];
+  availableDepartments: Departments[];
+  availableJobsites: Jobsites[];
   onUpdateUsers: (users: User[]) => void;
 }
 
-export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUsers, onNavigateToRoleManagement }: UserManagementProps) {
-  const [users, setUsers] = useState<User[]>(propUsers ?? []);
-  const [roles, setRoles] = useState<RoleDefinition[]>(propRoles?? []);
-  const [loading, setLoading] = useState(true);
+function getActiveRolesFromProp(roles: RoleDefinition[]): RoleDefinition[] {
+  return roles.filter(role => role.isActive);
+}
 
+function getRolesByCategory(
+    roles: RoleDefinition[], 
+    category: RoleDefinition['category']
+): RoleDefinition[] {
+    return roles.filter(role => role.category === category && role.isActive);
+}
+
+function getRoleStatisticsFromProp(roles: RoleDefinition[]) {
+    const activeRoles = getActiveRolesFromProp(roles);
+    
+    return {
+      totalRoles: roles.length,
+      activeRoles: activeRoles.length,
+      inactiveRoles: roles.length - activeRoles.length,
+
+      staticRoles: roles.length,
+          creatorRoles: roles.filter(r => r.name.startsWith('Creator') && r.isActive).length,
+          unitHeadRoles: roles.filter(r => r.name.startsWith('Unit Head') && r.isActive).length,
+          sectionHeadRoles: roles.filter(r => r.name.startsWith('Section Head') && r.isActive).length,
+          departmentHeadRoles: roles.filter(r => r.name.startsWith('Department Head') && r.isActive).length,
+          managerRoles: roles.filter(r => r.name.startsWith('Manager') && r.isActive).length,
+          chiefOperationRoles: roles.filter(r => r.name.startsWith('Chief Operation') && r.isActive).length,
+          divisionHeads: roles.filter(r => r.name.includes('Division Head') && !r.name.startsWith('Department Head') && r.isActive).length,
+          directorRoles: roles.filter(r => r.name.includes('Director') && !r.name.includes('President') && r.isActive).length,
+          byCategory: {
+                System: getRolesByCategory(roles, 'System').length, 
+                Approval: getRolesByCategory(roles, 'Approval').length,
+                Sourcing: getRolesByCategory(roles, 'Sourcing').length,
+                Custom: getRolesByCategory(roles, 'Custom').length,
+              }
+    };
+}
+
+function getRoleTotalCount(roles: RoleDefinition[]): number {
+    return roles.length;
+}
+
+export function UserManagement({ 
+    roles : propRoles, 
+    users: propUsers, 
+    availableDepartments: propDepartment = [],
+    availableJobsites: propJobsite = [],
+    onUpdateUsers, 
+    onNavigateToRoleManagement 
+  }: UserManagementProps) 
+{
+  const [users, setUsers] = useState<User[]>(propUsers ?? []);
+
+   useEffect(() => {
+    if (propUsers.length > 0) {
+            setLoading(false);
+        }
+  }, [propUsers]);
+
+  const [loading, setLoading] = useState(propUsers.length === 0);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -79,9 +107,9 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
     username: '',
     name: '',
     password: '',
-    roleName: '' as UserRole | '',
-    jobsite: '' as Jobsite | '',
-    department: '' as Department | '',
+    roleName: '' as RoleDefinition | '',
+    jobsite: '' as Jobsites | '',
+    department: '' as Departments | '',
     email: '',
     phone: '',
   });
@@ -95,8 +123,8 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
   const [currentPage, setCurrentPage] = useState(1);
 
   // Get active roles and statistics
-  const activeRoles = getActiveRoles();
-  const roleStats = useMemo(() => getRoleStatistics(roles), [roles]);
+  const activeRoles = useMemo(() => getActiveRolesFromProp(propRoles), [propRoles]); 
+  const roleStats = useMemo(() => getRoleStatisticsFromProp(propRoles), [propRoles]);
 
   // Handle sorting
   const handleSort = (column: string) => {
@@ -108,34 +136,7 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
     }
   };
 
-  useEffect(() => {
-  let isMounted = true;
-
-  const fetchData = async () => {
-      try {
-        setLoading(true); // loading untuk seluruh komponen
-
-        const mappedUsers: User[] = await fetchApiUsers();
-        
-        if (isMounted) {
-          setUsers(mappedUsers);
-          setLoading(false);
-        }
-
-      } catch (err) {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-
-  fetchData();
-  return () => {
-      isMounted = false;
-    };
-  }, []);
-
+ 
   // Search, filter, and sort users
   const filteredUsers = useMemo(() => {
     let filtered = users.filter(u => {
@@ -226,9 +227,9 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
       username: '',
       name: '',
       password: '',
-      role: '',
-      jobsite: '',
-      department: '',
+      roleName: '' as any,
+      jobsite: '' as any, 
+      department: '' as any,
       email: '',
       phone: '',
     });
@@ -311,11 +312,9 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
 
   // Calculate user statistics
   const userStats = useMemo(() => {
-  const safeUsers = Array.isArray(users) ? users : [];
-  const safeRoles = Array.isArray(roles) ? roles : [];
-  console.log(roles);
-  console.log(users);
-
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeRoles = Array.isArray(propRoles) ? propRoles : [];
+ 
   return {
     total: safeUsers.length,
     admins: safeUsers.filter(u => u.roleName === 'Administrator').length,
@@ -327,7 +326,7 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
     }).length,
     active: safeUsers.length, // atau tambah isLocked nanti
   };
-}, [users, roles]);
+}, [users, propRoles]);
 
   return (
   <>
@@ -436,11 +435,8 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="Administrator">Administrator</SelectItem>
-                {activeRoles.slice(0, 20).map(role => (
-                  <SelectItem key={role.id} value={role.name}>
-                    {role.name}
-                  </SelectItem>
+                {propRoles.map(role => (
+                  <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -454,8 +450,8 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                {propDepartment.map(dept => (
+                  <SelectItem key={dept.departmentID} value={dept.name}>{dept.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -469,8 +465,8 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Jobsites</SelectItem>
-                {jobsites.map(site => (
-                  <SelectItem key={site} value={site}>{site}</SelectItem>
+                {propJobsite.map(site => (
+                  <SelectItem key={site.jobsiteID} value={site.name}>{site.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -538,7 +534,6 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left text-xs uppercase tracking-wider" style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>Password</th>
                 <th className="px-6 py-3 text-left text-xs uppercase tracking-wider" style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>
                   <button
                     onClick={() => handleSort('role')}
@@ -614,20 +609,6 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
       <tr key={user.userID} className="hover:bg-gray-50">
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm">
-          <div className="flex items-center gap-2">
-            <code className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">
-              {showPasswords[user.userID] ? user.password : '••••••••'}
-            </code>
-            <button
-              onClick={() => togglePasswordVisibility(user.userID)}
-              className="text-gray-500 hover:text-gray-700"
-              title={showPasswords[user.userID] ? 'Hide password' : 'Show password'}
-            >
-              {showPasswords[user.userID] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </td>
         <td className="px-6 py-4">
           <span className="px-2.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
             {user.roleName}
@@ -830,14 +811,14 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                 <Label htmlFor="department">Department</Label>
                 <Select 
                   value={formData.department} 
-                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value as Department }))}
+                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, department: value as Departments }))}
                 >
                   <SelectTrigger id="department">
                     <SelectValue placeholder="Select department (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {propDepartment.map(dept => (
+                      <SelectItem key={dept.departmentID} value={dept.name}>{dept.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -853,8 +834,8 @@ export function UserManagement({ roles : propRoles, users: propUsers, onUpdateUs
                     <SelectValue placeholder="Select jobsite (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {jobsites.map(site => (
-                      <SelectItem key={site} value={site}>{site}</SelectItem>
+                    {propJobsite.map(site => (
+                      <SelectItem key={site.jobsiteID} value={site.name}>{site.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

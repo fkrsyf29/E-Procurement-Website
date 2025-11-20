@@ -28,26 +28,26 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
 
   // Filter proposals created by the current user
   const myProposals = useMemo(() => {
-    console.log('🔄 [MY PROPOSALS] Recomputing myProposals');
-    console.log('   - Total proposals:', proposals.length);
-    console.log('   - Proposals array reference:', proposals === proposals ? 'stable' : 'changed');
-    console.log('   - Current User ID:', user.id);
-    console.log('   - Current User:', user.username);
+   // console.log('🔄 [MY PROPOSALS] Recomputing myProposals');
+   // console.log('   - Total proposals:', proposals.length);
+   // console.log('   - Proposals array reference:', proposals === proposals ? 'stable' : 'changed');
+   // console.log('   - Current User ID:', user.id);
+   // console.log('   - Current User:', user.username);
     
     // ✅ CRITICAL DEBUG: Show ALL proposal creator IDs
-    console.log('   - 📋 ALL PROPOSALS:');
+   // console.log('   - 📋 ALL PROPOSALS:');
     proposals.forEach((p, idx) => {
-      console.log(`      ${idx + 1}. ${p.proposalNo} - Creator ID: ${p.creatorId} (${p.creator}) - Status: ${p.status}`);
+     // console.log(`      ${idx + 1}. ${p.proposalNo} - Creator ID: ${p.creatorId} (${p.creator}) - Status: ${p.status}`);
     });
     
     const filtered = proposals.filter(p => p.creatorId === user.id);
-    console.log('   - ✅ MY PROPOSALS (filtered):', filtered.length);
+   // console.log('   - ✅ MY PROPOSALS (filtered):', filtered.length);
     if (filtered.length > 0) {
       filtered.forEach((p, idx) => {
-        console.log(`      ${idx + 1}. ${p.proposalNo} - ${p.title} - ${p.status}`);
+       // console.log(`      ${idx + 1}. ${p.proposalNo} - ${p.title} - ${p.status}`);
       });
     } else {
-      console.log('      ⚠️ NO PROPOSALS FOUND FOR THIS USER!');
+     // console.log('      ⚠️ NO PROPOSALS FOUND FOR THIS USER!');
     }
     
     return filtered;
@@ -139,14 +139,14 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
   };
 
   const handleSaveProposalWrapper = (proposalData: any, isDraft: boolean) => {
-    console.log('📝 [MY PROPOSALS] handleSaveProposalWrapper called');
-    console.log('   - Proposal No:', proposalData.proposalNo);
-    console.log('   - Is Draft:', isDraft);
-    console.log('   - Current proposals count:', proposals.length);
+   // console.log('📝 [MY PROPOSALS] handleSaveProposalWrapper called');
+   // console.log('   - Proposal No:', proposalData.proposalNo);
+   // console.log('   - Is Draft:', isDraft);
+   // console.log('   - Current proposals count:', proposals.length);
     
     // Call parent onSaveProposal (this will update proposals state in App)
     onSaveProposal(proposalData, isDraft);
-    console.log('   - ✅ onSaveProposal called');
+   // console.log('   - ✅ onSaveProposal called');
   };
 
 
@@ -393,7 +393,7 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
         if (!open) {
           setShowForm(false);
           setEditingProposal(null);
-          console.log('🚪 [MY PROPOSALS] Dialog closed');
+         // console.log('🚪 [MY PROPOSALS] Dialog closed');
         }
       }}>
         <DialogContent className="max-w-[98vw] w-[1600px] max-h-[95vh] overflow-y-auto">

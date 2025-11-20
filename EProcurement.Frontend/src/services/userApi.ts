@@ -1,7 +1,7 @@
 // src/services/userApi.ts
 
-import { User, UserRole, Jobsite, Department } from '../types';
-import { FALLBACK_USERS, mapApiUserToDefinition } from '../data/mockData'; 
+import { User } from '../types';
+import { mapApiUserToDefinition } from '../data/mockData'; 
 import { toast } from 'sonner';
 
 // Definisikan base URL API Anda di sini
@@ -18,7 +18,7 @@ if (!API_BASE) {
  * Mengambil daftar User dari API. Digunakan untuk User Management.
  * @returns Promise<User[]> Daftar pengguna atau data fallback.
  */
-export async function fetchApiUsers(): Promise<User[]> {
+export async function fetchApiUsers(): Promise<User[] | null> {
   try {
     const usersRes = await fetch(`${API_BASE}/User`);
 
@@ -26,14 +26,14 @@ export async function fetchApiUsers(): Promise<User[]> {
       const usersData = await usersRes.json();
       return usersData.map(mapApiUserToDefinition); 
     } else {
-      console.warn('Gagal fetch users dari API. Menggunakan data default.');
-      toast.error('Gagal ambil data User dari server, menggunakan data default');
-      return FALLBACK_USERS as User[]; // Menggunakan data fallback
+      console.warn('Gagal fetch users dari API.');
+      toast.error('Gagal ambil data User dari server.');
+      return null; 
      }
   } catch (err) {
     console.error('Koneksi ke server gagal:', err);
-    toast.error('Koneksi ke server gagal, menggunakan data default');
-    return FALLBACK_USERS as User[]; // Menggunakan data fallback
+    toast.error('Koneksi ke server gagal');
+    return null; 
  }
 }
 
@@ -46,7 +46,7 @@ export async function fetchApiUsers(): Promise<User[]> {
  */
 export async function loginUser(username: string, password: string): Promise<{ token: string, user: User }> {
     const url = `${API_BASE}${LOGIN_ENDPOINT}`;
-    console.log(`[API] Attempting login to: ${url}`);
+    console.warn(`[API] Attempting login to: ${url}`);
 
     const response = await fetch(url, {
         method: 'POST', 
@@ -68,7 +68,7 @@ export async function loginUser(username: string, password: string): Promise<{ t
     }
 
     const data = await response.json();
-    console.log('[API Success] Login successful. Data received.');
+    console.warn('[API Success] Login successful. Data received.');
     
     const apiUserData = data.user || data;
     const definedUser: User = mapApiUserToDefinition(apiUserData);
@@ -98,7 +98,7 @@ export async function fetchCurrentUser(token: string): Promise<User | null> {
 
     let userResponse = await callUserinfoApi(token);
     if (userResponse.status === 401) {
-        console.log('[Auth] Access Token 401. Mencoba Refresh Sesi...');
+        console.warn('[Auth] Access Token 401. Mencoba Refresh Sesi...');
 
         const newToken = await attemptTokenRefresh();
         
@@ -133,7 +133,7 @@ export async function fetchCurrentUser(token: string): Promise<User | null> {
  */
 async function attemptTokenRefresh(): Promise<string | null> {
     const url = `${API_BASE}${REFRESH_ENDPOINT}`;
-    console.log('[Auth] Mencoba Refresh Token...');
+    console.warn('[Auth] Mencoba Refresh Token...');
 
     try {
         const response = await fetch(url, {
@@ -157,7 +157,7 @@ async function attemptTokenRefresh(): Promise<string | null> {
         }
 
         localStorage.setItem('authToken', newAccessToken);
-        console.log('✅ [Auth] Access Token baru berhasil disimpan.');
+        console.warn('✅ [Auth] Access Token baru berhasil disimpan.');
         
         return newAccessToken;
 

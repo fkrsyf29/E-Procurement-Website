@@ -163,7 +163,7 @@ export function getApprovalMatrix(
   amount: number
 ): ApprovalMatrix | undefined {
   // Debug logging
-  console.log(`[ApprovalMatrix] Looking for: Department="${department}", Jobsite="${jobsite}", Amount=${amount}`);
+ // console.log(`[ApprovalMatrix] Looking for: Department="${department}", Jobsite="${jobsite}", Amount=${amount}`);
   
   const result = approvalMatrixData.find(
     (matrix) =>
@@ -188,7 +188,7 @@ export function getApprovalMatrix(
     const amountMatches = approvalMatrixData.filter(m => amount >= m.amountMin && amount <= m.amountMax);
     console.warn(`[ApprovalMatrix] Matrices covering amount $${amount}:`, amountMatches.length);
   } else {
-    console.log(`[ApprovalMatrix] ✓ Match found:`, result.id);
+   // console.log(`[ApprovalMatrix] ✓ Match found:`, result.id);
   }
   
   return result;
@@ -275,8 +275,8 @@ export const totalApprovalMatrices = approvalMatrixData.length;
 
 // Log statistics on import (development only)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('📊 Approval Matrix Statistics:', getMatrixStatistics());
-  console.log(`✅ Total Matrices: ${totalApprovalMatrices}`);
-  console.log(`📦 Departments: ${DEPARTMENTS.join(', ')}`);
-  console.log(`🏢 Jobsites: ${JOBSITES.join(', ')}`);
+ // console.log('📊 Approval Matrix Statistics:', getMatrixStatistics());
+ // console.log(`✅ Total Matrices: ${totalApprovalMatrices}`);
+ // console.log(`📦 Departments: ${DEPARTMENTS.join(', ')}`);
+ // console.log(`🏢 Jobsites: ${JOBSITES.join(', ')}`);
 }

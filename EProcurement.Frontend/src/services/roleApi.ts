@@ -1,6 +1,6 @@
 // src/services/roleApi.ts
 
-import { RoleDefinition, UserRole, Jobsite, Department } from '../types';
+import { RoleDefinition } from '../types';
 import { defaultRoles, mapApiRoleToDefinition } from '../data/rolesData'; 
 import { toast } from 'sonner';
 
@@ -17,7 +17,6 @@ export async function fetchApiRoles(): Promise<RoleDefinition[]> {
 
     if (rolesRes.ok) {
       const rolesData = await rolesRes.json();
-      console.log('Roles Data -> ' ,rolesData);
       return rolesData.map(mapApiRoleToDefinition); 
     } else {
       console.warn('Gagal fetch users dari API. Menggunakan data default.');
@@ -30,35 +29,3 @@ export async function fetchApiRoles(): Promise<RoleDefinition[]> {
     return defaultRoles as RoleDefinition[]; // Menggunakan data fallback
   }
 }
-
-// // Anda juga bisa memindahkan FALLBACK_USERS, jobsites, dan departments di sini, 
-// // atau ke file konfigurasi/mock terpisah yang diimpor.
-
-// // Contoh fungsi lain yang bisa dipindahkan
-// export async function createUser(userData: Omit<User, 'userID' | 'lastPasswordChange'>): Promise<User> {
-//   // Logika POST ke API
-//   console.log('API: Creating user', userData);
-//   // ... fetch(..., { method: 'POST', body: JSON.stringify(userData) })
-//   return { ...userData, userID: Date.now().toString(), lastPasswordChange: new Date().toISOString().split('T')[0] } as User; // Mock response
-// }
-
-// export async function updateUser(user: User): Promise<User> {
-//   // Logika PUT ke API
-//   console.log('API: Updating user', user);
-//   // ... fetch(..., { method: 'PUT', body: JSON.stringify(user) })
-//   return user; // Mock response
-// }
-
-// export async function deleteUser(userId: string): Promise<void> {
-//   // Logika DELETE ke API
-//   console.log('API: Deleting user', userId);
-//   // ... fetch(..., { method: 'DELETE' })
-//   return; // Mock response
-// }
-
-// export async function resetUserPassword(userId: string, newPassword: string): Promise<void> {
-//   // Logika PATCH/PUT untuk reset password
-//   console.log(`API: Resetting password for ${userId}`);
-//   // ... fetch(..., { method: 'PATCH', body: JSON.stringify({ newPassword }) })
-//   return; // Mock response
-// }

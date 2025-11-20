@@ -782,7 +782,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
   // ✅ COMPREHENSIVE: Load ALL data from existing proposal when editing (Nov 13, 2025 FIX)
   useEffect(() => {
     if (proposal) {
-      console.log('📝 [EDIT MODE] Loading existing proposal data:', proposal);
+     // console.log('📝 [EDIT MODE] Loading existing proposal data:', proposal);
       
       // Load KBLI codes and brands
       if (proposal.kbliCodes && proposal.kbliCodes.length > 0) {
@@ -903,7 +903,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
         setTerItems(loadedTerItems);
       }
       
-      console.log('✅ [EDIT MODE] All proposal data loaded successfully');
+     // console.log('✅ [EDIT MODE] All proposal data loaded successfully');
     }
   }, [proposal]);
   
@@ -1045,7 +1045,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
     });
     
     // ✅ AUTO-FETCH RECOMMENDED VENDORS FOR DRAFT (Nov 13, 2025)
-    console.log('💾 [DRAFT SAVE] Auto-fetching recommended vendors...');
+   // console.log('💾 [DRAFT SAVE] Auto-fetching recommended vendors...');
     
     const recommendedVendorsResult = getRecommendedVendors({
       subClassifications: selectedSubClassifications,
@@ -1053,7 +1053,7 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
       brands: finalBrands
     });
     
-    console.log('✅ [DRAFT SAVE] Found recommended vendors:', recommendedVendorsResult.length);
+   // console.log('✅ [DRAFT SAVE] Found recommended vendors:', recommendedVendorsResult.length);
     
     // ✅ Convert recommended vendors to AddedVendorDetail format (Nov 13, 2025 FIX)
     const recommendedVendorsList = recommendedVendorsResult.map(r => ({
@@ -1176,10 +1176,10 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
     });
     
     // ✅ AUTO-FETCH RECOMMENDED VENDORS (Nov 13, 2025)
-    console.log('🚀 [PROPOSAL SUBMIT] Auto-fetching recommended vendors...');
-    console.log('📋 [PROPOSAL SUBMIT] Sub-classifications:', selectedSubClassifications);
-    console.log('📋 [PROPOSAL SUBMIT] KBLI codes:', finalKBLICodes);
-    console.log('📋 [PROPOSAL SUBMIT] Brands:', finalBrands);
+   // console.log('🚀 [PROPOSAL SUBMIT] Auto-fetching recommended vendors...');
+   // console.log('📋 [PROPOSAL SUBMIT] Sub-classifications:', selectedSubClassifications);
+   // console.log('📋 [PROPOSAL SUBMIT] KBLI codes:', finalKBLICodes);
+   // console.log('📋 [PROPOSAL SUBMIT] Brands:', finalBrands);
     
     const recommendedVendorsResult = getRecommendedVendors({
       subClassifications: selectedSubClassifications,
@@ -1187,14 +1187,14 @@ export function ProposalForm({ user, proposal, onClose, onSave, existingProposal
       brands: finalBrands
     });
     
-    console.log('✅ [PROPOSAL SUBMIT] Found recommended vendors:', recommendedVendorsResult.length);
-    console.log('✅ [PROPOSAL SUBMIT] Vendor details:', recommendedVendorsResult.map(r => ({
-      name: r.vendor.vendorName,
-      matchCount: r.matchDetails.matchCount,
-      subClassMatch: r.matchDetails.subClassificationMatch,
-      kbliMatch: r.matchDetails.kbliMatch,
-      brandMatch: r.matchDetails.brandMatch
-    })));
+   // console.log('✅ [PROPOSAL SUBMIT] Found recommended vendors:', recommendedVendorsResult.length);
+   // console.log('✅ [PROPOSAL SUBMIT] Vendor details:', recommendedVendorsResult.map(r => ({
+   //   name: r.vendor.vendorName,
+   //   matchCount: r.matchDetails.matchCount,
+   //   subClassMatch: r.matchDetails.subClassificationMatch,
+   //   kbliMatch: r.matchDetails.kbliMatch,
+   //   brandMatch: r.matchDetails.brandMatch
+   // })));
     
     // ✅ Convert recommended vendors to AddedVendorDetail format (Nov 13, 2025 FIX)
     const recommendedVendorsList = recommendedVendorsResult.map(r => ({

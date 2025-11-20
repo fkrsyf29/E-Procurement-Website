@@ -674,7 +674,7 @@ const initializeMaterials = (): Material[] => {
       const parsed = JSON.parse(stored);
       // Ensure it's an array
       if (Array.isArray(parsed) && parsed.length > 0) {
-        console.log('✅ Materials loaded from localStorage:', parsed.length);
+       // console.log('✅ Materials loaded from localStorage:', parsed.length);
         
         // ✅ CHECK: Do materials need Annual Purchase Plan enhancement?
         const needsEnhancement = parsed.some(m => 
@@ -682,10 +682,10 @@ const initializeMaterials = (): Material[] => {
         );
         
         if (needsEnhancement) {
-          console.log('🔧 Enhancing materials with Annual Purchase Plan data...');
+         // console.log('🔧 Enhancing materials with Annual Purchase Plan data...');
           const enhanced = enhanceAllMaterials(parsed);
           saveMaterialsToStorage(enhanced);
-          console.log('✅ All materials enhanced with APP data!');
+         // console.log('✅ All materials enhanced with APP data!');
           return enhanced;
         }
         
@@ -697,11 +697,11 @@ const initializeMaterials = (): Material[] => {
   }
   
   // Use initial data if localStorage is empty or invalid
-  console.log('📦 Using initial materials data:', initialMaterials.length);
-  console.log('🔧 Enhancing initial materials with APP data...');
+ // console.log('📦 Using initial materials data:', initialMaterials.length);
+ // console.log('🔧 Enhancing initial materials with APP data...');
   const enhanced = enhanceAllMaterials(initialMaterials);
   saveMaterialsToStorage(enhanced);
-  console.log('✅ Initial materials enhanced and saved!');
+ // console.log('✅ Initial materials enhanced and saved!');
   return enhanced;
 };
 
@@ -709,7 +709,7 @@ const initializeMaterials = (): Material[] => {
 const saveMaterialsToStorage = (materialsData: Material[]): void => {
   try {
     localStorage.setItem(MATERIALS_STORAGE_KEY, JSON.stringify(materialsData));
-    console.log('💾 Materials saved to localStorage:', materialsData.length);
+   // console.log('💾 Materials saved to localStorage:', materialsData.length);
   } catch (error) {
     console.error('❌ Error saving materials to localStorage:', error);
   }
@@ -819,7 +819,7 @@ export const bulkAddMaterials = (newMaterials: Omit<Material, 'id' | 'createdDat
   
   materials.push(...addedMaterials);
   saveMaterialsToStorage(materials); // ✅ Persist to localStorage
-  console.log(`✅ Bulk added ${addedMaterials.length} materials to system`);
+ // console.log(`✅ Bulk added ${addedMaterials.length} materials to system`);
   return addedMaterials;
 };
 

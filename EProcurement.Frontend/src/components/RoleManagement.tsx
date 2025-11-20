@@ -19,60 +19,40 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './ui/alert-dialog';
-import { getRoleStatistics, ROLE_CONFIG, defaultRoles } from '../data/rolesData';
-import { ApprovalRoles, Departments, Jobsites, RoleDefinition,Permission,RoleCategories,PermissionCategories  } from '../types';
+import { getRoleStatistics, ROLE_CONFIG } from '../data/rolesData';
+import { RoleDefinition,Permission, Departments, Jobsites, ApprovalRoles, PermissionCategories, RoleCategories  } from '../types';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 
-import { fetchApiRoles } from '../services/roleApi';
-import { fetchApiPermissions } from '../services/permissionApi';
-import { fetchApiDepartment } from '../services/departmentApi';
-import { fetchApiJobsite } from '../services/jobsiteApi';
-import { fetchApiApprovalRole } from '../services/approvalRoleApi';
-import { fetchApiRoleCategory } from '../services/roleCategoryApi';
-import { fetchApiPermissionCategory } from '../services/permissionCategoryApi';
-
-
 interface RoleManagementProps {
   roles: RoleDefinition[];
+  permissions : Permission[];
+  availableDepartments: Departments[];
+  availableJobsites: Jobsites[];
+  availableApprovalRoles: ApprovalRoles[];
+  availablePermissionCategories: PermissionCategories[];
+  availableRoleCategories: RoleCategories[];
   onUpdateRoles: (roles: RoleDefinition[]) => void;
 }
 
-const ROLE_CATEGORIES: RoleDefinition['category'][] = ['System', 'Approval', 'Sourcing', 'Custom'];
-
-const APPROVAL_ROLES: ApprovalRole[] = [
-  'UH User', 'SH User', 'Manager User', 'DH User', 'DIV User',
-  'Chief Operation Site', 'Dir User', 'President Director',
-];
-
-export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManagementProps) {
+export function RoleManagement({ 
+    roles: propRoles, 
+    permissions: propPermissions, 
+    availableDepartments: propDepartment = [],
+    availableJobsites: propJobsite = [],
+    availableApprovalRoles: propApprovalRole = [],
+    availablePermissionCategories: propPermissionCategory = [],
+    availableRoleCategories: propRoleCategory = [],
+    onUpdateRoles }: RoleManagementProps) {
   const [roles, setRoles] = useState<RoleDefinition[]>(propRoles);
-  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    if (propRoles.length > 0) {
+            setLoading(false);
+        }
+  }, [propRoles]);
 
-  const [availablePermissions, setAvailablePermissions] = useState<
-    { permissionID: string; name: string; category: string }[]
-  >([]);
-
-  const [availableDepartments, setAvailableDepartments] = useState<
-    { departmentID: string; name: string }[]
-  >([]);
-
-  const [availableJobsites, setAvailableJobsites] = useState<
-    { jobsiteID: string; name: string }[]
-  >([]);
-
-  const [availableRoleCategories, setAvailableRoleCategories] = useState<
-    { roleCategoryID: string; name: string }[]
-  >([]);
-
-  const [availablePermissionCategories, setAvailablePermissionCategories] = useState<
-    { permissionCategoryID: string; name: string }[]
-  >([]);
-
-  const [availableApprovalRoles, setAvailableApprovalRoles] = useState<
-    { approvalRoleID: string; name: string }[]
-  >([]);
-
+  const [loading, setLoading] = useState(propRoles.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('active');
@@ -98,57 +78,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
     relatedApprovalRole: undefined,
   });
 
-  useEffect(() => {
-    let isMounted = true; // biar tidak setState kalau component unmount
-
-    const fetchData = async () => {
-      try {
-        setLoading(true); // loading untuk seluruh komponen
-
-        // 1. Fetch Roles
-        const mappedRoles: RoleDefinition[] = await fetchApiRoles();
-        
-        // 2. Fetch Permissions
-        const permissionsList : Permission[] = await fetchApiPermissions();
-
-        const departmentList : Departments[] = await fetchApiDepartment();
-        const jobsiteList : Jobsites[] = await fetchApiJobsite();
-        const approvalRoleList : ApprovalRoles [] = await fetchApiApprovalRole();
-        const roleCategoryList : RoleCategories[] = await fetchApiRoleCategory();
-        const permissionCategoryList : PermissionCategories[] = await fetchApiPermissionCategory();
-        
-        // Hanya update state kalau component masih mounted
-        if (isMounted) {
-          setRoles(mappedRoles);
-          onUpdateRoles(mappedRoles);
-          setAvailablePermissions(permissionsList);
-          setAvailableDepartments(departmentList);
-          setAvailableJobsites(jobsiteList);
-          setAvailableApprovalRoles(approvalRoleList);
-          setAvailablePermissionCategories(permissionCategoryList);
-          setAvailableRoleCategories(roleCategoryList);
-          setLoading(false);
-        }
-
-      } catch (err) {
-        if (isMounted) {
-          console.error('Koneksi ke server gagal:', err);
-          setRoles(defaultRoles);
-          onUpdateRoles(defaultRoles);
-          setAvailablePermissions(FALLBACK_PERMISSIONS);
-          setAvailableDepartments([]);
-          setAvailableJobsites([]);
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  
 
   const stats = useMemo(() => getRoleStatistics(roles), [roles]);
 
@@ -412,17 +342,17 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
               <p className="text-sm text-gray-700 mb-2"><strong>System Configuration:</strong></p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600">Departments ({availableDepartments.length}):</p>
+                  <p className="text-gray-600">Departments ({propDepartment.length}):</p>
                   <p className="text-gray-900">
-                    {availableDepartments
+                    {propDepartment
                       .map(dept => dept.name)
                       .join(', ')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Jobsites ({availableJobsites.length}):</p>
+                  <p className="text-gray-600">Jobsites ({propJobsite.length}):</p>
                   <p className="text-gray-900">
-                    {availableJobsites
+                    {propJobsite
                       .map(jobs => jobs.name)
                       .join(', ')}
                   </p>
@@ -458,7 +388,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                      {availableRoleCategories.map((role) => ( 
+                      {propRoleCategory.map((role) => ( 
                         <SelectItem 
                           key={role.roleCategoryID}        // 
                           value={role.name}      // 
@@ -663,7 +593,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableRoleCategories.map((role) => ( 
+                        {propRoleCategory.map((role) => ( 
                             <SelectItem 
                               key={role.roleCategoryID} 
                               value={role.name} 
@@ -690,7 +620,7 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
                         <SelectContent>
                           <SelectItem value="none">No Related Role</SelectItem>
                           
-                          {availableApprovalRoles.map((roleName) => ( 
+                          {propApprovalRole.map((roleName) => ( 
                             <SelectItem 
                               key={roleName.approvalRoleID} 
                               value={roleName.name} 
@@ -736,9 +666,9 @@ export function RoleManagement({ roles: propRoles, onUpdateRoles }: RoleManageme
     <div className="border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
     <div className="space-y-3">
         
-        {availablePermissionCategories.map(categoryObject => {
+        {propPermissionCategory.map(categoryObject => {
             const categoryName = categoryObject.name; 
-            const categoryPerms = availablePermissions.filter(
+            const categoryPerms = propPermissions.filter(
                 (p) => {
                     const matches = p.category && p.category.toLowerCase() === categoryName.toLowerCase();
                     if (!p.category) {
