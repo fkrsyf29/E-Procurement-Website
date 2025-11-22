@@ -1,6 +1,6 @@
 // ./types/index.ts
 
-export type UserRole = 
+export type UserRole =
   | 'Administrator'
   | 'Creator Plant Department JAHO'
   | 'Unit Head Plant Department JAHO'
@@ -103,7 +103,7 @@ export interface Proposal {
   currentStep?: number; // Current step in the approval path
   history: ApprovalHistory[];
   comments?: string;
-  
+
   // Extended fields from ProposalForm
   scopeOfWork?: string;
   analysis?: string;
@@ -116,23 +116,23 @@ export interface Proposal {
   contractTermination?: string;
   regulations?: string;
   attachments?: string[]; // File paths or URLs
-  
+
   // Matrix conditions for contract type determination (dynamic)
   matrixConditions?: Record<string, boolean>; // Dynamic key-value pairs for matrix conditions
   isTransactionValueExceeded?: boolean; // Auto-checked when Estimated Cost > USD 200,000
   isDurationExceeded?: boolean; // Auto-checked when Duration > 6 months
   durationMonths?: number; // Duration in months for service items
-  
+
   // Legacy matrix conditions (for backward compatibility with existing proposals)
   matrixValueAbove200k?: boolean;
   matrixDurationAbove6Months?: boolean;
   matrixLongTermAgreement?: boolean;
   matrixRiskAbove1?: boolean;
-  
+
   // Detailed TOR/TER items
   torItems?: TORItem[];
   terItems?: TERItem[];
-  
+
   // Vendor recommendation workflow
   vendorConfirmationStatus?: 'Pending' | 'Confirmed' | 'Additional Requested' | 'Completed';
   vendorRequestSubmitted?: boolean;
@@ -141,20 +141,20 @@ export interface Proposal {
   vendorsConfirmedDate?: string;
   vendorsCompletedBy?: string; // User who marked as completed after additional vendors
   vendorsCompletedDate?: string;
-  
+
   // ✅ Vendor data from VendorRecommendation (copied when accepted)
   recommendedVendors?: AddedVendorDetail[]; // Auto-fetched vendors based on sub-classification
   additionalVendors?: AddedVendorDetail[]; // Manually added vendors by Sourcing team
   vendorRecommendation?: VendorRecommendation; // Full vendor recommendation object for approval tracking
-  
+
   // Budget Items
   budgetItems?: BudgetItem[]; // Selected materials with qty and estimated price
-  
+
   // TOR Specifications for Vendor Matching (NEW - Nov 12, 2025)
   kbliCodes?: string[]; // Multiple KBLI codes from TOR
   brandSpecifications?: string[]; // Multiple brands from TOR
 
-  approvers?:string
+  approvers?: string
 }
 
 export interface ApprovalHistory {
@@ -250,7 +250,7 @@ export interface ApprovalMatrix {
 }
 
 // Vendor Recommendation Types (formerly Vendor Request)
-export type VendorRecommendationStatus = 
+export type VendorRecommendationStatus =
   | 'Pending'                        // Initial state - waiting for Sourcing to start
   | 'In Progress'                    // Sourcing is working on it
   | 'Waiting Dept Head Approval'     // Submitted to Sourcing Dept Head
@@ -288,7 +288,7 @@ export interface VendorRecommendation {
   jobsite: Jobsite;
   department: Department;
   reason?: string;               // Why additional vendors needed
-  
+
   // Sourcing work
   assignedTo?: string;           // Sourcing team member assigned
   assignedToName?: string;
@@ -303,7 +303,7 @@ export interface VendorRecommendation {
     type: string;
     uploadDate: string;
   }>;
-  
+
   // Approval workflow
   submittedForApprovalDate?: string;
   deptHeadApprovedBy?: string;
@@ -314,7 +314,7 @@ export interface VendorRecommendation {
   divHeadApprovedByName?: string;
   divHeadApprovedDate?: string;
   divHeadComments?: string;
-  
+
   // Planner/Buyer review
   plannerReviewedBy?: string;
   plannerReviewedByName?: string;
@@ -326,7 +326,7 @@ export interface VendorRecommendation {
   buyerReviewDate?: string;
   buyerDecision?: 'Approved' | 'Rejected';
   buyerComments?: string;
-  
+
   // Completion
   completedDate?: string;
   revisionCount?: number;        // Number of times sent back for revision
@@ -364,7 +364,7 @@ export interface Material {
   plant: string;                      // Plant Code (auto-filled from jobsite abbreviation) e.g., "40AB", "40A0"
   createdDate: string;
   updatedDate?: string;
-  
+
   // Annual Purchase Plan fields (NEW - Nov 12, 2025)
   qty?: number;                       // Quantity
   estimatedPrice?: number;            // Estimated Price (USD)
@@ -375,7 +375,7 @@ export interface Material {
   contractStartDate?: string;         // Start of Contract (ISO date string)
   contractEndDate?: string;           // End of Contract (ISO date string)
   unique?: 'Yes' | 'No';              // Unique field (NEW - Nov 13, 2025)
-  
+
   // Legacy field for backward compatibility
   company?: string;                   // @deprecated Use jobsite instead
 }
@@ -409,49 +409,49 @@ export interface Permission {
   deletedBy: string | null;
 }
 
-export interface Departments { 
-    departmentID: string; 
-    code: string; 
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    createdBy: string;
+export interface Departments {
+  departmentID: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
 }
 
-export interface Jobsites { 
-    jobsiteID: string; 
-    code: string; 
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    createdBy: string;
+export interface Jobsites {
+  jobsiteID: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
 }
 
-export interface ApprovalRoles { 
-    approvalRoleID: string; 
-    code: string; 
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    createdBy: string;
+export interface ApprovalRoles {
+  approvalRoleID: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
 }
 
-export interface RoleCategories { 
-    roleCategoryID: string; 
-    code: string; 
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    createdBy: string;
+export interface RoleCategories {
+  roleCategoryID: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
 }
 
-export interface PermissionCategories { 
-    permissionCategoryID: string; 
-    code: string; 
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    createdBy: string;
+export interface PermissionCategories {
+  permissionCategoryID: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
 }
 
 export interface ApiRole {
@@ -478,6 +478,7 @@ export interface ApiRole {
 
 export interface RoleDefinition {
   id: string;
+  code: string;
   name: string;
   description: string;
   permissions: string[];
@@ -491,6 +492,27 @@ export interface RoleDefinition {
   updatedDate?: string;
   relatedApprovalRole?: string; // Maps to ApprovalRole in approval matrix
 }
+
+export const mapApiRoleToDefinition = (apiRole: any): RoleDefinition => ({
+  id: apiRole.roleID,
+  code: apiRole.code,
+  name: apiRole.name,
+  description: apiRole.description ?? '',
+  permissions: apiRole.permission ?? [],                       // array string permission
+  canApprove: apiRole.canApprove ?? false,
+  canCreate: apiRole.canCreate ?? false,
+  canView: apiRole.canView ?? true,
+  category: (apiRole.category ?? 'Custom') as RoleDefinition['category'],
+  isActive: apiRole.isActive ?? true,
+  isSystemGenerated: apiRole.isSystemGenerated ?? false,
+  createdDate: apiRole.createdAt
+    ? apiRole.createdAt.split('T')[0]
+    : new Date().toISOString().split('T')[0],
+  updatedDate: apiRole.updatedAt
+    ? apiRole.updatedAt.split('T')[0]
+    : undefined,
+  relatedApprovalRole: apiRole.approvalRole ?? undefined,
+});
 
 export interface apiUser {
   userID: number;

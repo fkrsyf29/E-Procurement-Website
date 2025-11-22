@@ -497,7 +497,6 @@ export default function App() {
 
   const renderPage = () => {
     if (!currentUser) return null;
-
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard proposals={proposals} user={currentUser} onUpdateProposal={handleUpdateProposal} />;
@@ -523,6 +522,7 @@ export default function App() {
       case 'users':
         return <UserManagement 
           users={users}
+          currentUser={currentUser}
           onUpdateUsers={setUsers}
           roles={roles} 
           availableDepartments={availableDepartments} 
@@ -531,6 +531,7 @@ export default function App() {
         />;
       case 'role-management':
         return <RoleManagement 
+          currentUser={currentUser}
           roles={roles} 
           availableDepartments={availableDepartments} 
           availableJobsites={availableJobsites} 

@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   Search, Filter, ShieldCheck, Users, CheckCircle, XCircle, Eye, Info,
-  Plus, Pencil, Trash2, Lock, ArrowUpDown, ArrowUp, ArrowDown, Loader2
+  Plus, Pencil, Trash2, Lock, ArrowUpDown, ArrowUp, ArrowDown, Loader2,
+  Cast,
+  Code
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -20,13 +22,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './ui/alert-dialog';
 import { getRoleStatistics, ROLE_CONFIG } from '../data/rolesData';
-import { RoleDefinition,Permission, Departments, Jobsites, ApprovalRoles, PermissionCategories, RoleCategories  } from '../types';
+import { RoleDefinition, Permission, Departments, Jobsites, ApprovalRoles, PermissionCategories, RoleCategories, User } from '../types';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
+import { createRoleApi, updateRoleApi } from '../services/roleApi';
+
 
 interface RoleManagementProps {
+  currentUser: User[];
   roles: RoleDefinition[];
-  permissions : Permission[];
+  permissions: Permission[];
   availableDepartments: Departments[];
   availableJobsites: Jobsites[];
   availableApprovalRoles: ApprovalRoles[];
@@ -35,21 +40,23 @@ interface RoleManagementProps {
   onUpdateRoles: (roles: RoleDefinition[]) => void;
 }
 
-export function RoleManagement({ 
-    roles: propRoles, 
-    permissions: propPermissions, 
-    availableDepartments: propDepartment = [],
-    availableJobsites: propJobsite = [],
-    availableApprovalRoles: propApprovalRole = [],
-    availablePermissionCategories: propPermissionCategory = [],
-    availableRoleCategories: propRoleCategory = [],
-    onUpdateRoles }: RoleManagementProps) {
+export function RoleManagement({
+  currentUser: propCurrentUser,
+  roles: propRoles,
+  permissions: propPermissions,
+  availableDepartments: propDepartment = [],
+  availableJobsites: propJobsite = [],
+  availableApprovalRoles: propApprovalRole = [],
+  availablePermissionCategories: propPermissionCategory = [],
+  availableRoleCategories: propRoleCategory = [],
+  onUpdateRoles }: RoleManagementProps) {
+
   const [roles, setRoles] = useState<RoleDefinition[]>(propRoles);
-  
+
   useEffect(() => {
     if (propRoles.length > 0) {
-            setLoading(false);
-        }
+      setLoading(false);
+    }
   }, [propRoles]);
 
   const [loading, setLoading] = useState(propRoles.length === 0);
@@ -67,6 +74,8 @@ export function RoleManagement({
   const [currentPage, setCurrentPage] = useState(1);
 
   const [formData, setFormData] = useState<Partial<RoleDefinition>>({
+    id: '',
+    code: '',
     name: '',
     description: '',
     permissions: [],
@@ -78,9 +87,14 @@ export function RoleManagement({
     relatedApprovalRole: undefined,
   });
 
-  
 
+  const getPermissionIdByName = (name: string, permissions: Permission[]): string | undefined => {
+    const foundPerm = permissions.find(p => p.name === name);
+    return foundPerm ? String(foundPerm.permissionID) : undefined;
+  };
   const stats = useMemo(() => getRoleStatistics(roles), [roles]);
+
+  const currentUserName = propCurrentUser?.username || 'System';
 
   const filteredRoles = useMemo(() => {
     let filtered = roles.filter(role => {
@@ -121,6 +135,47 @@ export function RoleManagement({
     setCurrentPage(1);
   }, [searchTerm, filterCategory, filterStatus, pageSize]);
 
+  const mapApiRoleToDefinitionLocal = (apiRole: any, originalPayload: any): RoleDefinition => {
+    const source = originalPayload;
+    const roleIdNumeric = apiRole.roleID || apiRole.id;
+
+    if (!apiRole || (!apiRole.id && !apiRole.roleID)) {
+      const errorDetail = apiRole ? `Missing ID property. Object received: ${JSON.stringify(apiRole)}` : 'API returned empty data.';
+      console.error("Mapper Error:", errorDetail);
+      throw new Error("Invalid API response format: Missing Role ID.");
+    }
+
+    const mappedPermissions: string[] = (source.permissionIds || [])
+      .map((id: any) => {
+        const permObject = propPermissions.find(p => String(p.permissionID) === String(id));
+        return permObject ? permObject.name : undefined;
+      })
+
+    const categoryName = propRoleCategory.find(c =>
+      c.roleCategoryID === source.roleCategoryId
+    )?.name || apiRole.category || 'Custom';
+
+    const approvalRoleName = propApprovalRole.find(r =>
+      r.approvalRoleID === source.approvalRoleId
+    )?.name || apiRole.relatedApprovalRole;
+
+    return {
+      id: roleIdNumeric, // GUNAKAN String() untuk konversi yang aman
+      name: source.name || 'Unknown Role',
+      description: source.description || '',
+      permissions: mappedPermissions,
+      canApprove: source.canApprove ?? false,
+      canCreate: source.canCreate ?? false,
+      canView: source.canView ?? true,
+      isActive: source.isActive ?? true,
+      isSystemGenerated: source.isSystemGenerated ?? false,
+      createdDate: source.createdDate || new Date().toISOString().split('T')[0],
+      updatedDate: source.updatedDate || undefined,
+      category: categoryName as RoleDefinition['category'],
+      relatedApprovalRole: approvalRoleName,
+    };
+  };
+
   const generateNewId = () => {
     const maxId = Math.max(...roles.map(r => parseInt(r.id.replace('role_', '') || '0', 10)), 0);
     return `role_${(maxId + 1).toString().padStart(6, '0')}`;
@@ -128,6 +183,7 @@ export function RoleManagement({
 
   const resetForm = () => {
     setFormData({
+      id: '', code: '',
       name: '', description: '', permissions: [], canApprove: false,
       canCreate: false, canView: true, category: undefined, isActive: true,
       relatedApprovalRole: undefined,
@@ -163,7 +219,30 @@ export function RoleManagement({
     });
   };
 
-  const handleAddRole = () => {
+  const toggleCategoryPermissions = (categoryPermIds: string[]) => {
+      setFormData(prev => {
+        const currentPermissions = prev.permissions || [];
+
+        const allChecked = categoryPermIds.every(id => currentPermissions.includes(id));
+
+        let newPermissions;
+
+        if (allChecked) {
+          newPermissions = currentPermissions.filter(id => !categoryPermIds.includes(id));
+        } else {
+          const permissionsToAdd = categoryPermIds.filter(id => !currentPermissions.includes(id));
+          newPermissions = [...currentPermissions, ...permissionsToAdd];
+        }
+
+        return {
+          ...prev,
+          permissions: newPermissions
+        };
+      });
+    };
+
+
+  const handleAddRole = async () => {
     if (!formData.name || !formData.description) {
       toast.error('Please fill in all required fields');
       return;
@@ -173,30 +252,55 @@ export function RoleManagement({
       return;
     }
 
-    const newRole: RoleDefinition = {
-      id: generateNewId(),
+    // 1. Map Category Name ke ID
+    const categoryName = formData.category || 'Custom';
+    const roleCategory = propRoleCategory.find(c => c.name === categoryName);
+    const roleCategoryId = roleCategory?.roleCategoryID; // Ambil ID
+
+    // 2. Map Related Approval Role Name ke ID
+    const approvalRoleName = formData.relatedApprovalRole;
+    const approvalRole = propApprovalRole.find(r => r.name === approvalRoleName);
+    const approvalRoleId = approvalRole?.approvalRoleID; // Ambil ID, bisa undefined/null
+
+    if (!roleCategoryId) {
+      toast.error('Invalid Role Category selected.');
+      return;
+    }
+
+    const apiPayload = {
       name: formData.name!,
       description: formData.description!,
-      permissions: formData.permissions || [],
+      roleCategoryId: roleCategoryId,
+      approvalRoleId: approvalRoleId,
       canApprove: formData.canApprove || false,
       canCreate: formData.canCreate || false,
       canView: formData.canView ?? true,
-      category: formData.category as RoleDefinition['category'] || 'Custom',
-      isActive: formData.isActive ?? true,
-      isSystemGenerated: false,
-      createdDate: new Date().toISOString().split('T')[0],
-      relatedApprovalRole: formData.relatedApprovalRole,
+      permissionIds: formData.permissions || [],
+      createdBy: currentUserName,
     };
 
-    const updated = [...roles, newRole];
-    setRoles(updated);
-    onUpdateRoles(updated);
-    toast.success(`Role created: ${newRole.name}`);
-    setIsAddDialogOpen(false);
-    resetForm();
+    try {
+      const newRoleFromApi = await createRoleApi(
+        apiPayload as any,
+        mapApiRoleToDefinitionLocal
+      );
+
+      const updated = [...roles, newRoleFromApi];
+      setRoles(updated);
+      onUpdateRoles(updated);
+
+      toast.success(`Role created: ${newRoleFromApi.name}`);
+      setIsAddDialogOpen(false);
+      resetForm();
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during creation.';
+      toast.error(`Failed to create role: ${errorMessage}`);
+      console.error('Role Creation Error:', error);
+    }
   };
 
-  const handleEditRole = () => {
+  const handleEditRole = async () => {
     if (!selectedRole || !formData.name || !formData.description) return;
 
     if (roles.some(r => r.id !== selectedRole.id && r.name.toLowerCase() === formData.name!.toLowerCase())) {
@@ -204,52 +308,177 @@ export function RoleManagement({
       return;
     }
 
-    const updatedRoles = roles.map(role =>
-      role.id === selectedRole.id
-        ? {
-            ...roleName,
-            name: formData.name!,
-            description: formData.description!,
-            permissions: formData.permissions || [],
-            canApprove: formData.canApprove || false,
-            canCreate: formData.canCreate || false,
-            canView: formData.canView ?? true,
-            category: formData.category as RoleDefinition['category'] || 'Custom',
-            relatedApprovalRole: formData.relatedApprovalRole,
-            updatedDate: new Date().toISOString().split('T')[0],
-          }
-        : role
-    );
+    const categoryName = formData.category || selectedRole.category;
+    const roleCategory = propRoleCategory.find(c => c.name === categoryName);
+    const roleCategoryId = roleCategory?.roleCategoryID;
 
-    setRoles(updatedRoles);
-    onUpdateRoles(updatedRoles);
-    toast.success(`Role updated: ${formData.name}`);
-    setIsEditDialogOpen(false);
-    setSelectedRole(null);
-    resetForm();
+    const approvalRoleName = formData.relatedApprovalRole;
+    const approvalRole = propApprovalRole.find(r => r.name === approvalRoleName);
+    const approvalRoleId = approvalRole?.approvalRoleID;
+    if (!roleCategoryId) {
+      toast.error('Invalid Role Category selected.');
+      return;
+    }
+
+    const apiPayload = {
+      id: formData.id,
+      name: formData.name!,
+      description: formData.description!,
+      roleCategoryId: roleCategoryId,
+      approvalRoleId: approvalRoleId,
+      canApprove: formData.canApprove || false,
+      canCreate: formData.canCreate || false,
+      canView: formData.canView ?? true,
+      isActive: formData.isActive ?? selectedRole.isActive,
+      permissionIds: formData.permissions || [],
+      updatedBy: currentUserName,
+
+      // UPDATE: isDeleted harus FALSE
+      isDeleted: false,
+      deletedBy: currentUserName,
+    };
+
+    try {
+      const updatedRoleFromApi = await updateRoleApi(
+        apiPayload as any,
+        mapApiRoleToDefinitionLocal
+      );
+
+      const updatedRoles = roles.map(role => {
+
+        const currentId = parseInt(role.id, 10);
+
+        const updatedId = parseInt(updatedRoleFromApi.id, 10);
+
+        if (currentId === updatedId) {
+          return updatedRoleFromApi;
+        }
+        return role;
+      });
+
+      setRoles(updatedRoles);
+      onUpdateRoles(updatedRoles);
+
+      toast.success(`Role updated: ${updatedRoleFromApi.name}`);
+      setIsEditDialogOpen(false);
+      setSelectedRole(null);
+      resetForm();
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during update.';
+      toast.error(`Failed to update role: ${errorMessage}`);
+      console.error('Role Update Error:', error);
+    }
   };
 
-  const handleDeleteRole = () => {
+  const handleDeleteRole = async () => {
     if (!selectedRole) return;
-    const updated = roles.filter(r => r.id !== selectedRole.id);
-    setRoles(updated);
-    onUpdateRoles(updated);
-    toast.success(`Role deleted: ${selectedRole.name}`);
-    setIsDeleteDialogOpen(false);
-    setSelectedRole(null);
+
+
+    // 2. Tentukan ID Numerik (INT) untuk body payload
+    const deletePayload = {
+      id: selectedRole.id, // URL: /Role/359
+      name: selectedRole.name,
+      description: selectedRole.description,
+      roleCategoryId: propRoleCategory.find(c => c.name === selectedRole.category)?.roleCategoryID || 0, // Ambil ID kategori lama
+      approvalRoleId: propApprovalRole.find(r => r.name === selectedRole.relatedApprovalRole)?.approvalRoleID,
+      canApprove: selectedRole.canApprove,
+      canCreate: selectedRole.canCreate,
+      canView: selectedRole.canView,
+      isActive: false, // Peran yang dihapus harus nonaktif
+      permissionIds: selectedRole.permissions || [],
+      updatedBy: currentUserName, // ID pengguna yang menghapus
+
+      // DELETE: isDeleted harus TRUE
+      isDeleted: true,
+      deletedBy: currentUserName, // GANTI dengan ID pengguna nyata
+    };
+
+    try {
+      // Panggilan API untuk Soft Delete
+      await updateRoleApi(
+        deletePayload as any,
+        mapApiRoleToDefinitionLocal
+      );
+
+      // Sukses: Hapus dari state lokal
+      const updated = roles.filter(r => r.id !== selectedRole.id);
+      setRoles(updated);
+      onUpdateRoles(updated);
+
+      toast.success(`Role deleted: ${selectedRole.name}`);
+      setIsDeleteDialogOpen(false);
+      setSelectedRole(null);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during deletion.';
+      toast.error(`Failed to delete role: ${errorMessage}`);
+      console.error('Role Deletion Error:', error);
+    }
   };
 
-  const handleToggleStatus = (roleId: string) => {
-    const updatedRoles = roles.map(role => {
-      if (role.id === roleId) {
-        const newStatus = !role.isActive;
-        toast.success(`Role ${newStatus ? 'activated' : 'deactivated'}: ${role.name}`);
-        return { ...roleName, isActive: newStatus, updatedDate: new Date().toISOString().split('T')[0] };
-      }
-      return role;
-    });
-    setRoles(updatedRoles);
-    onUpdateRoles(updatedRoles);
+  const handleToggleStatus = async (roleId: string) => {
+    const roleToUpdate = roles.find(r => r.id === roleId);
+
+    if (!roleToUpdate) {
+      toast.error('Role not found.');
+      return;
+    }
+
+    const newStatus = !roleToUpdate.isActive;
+    const finalUrlId = roleToUpdate.id;
+    const roleIdNumber = parseInt(finalUrlId, 10);
+
+    const permissionIdsForApi: string[] = (roleToUpdate.permissions || [])
+      .map(name => getPermissionIdByName(name, propPermissions))
+      .filter((id): id is string => id !== undefined);
+
+
+    const apiPayload = {
+      id: finalUrlId,
+      roleId: roleIdNumber,
+      code: roleToUpdate.code,
+      name: roleToUpdate.name,
+      description: roleToUpdate.description,
+      // Ambil ID Category dan Approval Role dari data referensi
+      roleCategoryId: propRoleCategory.find(c => c.name === roleToUpdate.category)?.roleCategoryID || 0,
+      approvalRoleId: propApprovalRole.find(r => r.name === roleToUpdate.relatedApprovalRole)?.approvalRoleID,
+
+      canApprove: roleToUpdate.canApprove,
+      canCreate: roleToUpdate.canCreate,
+      canView: roleToUpdate.canView,
+
+      isActive: newStatus, // Status BARU
+      isDeleted: false, // TIDAK DIHAPUS
+
+      permissionIds: permissionIdsForApi,
+      updatedBy: currentUserName,
+      deletedBy: null,
+    };
+
+    try {
+      const updatedRoleFromApi = await updateRoleApi(
+        apiPayload as any,
+        mapApiRoleToDefinitionLocal
+      );
+
+      const updatedRoles = roles.map(role => {
+        if (role.id === roleId) {
+          return updatedRoleFromApi;
+        }
+        return role;
+      });
+
+      setRoles(updatedRoles);
+      onUpdateRoles(updatedRoles);
+
+      toast.success(`Role ${newStatus ? 'activated' : 'deactivated'}: ${roleToUpdate.name}`);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during status toggle.';
+      toast.error(`Failed to change status: ${errorMessage}`);
+      console.error('Status Toggle Error:', error);
+    }
   };
 
   const handleViewDetails = (role: RoleDefinition) => {
@@ -262,8 +491,25 @@ export function RoleManagement({
       toast.error('System-generated roles cannot be edited');
       return;
     }
+
+    const currentPermissions: string[] = (role.permissions || [])
+      .map(name => getPermissionIdByName(name, propPermissions))
+      .filter((id): id is string => id !== undefined);
+
     setSelectedRole(role);
-    setFormData({ ...roleName });
+    setFormData({
+      id: role.id,
+      code: role.code,
+      name: role.name,
+      description: role.description,
+      permissions: currentPermissions,
+      canApprove: role.canApprove,
+      canCreate: role.canCreate,
+      canView: role.canView,
+      category: role.category,
+      isActive: role.isActive,
+      relatedApprovalRole: role.relatedApprovalRole,
+    });
     setIsEditDialogOpen(true);
   };
 
@@ -276,6 +522,7 @@ export function RoleManagement({
     setIsDeleteDialogOpen(true);
   };
 
+  
   return (
     <>
       {loading ? (
@@ -388,14 +635,14 @@ export function RoleManagement({
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                      {propRoleCategory.map((role) => ( 
-                        <SelectItem 
-                          key={role.roleCategoryID}        // 
-                          value={role.name}      // 
-                        >
-                          {role.name}                      
+                    {propRoleCategory.map((role) => (
+                      <SelectItem
+                        key={role.roleCategoryID}        // 
+                        value={role.name}      // 
+                      >
+                        {role.name}
                       </SelectItem>
-                      ))}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -554,13 +801,33 @@ export function RoleManagement({
                   {isAddDialogOpen ? 'Add Custom Role' : 'Edit Role'}
                 </DialogTitle>
                 <DialogDescription>
-                  {isAddDialogOpen 
-                    ? 'Create a new custom role for specific organizational needs' 
+                  {isAddDialogOpen
+                    ? 'Create a new custom role for specific organizational needs'
                     : 'Edit custom role details'}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
+                {!isAddDialogOpen && (<div>
+                  <Label htmlFor="id">ID</Label>
+                  <Input
+                    id="id"
+                    value={formData.id || ''}
+                    disabled
+                  />
+                </div>
+                )}
+
+                {!isAddDialogOpen && (<div>
+                  <Label htmlFor="code">Code</Label>
+                  <Input
+                    id="code"
+                    value={formData.code || ''}
+                    disabled
+                  />
+                </div>
+                )}
+
                 <div>
                   <Label htmlFor="name">Role Name *</Label>
                   <Input
@@ -585,21 +852,21 @@ export function RoleManagement({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select 
-                      value={formData.category || 'Custom'} 
+                    <Select
+                      value={formData.category || 'Custom'}
                       onValueChange={(value) => setFormData({ ...formData, category: value as RoleDefinition['category'] })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {propRoleCategory.map((role) => ( 
-                            <SelectItem 
-                              key={role.roleCategoryID} 
-                              value={role.name} 
-                            >
-                              {role.name} 
-                            </SelectItem>
+                        {propRoleCategory.map((role) => (
+                          <SelectItem
+                            key={role.roleCategoryID}
+                            value={role.name}
+                          >
+                            {role.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -607,30 +874,30 @@ export function RoleManagement({
 
                   <div>
                     <Label htmlFor="approvalRole">Related Approval Role (Optional)</Label>
-                    <Select 
-                        value={formData.relatedApprovalRole || 'none'} 
-                        onValueChange={(value) => setFormData({ 
-                          ...formData, 
-                          relatedApprovalRole: value === 'none' ? undefined : value as ApprovalRole 
-                        })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Approval Role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Related Role</SelectItem>
-                          
-                          {propApprovalRole.map((roleName) => ( 
-                            <SelectItem 
-                              key={roleName.approvalRoleID} 
-                              value={roleName.name} 
-                            >
-                              {roleName.name} 
-                            </SelectItem>
-                          ))}
-                          
-                        </SelectContent>
-                      </Select>
+                    <Select
+                      value={formData.relatedApprovalRole || 'none'}
+                      onValueChange={(value) => setFormData({
+                        ...formData,
+                        relatedApprovalRole: value === 'none' ? undefined : value as ApprovalRole
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Approval Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Related Role</SelectItem>
+
+                        {propApprovalRole.map((roleName) => (
+                          <SelectItem
+                            key={roleName.approvalRoleID}
+                            value={roleName.name}
+                          >
+                            {roleName.name}
+                          </SelectItem>
+                        ))}
+
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -662,55 +929,73 @@ export function RoleManagement({
                 </div>
 
                 <div>
-    <Label className="mb-2 block">Permissions</Label>
-    <div className="border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
-    <div className="space-y-3">
-        
-        {propPermissionCategory.map(categoryObject => {
-            const categoryName = categoryObject.name; 
-            const categoryPerms = propPermissions.filter(
-                (p) => {
-                    const matches = p.category && p.category.toLowerCase() === categoryName.toLowerCase();
-                    if (!p.category) {
-                    }
-                    return matches;
-                }
-            );
+                  <Label className="mb-2 block">Permissions</Label>
+                  <div className="border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                    <div className="space-y-3">
 
-            if (categoryPerms.length === 0) return null;
-            
-            return (
-                <div key={categoryName} className="space-y-2">
-                        {/* Header Kategori */}
-                        <p className="text-sm text-gray-700 font-medium border-b border-gray-100 pb-1">{categoryName}</p>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                            {categoryPerms.map(perm => {
-                                const permissionIdStr = String(perm.permissionID); 
-                                
+                      {propPermissionCategory.map((categoryObject, index) => {
+                        const categoryName = categoryObject.name;
+                        const categoryPerms = propPermissions.filter(
+                          (p) => {
+                            const matches = p.category && p.category.toLowerCase() === categoryName.toLowerCase();
+                            if (!p.category) {
+                            }
+                            return matches;
+                          }
+                        );
+
+                        if (categoryPerms.length === 0) return null;
+
+                        const categoryPermIds = categoryPerms.map(p => String(p.permissionID));
+                        const currentPermissions = formData.permissions || [];
+                        const allCategoryPermsChecked = categoryPermIds.every(id => currentPermissions.includes(id));
+                        const indeterminate = !allCategoryPermsChecked && categoryPermIds.some(id => currentPermissions.includes(id));
+
+                        return (
+                          <div key={categoryName} className={`space-y-2 ${index > 0 ? 'mt-4 pt-4 border-t border-gray-100' : ''}`}>
+                            {/* Header Kategori */}
+                            <div className="flex items-center space-x-2 border-b border-gray-100 pb-1">
+                              <Checkbox
+                                id={`category-${categoryName}`}
+                                checked={allCategoryPermsChecked}
+                                // Properti `indeterminate` dari Shadcn UI untuk tampilan setengah centang
+                                {...(indeterminate ? { checked: 'indeterminate' } : {})}
+                                onCheckedChange={() => toggleCategoryPermissions(categoryPermIds)}
+                              />
+                              <Label
+                                htmlFor={`category-${categoryName}`}
+                                className="text-sm text-gray-700 font-medium cursor-pointer flex-1 font-bold"
+                              >
+                                {categoryName}
+                              </Label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              {categoryPerms.map(perm => {
+                                const permissionIdStr = String(perm.permissionID);
                                 return (
-                                    <div key={permissionIdStr} className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id={permissionIdStr}
-                                            checked={(formData.permissions || []).includes(permissionIdStr)}
-                                            onCheckedChange={() => togglePermission(permissionIdStr)}
-                                        />
-                                        <Label htmlFor={permissionIdStr} className="text-sm cursor-pointer">
-                                            {perm.name}
-                                        </Label>
-                                    </div>
+                                  <div key={permissionIdStr} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={permissionIdStr}
+                                      checked={currentPermissions.includes(permissionIdStr)}
+                                      onCheckedChange={() => togglePermission(permissionIdStr)}
+                                    />
+                                    <Label htmlFor={permissionIdStr} className="text-sm cursor-pointer">
+                                      {perm.name}
+                                    </Label>
+                                  </div>
                                 );
-                            })}
-                        </div>
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                );
-            })}
-        </div>
-    </div>
-    <p className="text-xs text-gray-600 mt-2">
-        Selected: {(formData.permissions || []).length} permission{(formData.permissions || []).length !== 1 ? 's' : ''}
-    </p>
-</div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Selected: {(formData.permissions || []).length} permission{(formData.permissions || []).length !== 1 ? 's' : ''}
+                  </p>
+                </div>
               </div>
 
               <DialogFooter>
@@ -741,7 +1026,7 @@ export function RoleManagement({
                   Detailed information about this role
                 </DialogDescription>
               </DialogHeader>
-              
+
               {selectedRole && (
                 <div className="space-y-4">
                   <div>
@@ -767,10 +1052,10 @@ export function RoleManagement({
                     <div>
                       <label className="text-sm text-gray-700">Type</label>
                       <div className="mt-1">
-                        <Badge 
+                        <Badge
                           variant="outline"
-                          className={selectedRole.isSystemGenerated 
-                            ? 'bg-gray-50 text-gray-700 border-gray-300' 
+                          className={selectedRole.isSystemGenerated
+                            ? 'bg-gray-50 text-gray-700 border-gray-300'
                             : 'bg-orange-50 text-orange-700 border-orange-300'
                           }
                         >
@@ -873,7 +1158,7 @@ export function RoleManagement({
                       <div className="flex items-start gap-2">
                         <Lock className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-blue-800">
-                          This is a system-generated role and cannot be edited or deleted. 
+                          This is a system-generated role and cannot be edited or deleted.
                           You can only activate or deactivate it.
                         </p>
                       </div>
@@ -888,7 +1173,7 @@ export function RoleManagement({
                 </Button>
                 {selectedRole && !selectedRole.isSystemGenerated && (
                   <>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
                         setIsDetailsOpen(false);
@@ -898,7 +1183,7 @@ export function RoleManagement({
                       <Pencil className="w-4 h-4 mr-2" />
                       Edit
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       className="text-red-600 hover:text-red-700"
                       onClick={() => {
@@ -912,7 +1197,7 @@ export function RoleManagement({
                   </>
                 )}
                 {selectedRole && (
-                  <Button 
+                  <Button
                     variant={selectedRole.isActive ? 'outline' : 'default'}
                     onClick={() => {
                       handleToggleStatus(selectedRole.id);
@@ -932,7 +1217,7 @@ export function RoleManagement({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Role</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete the role "{selectedRole?.name}"? 
+                  Are you sure you want to delete the role "{selectedRole?.name}"?
                   This action cannot be undone. Users with this role will need to be reassigned.
                 </AlertDialogDescription>
               </AlertDialogHeader>

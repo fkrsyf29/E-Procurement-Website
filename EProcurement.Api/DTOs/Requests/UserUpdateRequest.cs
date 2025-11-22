@@ -11,8 +11,9 @@
         public string Email { get; set; }
         public string Phone { get; set; }
         public bool IsActive { get; set; }
-        public string UpdatedBy { get; set; }
-        public bool IsDeleted { get; set; }
-        public string DeletedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+
+        public bool? IsDeleted { get; set; } = false;
+        public string? DeletedBy { get; set; }
     }
 }

@@ -26,17 +26,17 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
 
     try {
       const { token, user } = await loginUser(username, password);
-      localStorage.setItem('authToken', token); 
-      
-      onLogin(user);
-    } catch (err) {
-      console.error('Login API Error:', err);
-      setError(err instanceof Error ? err.message : 'Login gagal. Cek kredensial Anda.');
+      localStorage.setItem('authToken', token);
 
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      onLogin(user);
+    } catch (err) {
+      console.error('Login API Error:', err);
+      setError(err instanceof Error ? err.message : 'Login gagal. Cek kredensial Anda.');
+
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1e88e5] via-[#42a5f5] to-[#64b5f6] flex items-center justify-center p-4 relative overflow-hidden">
@@ -46,13 +46,13 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-cyan-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-4000"></div>
       </div>
-      
+
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-8 relative z-10 backdrop-blur-sm bg-opacity-95">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <img 
-              src={logoImage} 
-              alt="AlamTri Geo" 
+            <img
+              src={logoImage}
+              alt="AlamTri Geo"
               className="h-20 object-contain"
             />
           </div>
@@ -123,7 +123,7 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
               <div className="space-y-1 text-xs">
                 <div>
                   <span className="text-gray-600">Admin:</span>{' '}
-                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">dev36003</span> / 
+                  <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-[10px]">dev36003</span> /
                   <span className="font-mono bg-gray-100 px-1 py-0.5 rounded ml-1 text-[10px]">dev36003</span>
                 </div>
                 {/* <div>

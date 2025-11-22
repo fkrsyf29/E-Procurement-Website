@@ -7,7 +7,7 @@
             @DepartmentID, @Email, @Phone, @CreatedBy";
 
         public const string Update = @"EXEC sp_User_Update 
-            @UserID, @Name, @RoleID, 
+            @UserID, @Username, @Name, @RoleID, 
             @JobsiteID, @DepartmentID, @Email, @Phone, @IsActive,
             @UpdatedBy, @IsDeleted, @DeletedBy";
 
