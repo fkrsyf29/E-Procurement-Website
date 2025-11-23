@@ -73,6 +73,7 @@ builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IMatrixCategoryRepository, MatrixCategoryRepository>();
 builder.Services.AddScoped<IMatrixContractRepository, MatrixContractRepository>();
 builder.Services.AddScoped<IItemDefinitionRepository, ItemDefinitionRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
 // Base Dapper Repositories (Generic)
 builder.Services.AddScoped<IQueryRepository, DapperRepository>();
