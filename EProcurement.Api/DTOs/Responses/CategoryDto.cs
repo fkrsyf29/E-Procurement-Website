@@ -7,6 +7,8 @@
         public string Code { get; set; }
         public string Name { get; set; }
         public bool IsActive { get; set; }
+        public bool HasTor { get; set; }
+        public bool HasTer { get; set; }
     }
 
     public class ClassificationDto

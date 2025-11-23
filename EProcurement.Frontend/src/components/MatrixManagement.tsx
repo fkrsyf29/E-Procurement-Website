@@ -1,30 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { User } from '../types';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Save, X, Settings, ChevronRight, ChevronDown } from 'lucide-react';
-import { MatrixEntry, getAllMatrixEntries, createMatrixEntry, updateMatrixEntry, deleteMatrixEntry } from '../data/torterMatrix';
-import { getActiveTORDefinitions, getActiveTERDefinitions } from '../data/torterItemDefinitions';
+
+// --- API SERVICES ---
 import {
-  Category,
-  Classification,
-  SubClassification,
-  getAllCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  createClassification,
-  updateClassification,
-  deleteClassification,
-  createSubClassification,
-  updateSubClassification,
-  deleteSubClassification,
-} from '../data/categoryHierarchy';
+  fetchCategoryHierarchy,
+  createCategoryApi, updateCategoryApi, deleteCategoryApi, // Asumsi deleteCategoryApi ada (soft delete)
+  createClassificationApi, updateClassificationApi, deleteClassificationApi,
+  createSubClassificationApi, updateSubClassificationApi, deleteSubClassificationApi
+} from '../services/categoryApi';
+
+import { fetchAllItemDefinitions } from '../services/itemDefinitionApi';
+import { fetchMatrixBySubId, saveMatrixApi } from '../services/matrixApi';
+
+// --- TYPES ---
+import { CategoryDto, ClassificationDto, SubClassificationDto } from '../types/categoryTypes';
+import { ItemDefinition } from '../types/itemDefinitionTypes';
 
 interface MatrixManagementProps {
   user: User;
@@ -37,94 +35,104 @@ interface FormState {
   open: boolean;
   mode: 'add' | 'edit';
   level: HierarchyLevel;
-  parentCategory?: string;
-  parentClassification?: string;
-  data?: any;
+  parentCategoryID?: number;       // Changed to ID
+  parentClassificationID?: number; // Changed to ID
+  data?: any; // Holds the full DTO object being edited
 }
 
 export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixManagementProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [expandedClassifications, setExpandedClassifications] = useState<Set<string>>(new Set());
+  // Data State
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [itemDefinitions, setItemDefinitions] = useState<ItemDefinition[]>([]);
+
+  // UI State
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set()); // Changed to number (ID)
+  const [expandedClassifications, setExpandedClassifications] = useState<Set<number>>(new Set()); // Changed to number (ID)
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Form state
   const [formState, setFormState] = useState<FormState>({
     open: false,
     mode: 'add',
     level: 'category',
   });
-  
+
   // Form fields
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(''); // Optional, API might not save this in SubClass table, but in Matrix
   const [showInTOR, setShowInTOR] = useState(false);
   const [showInTER, setShowInTER] = useState(false);
-  
+
   // Dynamic item states for sub-classification TOR/TER mapping
   const [torItemStates, setTorItemStates] = useState<Record<string, boolean>>({});
   const [terItemStates, setTerItemStates] = useState<Record<string, boolean>>({});
-  
-  // Get dynamic definitions
-  const torDefinitions = getActiveTORDefinitions();
-  const terDefinitions = getActiveTERDefinitions();
-  
+  const [matrixFormDefaults, setMatrixFormDefaults] = useState<Record<string, { param: string, req: string, desc: string }>>({});
+
+  const userId = user?.username ?? 'SYSTEM';
+
+  // Get dynamic definitions from state
+  const torDefinitions = itemDefinitions.filter(i => i.category === 'tor' && i.isActive);
+  const terDefinitions = itemDefinitions.filter(i => i.category === 'ter' && i.isActive);
+
   useEffect(() => {
-    loadCategories();
-    initializeItemStates();
+    loadInitialData();
   }, []);
-  
-  const initializeItemStates = () => {
+
+  const loadInitialData = async () => {
+    try {
+      const [cats, items] = await Promise.all([
+        fetchCategoryHierarchy(),
+        fetchAllItemDefinitions()
+      ]);
+      setCategories(cats);
+      setItemDefinitions(items);
+      initializeItemStates(items);
+    } catch (error) {
+      toast.error("Failed to load data");
+    }
+  };
+
+  const initializeItemStates = (items: ItemDefinition[]) => {
     const torStates: Record<string, boolean> = {};
     const terStates: Record<string, boolean> = {};
-    
-    torDefinitions.forEach(def => {
+
+    items.filter(i => i.category === 'tor').forEach(def => {
       torStates[def.code] = false;
     });
-    
-    terDefinitions.forEach(def => {
+
+    items.filter(i => i.category === 'ter').forEach(def => {
       terStates[def.code] = false;
     });
-    
+
     setTorItemStates(torStates);
     setTerItemStates(terStates);
   };
-  
-  const loadCategories = () => {
-    const cats = getAllCategories();
-    setCategories(cats);
-  };
-  
-  const toggleCategory = (categoryCode: string) => {
+
+  const toggleCategory = (id: number) => {
     const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryCode)) {
-      newExpanded.delete(categoryCode);
-    } else {
-      newExpanded.add(categoryCode);
-    }
+    if (newExpanded.has(id)) newExpanded.delete(id);
+    else newExpanded.add(id);
     setExpandedCategories(newExpanded);
   };
-  
-  const toggleClassification = (classificationCode: string) => {
+
+  const toggleClassification = (id: number) => {
     const newExpanded = new Set(expandedClassifications);
-    if (newExpanded.has(classificationCode)) {
-      newExpanded.delete(classificationCode);
-    } else {
-      newExpanded.add(classificationCode);
-    }
+    if (newExpanded.has(id)) newExpanded.delete(id);
+    else newExpanded.add(id);
     setExpandedClassifications(newExpanded);
   };
-  
+
   const resetForm = () => {
     setCode('');
     setName('');
     setDescription('');
     setShowInTOR(false);
     setShowInTER(false);
-    initializeItemStates();
+    setMatrixFormDefaults({}); // Reset defaults
+    initializeItemStates(itemDefinitions);
   };
-  
+
   // Add handlers
   const handleAddCategory = () => {
     resetForm();
@@ -134,30 +142,30 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
       level: 'category',
     });
   };
-  
-  const handleAddClassification = (categoryCode: string) => {
+
+  const handleAddClassification = (categoryID: number) => {
     resetForm();
     setFormState({
       open: true,
       mode: 'add',
       level: 'classification',
-      parentCategory: categoryCode,
+      parentCategoryID: categoryID,
     });
   };
-  
-  const handleAddSubClassification = (categoryCode: string, classificationCode: string) => {
+
+  const handleAddSubClassification = (categoryID: number, classificationID: number) => {
     resetForm();
     setFormState({
       open: true,
       mode: 'add',
       level: 'subclassification',
-      parentCategory: categoryCode,
-      parentClassification: classificationCode,
+      parentCategoryID: categoryID,
+      parentClassificationID: classificationID,
     });
   };
-  
+
   // Edit handlers
-  const handleEditCategory = (category: Category) => {
+  const handleEditCategory = (category: CategoryDto) => {
     setCode(category.code);
     setName(category.name);
     setFormState({
@@ -167,206 +175,207 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
       data: category,
     });
   };
-  
-  const handleEditClassification = (categoryCode: string, classification: Classification) => {
+
+  const handleEditClassification = (categoryID: number, classification: ClassificationDto) => {
     setCode(classification.code);
     setName(classification.name);
     setFormState({
       open: true,
       mode: 'edit',
       level: 'classification',
-      parentCategory: categoryCode,
+      parentCategoryID: categoryID,
       data: classification,
     });
   };
-  
-  const handleEditSubClassification = (categoryCode: string, classificationCode: string, subClassification: SubClassification) => {
+
+  const handleEditSubClassification = async (categoryID: number, classificationID: number, subClassification: SubClassificationDto) => {
     setCode(subClassification.code);
     setName(subClassification.name);
-    
-    // Load TOR/TER data from matrix entries
-    const matrixEntries = getAllMatrixEntries();
-    const matrixEntry = matrixEntries.find(e => e.subClassificationCode === subClassification.code);
-    
-    if (matrixEntry) {
-      setDescription(matrixEntry.description);
-      setShowInTOR(matrixEntry.showInTOR);
-      setShowInTER(matrixEntry.showInTER);
-      
-      // Load TOR item states
+
+    // --- LOAD MATRIX DATA FROM API ---
+    try {
+      const matrixData = await fetchMatrixBySubId(subClassification.subClassificationID);
+
+      // Reset states
       const newTorStates: Record<string, boolean> = {};
-      torDefinitions.forEach(def => {
-        const value = matrixEntry.torItems?.[def.code as keyof typeof matrixEntry.torItems];
-        newTorStates[def.code] = value || false;
-      });
-      setTorItemStates(newTorStates);
-      
-      // Load TER item states
       const newTerStates: Record<string, boolean> = {};
-      terDefinitions.forEach(def => {
-        const value = matrixEntry.terItems?.[def.code as keyof typeof matrixEntry.terItems];
-        newTerStates[def.code] = value || false;
+      const newDefaults: Record<string, any> = {};
+
+      // Init all to false first
+      itemDefinitions.forEach(def => {
+        if (def.category === 'tor') newTorStates[def.code] = false;
+        if (def.category === 'ter') newTerStates[def.code] = false;
       });
+
+      // Map API data to form state
+      let hasTor = false;
+      let hasTer = false;
+
+      matrixData.forEach(entry => {
+        // Checkbox State
+        if (entry.itemCategory.toLowerCase() === 'tor') {
+          newTorStates[entry.itemCode] = true;
+          hasTor = true;
+        }
+        if (entry.itemCategory.toLowerCase() === 'ter') {
+          newTerStates[entry.itemCode] = true;
+          hasTer = true;
+        }
+
+        // Default Values (Description/Reqs)
+        // Note: Logic asli FE menyimpan deskripsi umum sub-class di 'description'
+        // Tapi struktur DB baru menyimpan per-item. 
+        // Kita ambil salah satu deskripsi item sebagai deskripsi umum jika perlu, 
+        // atau biarkan kosong jika kolom Description di SubClassification tidak ada di DB.
+        // Untuk form defaults:
+        // Kita tidak menyimpan default text di state FE asli Anda (hanya boolean), 
+        // tapi jika Anda ingin extend, datanya ada di `entry.defaultParameter`, dll.
+      });
+
+      setTorItemStates(newTorStates);
       setTerItemStates(newTerStates);
+      setShowInTOR(hasTor);
+      setShowInTER(hasTer);
+
+    } catch (error) {
+      console.error("Failed to fetch matrix", error);
+      toast.error("Failed to load matrix configuration");
     }
-    
+
     setFormState({
       open: true,
       mode: 'edit',
       level: 'subclassification',
-      parentCategory: categoryCode,
-      parentClassification: classificationCode,
+      parentCategoryID: categoryID,
+      parentClassificationID: classificationID,
       data: subClassification,
     });
   };
-  
-  // Delete handlers
-  const handleDeleteCategory = (category: Category) => {
+
+  // Delete handlers (Using Soft Delete API logic internally)
+  const handleDeleteCategory = async (category: CategoryDto) => {
     if (window.confirm(`Are you sure you want to delete category "${category.name}"? This will delete all its classifications and sub-classifications.`)) {
-      const success = deleteCategory(category.code);
-      if (success) {
+      // Simulasi delete via Update API (Soft Delete)
+      // Di real implementation, gunakan endpoint DELETE atau PUT dengan isDeleted=true
+      // Anggap deleteCategoryApi melakukan soft delete di BE
+      try {
+        // await deleteCategoryApi(category.categoryID); // Jika endpoint delete ada
+        // ATAU update status
+        await updateCategoryApi(category.categoryID, { ...category, isActive: false, isDeleted: true, deletedBy: userId });
         toast.success('Category deleted successfully');
-        loadCategories();
-      } else {
-        toast.error('Failed to delete category');
-      }
+        loadInitialData();
+      } catch (e) { toast.error('Failed to delete category'); }
     }
   };
-  
-  const handleDeleteClassification = (categoryCode: string, classification: Classification) => {
-    if (window.confirm(`Are you sure you want to delete classification "${classification.name}"? This will delete all its sub-classifications.`)) {
-      const success = deleteClassification(categoryCode, classification.code);
-      if (success) {
+
+  const handleDeleteClassification = async (categoryID: number, classification: ClassificationDto) => {
+    if (window.confirm(`Are you sure you want to delete classification "${classification.name}"?`)) {
+      try {
+        await updateClassificationApi(classification.classificationID, {
+          ...classification, categoryID, isActive: false, isDeleted: true, deletedBy: userId
+        });
         toast.success('Classification deleted successfully');
-        loadCategories();
-      } else {
-        toast.error('Failed to delete classification');
-      }
+        loadInitialData();
+      } catch (e) { toast.error('Failed to delete classification'); }
     }
   };
-  
-  const handleDeleteSubClassification = (categoryCode: string, classificationCode: string, subClassification: SubClassification) => {
+
+  const handleDeleteSubClassification = async (categoryID: number, classificationID: number, subClassification: SubClassificationDto) => {
     if (window.confirm(`Are you sure you want to delete sub-classification "${subClassification.name}"?`)) {
-      const success = deleteSubClassification(categoryCode, classificationCode, subClassification.code);
-      if (success) {
-        // Also delete matrix entry if exists
-        const matrixEntries = getAllMatrixEntries();
-        const matrixEntry = matrixEntries.find(e => e.subClassificationCode === subClassification.code);
-        if (matrixEntry) {
-          deleteMatrixEntry(matrixEntry.id);
-        }
-        
+      try {
+        await updateSubClassificationApi(subClassification.subClassificationID, {
+          ...subClassification, classificationID, isActive: false, isDeleted: true, deletedBy: userId
+        });
         toast.success('Sub-classification deleted successfully');
-        loadCategories();
-      } else {
-        toast.error('Failed to delete sub-classification');
-      }
+        loadInitialData();
+      } catch (e) { toast.error('Failed to delete sub-classification'); }
     }
   };
-  
+
   // Save handler
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!code || !name) {
       toast.error('Please fill in all required fields');
       return;
     }
-    
-    const { mode, level, parentCategory, parentClassification, data } = formState;
-    
+
+    const { mode, level, parentCategoryID, parentClassificationID, data } = formState;
+
     try {
       if (level === 'category') {
         if (mode === 'add') {
-          createCategory({ code, name });
+          await createCategoryApi({ code, name, user: userId });
           toast.success('Category created successfully');
         } else {
-          updateCategory(data.code, { code, name });
+          await updateCategoryApi(data.categoryID, { code, name, user: userId });
           toast.success('Category updated successfully');
         }
       } else if (level === 'classification') {
         if (mode === 'add') {
-          createClassification(parentCategory!, { code, name });
+          await createClassificationApi({ categoryID: parentCategoryID!, code, name, user: userId });
           toast.success('Classification created successfully');
         } else {
-          updateClassification(parentCategory!, data.code, { code, name });
+          await updateClassificationApi(data.classificationID, { categoryID: parentCategoryID, code, name, user: userId });
           toast.success('Classification updated successfully');
         }
       } else if (level === 'subclassification') {
-        if (!description) {
-          toast.error('Description is required for sub-classifications');
-          return;
-        }
-        
+
+        let subClassId = data?.subClassificationID;
+
+        // 1. Save Sub-Classification Metadata
         if (mode === 'add') {
-          createSubClassification(parentCategory!, parentClassification!, { code, name });
-          
-          // Create matrix entry
-          const torItems: any = {};
-          const terItems: any = {};
-          
-          Object.keys(torItemStates).forEach(itemCode => {
-            torItems[itemCode] = torItemStates[itemCode];
-          });
-          
-          Object.keys(terItemStates).forEach(itemCode => {
-            terItems[itemCode] = terItemStates[itemCode];
-          });
-          
-          createMatrixEntry({
-            subClassificationCode: code,
-            subClassificationName: name,
-            description,
-            showInTOR,
-            showInTER,
-            torItems,
-            terItems,
-          });
-          
+          const res = await createSubClassificationApi({ classificationID: parentClassificationID!, code, name, user: userId });
+          subClassId = res.id; // Asumsi API return { id: ... }
           toast.success('Sub-classification created successfully');
         } else {
-          updateSubClassification(parentCategory!, parentClassification!, data.code, { code, name });
-          
-          // Update matrix entry
-          const matrixEntries = getAllMatrixEntries();
-          const matrixEntry = matrixEntries.find(e => e.subClassificationCode === data.code);
-          
-          const torItems: any = {};
-          const terItems: any = {};
-          
-          Object.keys(torItemStates).forEach(itemCode => {
-            torItems[itemCode] = torItemStates[itemCode];
-          });
-          
-          Object.keys(terItemStates).forEach(itemCode => {
-            terItems[itemCode] = terItemStates[itemCode];
-          });
-          
-          if (matrixEntry) {
-            updateMatrixEntry(matrixEntry.id, {
-              subClassificationCode: code,
-              subClassificationName: name,
-              description,
-              showInTOR,
-              showInTER,
-              torItems,
-              terItems,
-            });
-          } else {
-            createMatrixEntry({
-              subClassificationCode: code,
-              subClassificationName: name,
-              description,
-              showInTOR,
-              showInTER,
-              torItems,
-              terItems,
-            });
-          }
-          
+          await updateSubClassificationApi(subClassId, { classificationID: parentClassificationID, code, name, user: userId });
           toast.success('Sub-classification updated successfully');
         }
+
+        // 2. Save Matrix Configuration (Bulk Save)
+        if (subClassId) {
+          const itemsToSave = [];
+
+          // Collect TOR items
+          for (const [itemCode, isChecked] of Object.entries(torItemStates)) {
+            if (isChecked) {
+              const def = itemDefinitions.find(d => d.code === itemCode && d.category === 'tor');
+              if (def) {
+                itemsToSave.push({
+                  itemDefinitionID: parseInt(def.id),
+                  defaultParameter: null, // Bisa diambil dari state form tambahan jika ada
+                  defaultRequirement: null,
+                  defaultDescription: null
+                });
+              }
+            }
+          }
+
+          // Collect TER items
+          for (const [itemCode, isChecked] of Object.entries(terItemStates)) {
+            if (isChecked) {
+              const def = itemDefinitions.find(d => d.code === itemCode && d.category === 'ter');
+              if (def) {
+                itemsToSave.push({
+                  itemDefinitionID: parseInt(def.id),
+                  defaultParameter: null,
+                  defaultRequirement: null,
+                  defaultDescription: null
+                });
+              }
+            }
+          }
+
+          // Call Save Matrix API
+          await saveMatrixApi({
+            subClassificationID: subClassId,
+            items: itemsToSave,
+            createdBy: userId
+          });
+        }
       }
-      
-      loadCategories();
+
+      loadInitialData();
       setFormState({ ...formState, open: false });
       resetForm();
     } catch (error) {
@@ -374,29 +383,23 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
       console.error(error);
     }
   };
-  
-  // Get matrix entry for sub-classification
-  const getMatrixEntry = (subClassificationCode: string): MatrixEntry | undefined => {
-    const matrixEntries = getAllMatrixEntries();
-    return matrixEntries.find(e => e.subClassificationCode === subClassificationCode);
-  };
-  
+
   // Filter function
-  const filterHierarchy = (cats: Category[]): Category[] => {
+  const filterHierarchy = (cats: CategoryDto[]): CategoryDto[] => {
     if (!searchTerm) return cats;
-    
+
     const term = searchTerm.toLowerCase();
-    
+
     return cats.map(cat => {
       const categoryMatch = cat.code.toLowerCase().includes(term) || cat.name.toLowerCase().includes(term);
-      
+
       const filteredClassifications = cat.classifications.map(cls => {
         const classificationMatch = cls.code.toLowerCase().includes(term) || cls.name.toLowerCase().includes(term);
-        
+
         const filteredSubClassifications = cls.subClassifications.filter(sub =>
           sub.code.toLowerCase().includes(term) || sub.name.toLowerCase().includes(term)
         );
-        
+
         if (classificationMatch || filteredSubClassifications.length > 0) {
           return {
             ...cls,
@@ -404,8 +407,8 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
           };
         }
         return null;
-      }).filter(Boolean) as Classification[];
-      
+      }).filter(Boolean) as ClassificationDto[];
+
       if (categoryMatch || filteredClassifications.length > 0) {
         return {
           ...cat,
@@ -413,11 +416,11 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
         };
       }
       return null;
-    }).filter(Boolean) as Category[];
+    }).filter(Boolean) as CategoryDto[];
   };
-  
+
   const filteredCategories = filterHierarchy(categories);
-  
+
   // Check if user is admin
   if (user.roleName !== 'Administrator') {
     return (
@@ -451,7 +454,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
           )}
         </div>
       </div>
-      
+
       {/* Actions Bar */}
       <div className="mb-6 flex justify-between items-center gap-4">
         <div className="flex-1 max-w-md">
@@ -466,7 +469,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
           Add Category
         </Button>
       </div>
-      
+
       {/* Hierarchical Matrix Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
@@ -491,16 +494,16 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                 </tr>
               ) : (
                 filteredCategories.map((category) => (
-                  <React.Fragment key={category.code}>
+                  <React.Fragment key={category.categoryID}>
                     {/* Category Row */}
                     <tr className="border-t hover:bg-gray-50">
                       <td className="px-4 py-3">
                         {category.classifications.length > 0 && (
                           <button
-                            onClick={() => toggleCategory(category.code)}
+                            onClick={() => toggleCategory(category.categoryID)}
                             className="p-1 hover:bg-gray-200 rounded"
                           >
-                            {expandedCategories.has(category.code) ? (
+                            {expandedCategories.has(category.categoryID) ? (
                               <ChevronDown className="w-4 h-4" />
                             ) : (
                               <ChevronRight className="w-4 h-4" />
@@ -522,7 +525,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleAddClassification(category.code)}
+                            onClick={() => handleAddClassification(category.categoryID)}
                             title="Add Classification"
                           >
                             <Plus className="w-4 h-4" />
@@ -545,18 +548,18 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                         </div>
                       </td>
                     </tr>
-                    
+
                     {/* Classification Rows */}
-                    {expandedCategories.has(category.code) && category.classifications.map((classification) => (
-                      <React.Fragment key={classification.code}>
+                    {expandedCategories.has(category.categoryID) && category.classifications.map((classification) => (
+                      <React.Fragment key={classification.classificationID}>
                         <tr className="border-t hover:bg-blue-50 bg-blue-25">
                           <td className="px-4 py-3 pl-12">
                             {classification.subClassifications.length > 0 && (
                               <button
-                                onClick={() => toggleClassification(classification.code)}
+                                onClick={() => toggleClassification(classification.classificationID)}
                                 className="p-1 hover:bg-gray-200 rounded"
                               >
-                                {expandedClassifications.has(classification.code) ? (
+                                {expandedClassifications.has(classification.classificationID) ? (
                                   <ChevronDown className="w-4 h-4" />
                                 ) : (
                                   <ChevronRight className="w-4 h-4" />
@@ -578,7 +581,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleAddSubClassification(category.code, classification.code)}
+                                onClick={() => handleAddSubClassification(category.categoryID, classification.classificationID)}
                                 title="Add Sub-classification"
                               >
                                 <Plus className="w-4 h-4" />
@@ -586,14 +589,14 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleEditClassification(category.code, classification)}
+                                onClick={() => handleEditClassification(category.categoryID, classification)}
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDeleteClassification(category.code, classification)}
+                                onClick={() => handleDeleteClassification(category.categoryID, classification)}
                                 className="text-red-600 hover:text-red-700"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -601,13 +604,14 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                             </div>
                           </td>
                         </tr>
-                        
+
                         {/* Sub-classification Rows */}
-                        {expandedClassifications.has(classification.code) && classification.subClassifications.map((subClassification) => {
-                          const matrixEntry = getMatrixEntry(subClassification.code);
-                          
+                        {expandedClassifications.has(classification.classificationID) && classification.subClassifications.map((subClassification) => {
+                          // Kita tidak memanggil getMatrixEntry disini untuk menghindari N+1 Query
+                          // Status TOR/TER di tabel dibiarkan "-" atau bisa diimplementasikan later
+
                           return (
-                            <tr key={subClassification.code} className="border-t hover:bg-green-50 bg-green-25">
+                            <tr key={subClassification.subClassificationID} className="border-t hover:bg-green-50 bg-green-25">
                               <td className="px-4 py-3 pl-20"></td>
                               <td className="px-4 py-3 text-sm text-gray-900">{subClassification.code}</td>
                               <td className="px-4 py-3 text-sm text-gray-900">{subClassification.name}</td>
@@ -617,17 +621,21 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-center">
-                                {matrixEntry?.showInTOR ? (
-                                  <span className="inline-block w-5 h-5 bg-green-500 rounded text-white text-xs leading-5">✓</span>
+                                {subClassification.hasTor ? (
+                                  <span className="inline-block w-5 h-5 bg-green-500 rounded text-white text-xs leading-5 flex items-center justify-center mx-auto">
+                                    ✓
+                                  </span>
                                 ) : (
-                                  <span className="inline-block w-5 h-5 bg-gray-300 rounded text-white text-xs leading-5">-</span>
+                                  <span className="inline-block w-5 h-5 bg-gray-300 rounded text-gray-500 text-xs leading-5">-</span>
                                 )}
                               </td>
                               <td className="px-4 py-3 text-center">
-                                {matrixEntry?.showInTER ? (
-                                  <span className="inline-block w-5 h-5 bg-green-500 rounded text-white text-xs leading-5">✓</span>
+                                {subClassification.hasTer ? (
+                                  <span className="inline-block w-5 h-5 bg-green-500 rounded text-white text-xs leading-5 flex items-center justify-center mx-auto">
+                                    ✓
+                                  </span>
                                 ) : (
-                                  <span className="inline-block w-5 h-5 bg-gray-300 rounded text-white text-xs leading-5">-</span>
+                                  <span className="inline-block w-5 h-5 bg-gray-300 rounded text-gray-500 text-xs leading-5">-</span>
                                 )}
                               </td>
                               <td className="px-4 py-3">
@@ -635,14 +643,14 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleEditSubClassification(category.code, classification.code, subClassification)}
+                                    onClick={() => handleEditSubClassification(category.categoryID, classification.classificationID, subClassification)}
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleDeleteSubClassification(category.code, classification.code, subClassification)}
+                                    onClick={() => handleDeleteSubClassification(category.categoryID, classification.classificationID, subClassification)}
                                     className="text-red-600 hover:text-red-700"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -661,7 +669,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
           </table>
         </div>
       </div>
-      
+
       {/* Form Dialog */}
       <Dialog open={formState.open} onOpenChange={(open) => setFormState({ ...formState, open })}>
         <DialogContent className={formState.level === 'subclassification' ? 'max-w-[90vw] w-[1000px] max-h-[90vh] overflow-y-auto' : ''}>
@@ -673,7 +681,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
               {formState.mode === 'add' ? 'Create a new' : 'Update'} {formState.level} entry
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="code">Code *</Label>
@@ -683,8 +691,8 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                 onChange={(e) => setCode(e.target.value)}
                 placeholder={
                   formState.level === 'category' ? 'e.g., M' :
-                  formState.level === 'classification' ? 'e.g., M.01' :
-                  'e.g., M.01.01'
+                    formState.level === 'classification' ? 'e.g., M.01' :
+                      'e.g., M.01.01'
                 }
               />
             </div>
@@ -696,29 +704,19 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                 onChange={(e) => setName(e.target.value)}
                 placeholder={
                   formState.level === 'category' ? 'e.g., M. Material - Goods' :
-                  formState.level === 'classification' ? 'e.g., M.01 Spareparts' :
-                  'e.g., M.01.01 Bearing'
+                    formState.level === 'classification' ? 'e.g., M.01 Spareparts' :
+                      'e.g., M.01.01 Bearing'
                 }
               />
             </div>
-            
+
             {/* Sub-classification specific fields */}
             {formState.level === 'subclassification' && (
               <>
-                <div>
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Enter detailed description..."
-                    rows={3}
-                  />
-                </div>
-                
                 {/* Display Settings */}
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="text-gray-900">TOR/TER Settings</h3>
+
                   <div className="flex gap-6">
                     <div className="flex items-center space-x-2">
                       <Checkbox
@@ -742,7 +740,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                     </div>
                   </div>
                 </div>
-                
+
                 {/* TOR Items - Dynamic */}
                 {showInTOR && (
                   <div className="space-y-4 bg-blue-50 p-4 rounded-lg">
@@ -774,7 +772,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
                     )}
                   </div>
                 )}
-                
+
                 {/* TER Items - Dynamic */}
                 {showInTER && (
                   <div className="space-y-4 bg-green-50 p-4 rounded-lg">
@@ -809,7 +807,7 @@ export function MatrixManagement({ user, onNavigateToItemDefinitions }: MatrixMa
               </>
             )}
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               variant="outline"

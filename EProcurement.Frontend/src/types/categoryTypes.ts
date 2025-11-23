@@ -4,6 +4,8 @@ export interface SubClassificationDto {
     code: string;
     name: string;
     isActive: boolean;
+    hasTor: boolean;
+    hasTer: boolean;
 }
 
 export interface ClassificationDto {
