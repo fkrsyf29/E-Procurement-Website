@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// ItemDefinitionsManagement.tsx
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -8,19 +9,16 @@ import { User } from '../types';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, FileText, Cog } from 'lucide-react';
 import {
-  TORItemDefinition,
-  TERItemDefinition,
-  getAllTORDefinitions,
-  getAllTERDefinitions,
-  createTORDefinition,
-  createTERDefinition,
-  updateTORDefinition,
-  updateTERDefinition,
-  deleteTORDefinition,
-  deleteTERDefinition,
-  reorderTORDefinitions,
-  reorderTERDefinitions,
-} from '../data/torterItemDefinitions';
+  fetchAllItemDefinitions,
+  createItemDefinition,
+  updateItemDefinition,
+  deleteItemDefinition,
+  reorderItemDefinitions,
+  getItemDefinitionById
+  // Tipe API data
+} from '../services/itemDefinitionApi';
+import { ItemCategory, ItemDefinition, ItemDefinitionApiData } from '../types/itemDefinitionTypes'
+
 
 interface ItemDefinitionsManagementProps {
   user: User;
@@ -28,171 +26,189 @@ interface ItemDefinitionsManagementProps {
 
 export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementProps) {
   const [activeTab, setActiveTab] = useState<'tor' | 'ter'>('tor');
-  const [torDefinitions, setTorDefinitions] = useState<TORItemDefinition[]>([]);
-  const [terDefinitions, setTERDefinitions] = useState<TERItemDefinition[]>([]);
+  const [allDefinitions, setAllDefinitions] = useState<ItemDefinition[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<TORItemDefinition | TERItemDefinition | null>(null);
-  
+  const [editingItem, setEditingItem] = useState<ItemDefinition | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   // Form fields
   const [code, setCode] = useState('');
   const [label, setLabel] = useState('');
   const [isActive, setIsActive] = useState(true);
-  
+
+  // Pisahkan definisi berdasarkan kategori untuk tampilan
+  const torDefinitions = useMemo(() =>
+    allDefinitions.filter(item => item.category === 'tor'),
+    [allDefinitions]
+  );
+  const terDefinitions = useMemo(() =>
+    allDefinitions.filter(item => item.category === 'ter'),
+    [allDefinitions]
+  );
+  console.warn('allDefinitions -> ',allDefinitions );
+  console.warn('torDefinitions -> ',torDefinitions );
+  console.warn('terDefinitions -> ', terDefinitions);
+
   useEffect(() => {
     loadDefinitions();
   }, []);
-  
-  const loadDefinitions = () => {
-    setTorDefinitions(getAllTORDefinitions());
-    setTERDefinitions(getAllTERDefinitions());
-  };
-  
-  const handleNewItem = (category: 'tor' | 'ter') => {
-    setActiveTab(category);
-    setEditingItem(null);
-    setCode('');
-    setLabel('');
-    setIsActive(true);
-    setShowForm(true);
-  };
-  
-  const handleEditItem = (item: TORItemDefinition | TERItemDefinition) => {
-    setEditingItem(item);
-    setActiveTab(item.category);
-    setCode(item.code);
-    setLabel(item.label);
-    setIsActive(item.isActive);
-    setShowForm(true);
-  };
-  
-  const handleDeleteItem = (item: TORItemDefinition | TERItemDefinition) => {
-    if (window.confirm(`Are you sure you want to delete "${item.label}"?`)) {
-      let success = false;
-      if (item.category === 'tor') {
-        success = deleteTORDefinition(item.id);
-      } else {
-        success = deleteTERDefinition(item.id);
-      }
+
+  const loadDefinitions = async () => {
+    setIsLoading(true);
+    try {
+        const definitions = await fetchAllItemDefinitions();
+        setAllDefinitions(definitions);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load definitions.';
+        toast.error(errorMessage);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleNewItem = (category: ItemCategory) => {
+    setActiveTab(category);
+    setEditingItem(null);
+    setCode('');
+    setLabel('');
+    setIsActive(true);
+    setShowForm(true);
+  };
+
+  const handleEditItem = (item: ItemDefinition) => {
+    setEditingItem(item);
+    setActiveTab(item.category);
+    setCode(item.code);
+    setLabel(item.label);
+    setIsActive(item.isActive);
+    setShowForm(true);
+  };
+
+  const handleDeleteItem = async (item: ItemDefinition) => {
+    if (window.confirm(`Are you sure you want to permanently delete (audit trail preserved) "${item.label}"? This action will disable the item.`)) {
       
-      if (success) {
-        toast.success('Item definition deleted successfully');
+      try {
+        const currentApiData: ItemDefinitionApiData = await getItemDefinitionById(item.id);
+
+        const updates = { 
+            isActive: false, 
+        }; 
+        
+        await updateItemDefinition(item.id, updates, currentApiData, user.username,true);
+
+        toast.success(`Item definition deleted (soft deleted) successfully.`);
         loadDefinitions();
-      } else {
-        toast.error('Failed to delete item definition');
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to execute permanent delete.';
+        toast.error(errorMessage);
       }
     }
-  };
-  
-  const handleSaveItem = () => {
-    if (!code || !label) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
-    // Validate code format (alphanumeric, camelCase recommended)
-    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(code)) {
-      toast.error('Code must be alphanumeric and start with a letter (e.g., performanceSpec)');
-      return;
-    }
-    
-    if (editingItem) {
-      // Update existing item
-      const updates = { code, label, isActive };
-      let success = null;
+};
+  
+  const handleSaveItem = async () => {
+    if (!code || !label) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(code)) {
+      toast.error('Code must be alphanumeric and start with a letter (e.g., performanceSpec)');
+      return;
+    }
+    
+    try {
+      if (editingItem) {
+        // UPDATE
+        const currentApiData: ItemDefinitionApiData = await getItemDefinitionById(editingItem.id);
+        const updates = { 
+            code, 
+            label, 
+            isActive, 
+            // Note: validationSource tidak ada di form, jadi diabaikan di sini
+        }; 
+        await updateItemDefinition(editingItem.id, updates, currentApiData, user.username,false);
+
+      } else {
+        // CREATE
+        const currentList = activeTab === 'tor' ? torDefinitions : terDefinitions;
+        const maxOrder = currentList.reduce((max, d) => Math.max(max, d.order), 0);
+        
+        const newOrder = maxOrder + 1;
+
+        const newDef = {
+            code,
+            label,
+            category: activeTab,
+            order: newOrder,
+            validationSource: null, // Asumsi default null
+        };
+        await createItemDefinition(newDef, user.username);
+      }
       
-      if (editingItem.category === 'tor') {
-        success = updateTORDefinition(editingItem.id, updates);
-      } else {
-        success = updateTERDefinition(editingItem.id, updates);
-      }
-      
-      if (success) {
-        toast.success('Item definition updated successfully');
-        loadDefinitions();
-        setShowForm(false);
-        resetForm();
-      } else {
-        toast.error('Failed to update item definition');
-      }
-    } else {
-      // Create new item
-      if (activeTab === 'tor') {
-        createTORDefinition(code, label);
-      } else {
-        createTERDefinition(code, label);
-      }
-      
-      toast.success('Item definition created successfully');
-      loadDefinitions();
-      setShowForm(false);
-      resetForm();
-    }
-  };
-  
+      loadDefinitions();
+      setShowForm(false);
+      resetForm();
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during save.';
+      toast.error(errorMessage);
+    }
+  };
+
   const resetForm = () => {
-    setCode('');
-    setLabel('');
-    setIsActive(true);
-    setEditingItem(null);
-  };
-  
-  const moveItemUp = (item: TORItemDefinition | TERItemDefinition) => {
-    if (item.category === 'tor') {
-      const sorted = [...torDefinitions];
-      const index = sorted.findIndex(d => d.id === item.id);
-      if (index > 0) {
-        [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
-        reorderTORDefinitions(sorted);
-        loadDefinitions();
-        toast.success('Order updated');
-      }
-    } else {
-      const sorted = [...terDefinitions];
-      const index = sorted.findIndex(d => d.id === item.id);
-      if (index > 0) {
-        [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
-        reorderTERDefinitions(sorted);
-        loadDefinitions();
-        toast.success('Order updated');
-      }
-    }
-  };
-  
-  const moveItemDown = (item: TORItemDefinition | TERItemDefinition) => {
-    if (item.category === 'tor') {
-      const sorted = [...torDefinitions];
-      const index = sorted.findIndex(d => d.id === item.id);
-      if (index < sorted.length - 1) {
-        [sorted[index], sorted[index + 1]] = [sorted[index + 1], sorted[index]];
-        reorderTORDefinitions(sorted);
-        loadDefinitions();
-        toast.success('Order updated');
-      }
-    } else {
-      const sorted = [...terDefinitions];
-      const index = sorted.findIndex(d => d.id === item.id);
-      if (index < sorted.length - 1) {
-        [sorted[index], sorted[index + 1]] = [sorted[index + 1], sorted[index]];
-        reorderTERDefinitions(sorted);
-        loadDefinitions();
-        toast.success('Order updated');
-      }
-    }
-  };
-  
-  const toggleActive = (item: TORItemDefinition | TERItemDefinition) => {
-    const updates = { isActive: !item.isActive };
+    setCode('');
+    setLabel('');
+    setIsActive(true);
+    setEditingItem(null);
+  };
+
+  const updateOrderInList = (list: ItemDefinition[], item: ItemDefinition, direction: 'up' | 'down'): ItemDefinition[] => {
+    const sorted = [...list].sort((a, b) => a.order - b.order);
+    const index = sorted.findIndex(d => d.id === item.id);
     
-    if (item.category === 'tor') {
-      updateTORDefinition(item.id, updates);
-    } else {
-      updateTERDefinition(item.id, updates);
-    }
+    if (index === -1) return list;
+
+    let newIndex = index + (direction === 'up' ? -1 : 1);
+    if (newIndex < 0 || newIndex >= sorted.length) return list;
+
+    // Swap elements
+    [sorted[index], sorted[newIndex]] = [sorted[newIndex], sorted[index]];
+
+    return sorted;
+};
+
+  const moveItem = async (item: ItemDefinition, direction: 'up' | 'down') => {
+    const currentList = item.category === 'tor' ? torDefinitions : terDefinitions;
+    const newOrderList = updateOrderInList(currentList, item, direction);
     
-    loadDefinitions();
-    toast.success(`Item ${item.isActive ? 'deactivated' : 'activated'}`);
+    try {
+        await reorderItemDefinitions(newOrderList, user.username);
+        loadDefinitions(); // Muat ulang data setelah reorder
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to reorder items.';
+        toast.error(errorMessage);
+        loadDefinitions(); // Muat ulang data lama jika gagal
+    }
   };
   
+  const moveItemUp = (item: ItemDefinition) => moveItem(item, 'up');
+  const moveItemDown = (item: ItemDefinition) => moveItem(item, 'down');
+
+  const toggleActive = async (item: ItemDefinition) => {
+    try {
+        const currentApiData: ItemDefinitionApiData = await getItemDefinitionById(item.id);
+        const updates = { isActive: !item.isActive };
+        
+        await updateItemDefinition(item.id, updates, currentApiData, user.username,false);
+        
+        loadDefinitions();
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update status.';
+        toast.error(errorMessage);
+    }
+  };
+
   // Check if user is admin
   if (user.roleName !== 'Administrator') {
     return (
@@ -204,6 +220,10 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
     );
   }
 
+  console.warn('activeTab -> ', activeTab);
+  const currentDefinitions = activeTab === 'tor' ? torDefinitions : terDefinitions;
+  console.warn('currentDefinitions -> ', currentDefinitions);
+
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -212,33 +232,31 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
           Manage the available item types for Terms of Reference (TOR) and Technical Evaluation Requirements (TER).
         </p>
       </div>
-      
+
       {/* Tabs */}
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('tor')}
-          className={`px-6 py-3 rounded-lg transition-all ${
-            activeTab === 'tor'
+          className={`px-6 py-3 rounded-lg transition-all ${activeTab === 'tor'
               ? 'bg-blue-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           <FileText className="w-4 h-4 inline-block mr-2" />
           TOR Items ({torDefinitions.length})
         </button>
         <button
           onClick={() => setActiveTab('ter')}
-          className={`px-6 py-3 rounded-lg transition-all ${
-            activeTab === 'ter'
+          className={`px-6 py-3 rounded-lg transition-all ${activeTab === 'ter'
               ? 'bg-green-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           <Cog className="w-4 h-4 inline-block mr-2" />
           TER Items ({terDefinitions.length})
         </button>
       </div>
-      
+
       {/* Add New Button */}
       <div className="mb-6">
         <Button
@@ -249,7 +267,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
           Add {activeTab === 'tor' ? 'TOR' : 'TER'} Item
         </Button>
       </div>
-      
+
       {/* Items List */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
@@ -264,14 +282,20 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
               </tr>
             </thead>
             <tbody>
-              {(activeTab === 'tor' ? torDefinitions : terDefinitions).length === 0 ? (
+              {currentDefinitions.length === 0 && !isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                     No {activeTab === 'tor' ? 'TOR' : 'TER'} item definitions found.
                   </td>
                 </tr>
-              ) : (
-                (activeTab === 'tor' ? torDefinitions : terDefinitions).map((item, index, array) => (
+              ) : isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    Loading data...
+                  </td>
+                </tr>
+              ) : (
+                currentDefinitions.map((item, index, array) => (
                   <tr key={item.id} className={`border-t hover:bg-gray-50 ${!item.isActive ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 text-sm text-gray-600">{item.order}</td>
                     <td className="px-4 py-3 text-sm">
@@ -330,7 +354,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
           </table>
         </div>
       </div>
-      
+
       {/* Info Box */}
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <h3 className="text-sm text-blue-900 mb-2">ℹ️ About Item Definitions</h3>
@@ -342,7 +366,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
           <li>Deleting an item will remove it from all future proposals, but won't affect existing data</li>
         </ul>
       </div>
-      
+
       {/* Item Definition Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-[600px]">
@@ -354,7 +378,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
               Define a new item type that will be available in the matrix configuration
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="code">Code (Unique Identifier) *</Label>
@@ -369,7 +393,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
                 Use camelCase, alphanumeric only. Cannot be changed after creation.
               </p>
             </div>
-            
+
             <div>
               <Label htmlFor="label">Label (Display Name) *</Label>
               <Input
@@ -382,7 +406,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
                 This is what users will see in forms.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="isActive"
@@ -394,7 +418,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
               </Label>
             </div>
           </div>
-          
+
           {/* Form Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button

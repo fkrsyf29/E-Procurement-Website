@@ -51,6 +51,7 @@ builder.Services.AddScoped<IRegionService, RegionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMatrixCategoryService, MatrixCategoryService>();
 builder.Services.AddScoped<IMatrixContractService, MatrixContractService>();
+builder.Services.AddScoped<IItemDefinitionService, ItemDefinitionService>();
 
 // ================================================
 // DAPPER FUNDAMENTALS
@@ -71,6 +72,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IMatrixCategoryRepository, MatrixCategoryRepository>();
 builder.Services.AddScoped<IMatrixContractRepository, MatrixContractRepository>();
+builder.Services.AddScoped<IItemDefinitionRepository, ItemDefinitionRepository>();
 
 // Base Dapper Repositories (Generic)
 builder.Services.AddScoped<IQueryRepository, DapperRepository>();

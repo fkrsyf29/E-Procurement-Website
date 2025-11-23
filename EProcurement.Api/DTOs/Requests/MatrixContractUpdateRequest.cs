@@ -20,7 +20,7 @@
         public string? DeletedBy { get; set; }  // <--- HARUS string? (Nullable)
     }
 
-    public class ReorderItemRequest
+    public class MatrixContractReorderItemRequest
     {
         public int MatrixContractID { get; set; }
         public int OrderNo { get; set; }
@@ -28,7 +28,7 @@
 
     public class MatrixContractReorderRequest
     {
-        public List<ReorderItemRequest> OrderItems { get; set; }
+        public List<MatrixContractReorderItemRequest> OrderItems { get; set; }
         public string UpdatedBy { get; set; }
     }
 }
