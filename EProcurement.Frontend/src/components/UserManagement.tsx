@@ -21,7 +21,6 @@ import {
 } from './ui/alert-dialog';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { mockUsers, mapApiUserToDefinition } from '../data/mockData';
 import { RoleDefinition, Departments, Jobsites, User } from '../types';
 import { toast } from 'sonner';
 import { fetchUserFromSSO, createApiUser, updateApiUser } from '../services/userApi';
@@ -77,8 +76,6 @@ function getRoleTotalCount(roles: RoleDefinition[]): number {
   return roles.length;
 }
 
-
-
 export function UserManagement({
   roles: propRoles,
   users: propUsers,
@@ -117,19 +114,15 @@ export function UserManagement({
     phone: '',
   });
 
-
   const [isFetchingUser, setIsFetchingUser] = useState(false);
   const [userFetched, setUserFetched] = useState(!!editingUser);
 
-  // Sorting state
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Pagination state
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Get active roles and statistics
   const activeRoles = useMemo(() => getActiveRolesFromProp(propRoles), [propRoles]);
   const roleStats = useMemo(() => getRoleStatisticsFromProp(propRoles), [propRoles]);
 
@@ -146,7 +139,6 @@ export function UserManagement({
     return roles;
   }, [propRoles, roleSearchTermForFilter]);
 
-  // Handle sorting
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -156,8 +148,6 @@ export function UserManagement({
     }
   };
 
-
-  // Search, filter, and sort users
   const filteredUsers = useMemo(() => {
     let filtered = users.filter(u => {
       const matchesSearch =
@@ -173,17 +163,14 @@ export function UserManagement({
       return matchesSearch && matchesRole && matchesDepartment && matchesJobsite;
     });
 
-    // Apply sorting if column is selected
     if (sortColumn) {
       filtered = [...filtered].sort((a, b) => {
         let aValue: any = a[sortColumn as keyof User];
         let bValue: any = b[sortColumn as keyof User];
 
-        // Handle undefined/null values
         if (!aValue) aValue = '';
         if (!bValue) bValue = '';
 
-        // Handle string comparison
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           aValue = aValue.toLowerCase();
           bValue = bValue.toLowerCase();
@@ -198,24 +185,19 @@ export function UserManagement({
     return filtered;
   }, [users, searchTerm, roleFilter, departmentFilter, jobsiteFilter, sortColumn, sortDirection]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
     return filteredUsers.slice(start, end);
   }, [filteredUsers, currentPage, pageSize]);
-
-  // Reset ke halaman 1 setiap kali filter/search/pageSize berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, roleFilter, departmentFilter, jobsiteFilter, pageSize]);
 
-  // Get roles for the role selector (filtered by search only)
   const rolesByCategory = useMemo(() => {
     let roles = activeRoles;
 
-    // Filter by search term only
     if (roleSearchTerm) {
       roles = roles.filter(r =>
         r.name.toLowerCase().includes(roleSearchTerm.toLowerCase()) ||
@@ -257,9 +239,7 @@ export function UserManagement({
     setShowForm(true);
   };
 
-
   const getCurrentUsername = (currentUser: User[]) => currentUser?.[0]?.username || 'System';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -268,7 +248,6 @@ export function UserManagement({
       return;
     }
 
-    // Validate Chief Operation role assignment
     if (formData.roleName.includes('Chief Operation')) {
       const jobsite = formData.jobsite;
       const validJobsitesForChiefOp = ['ADMO MINING', 'ADMO HAULING', 'MACO MINING', 'MACO HAULING', 'SERA'];
@@ -289,7 +268,7 @@ export function UserManagement({
       toast.error('Definisi peran tidak valid.');
       return;
     }
-    const roleID = parseInt(selectedRoleDef.id, 10); // Asumsi role.id di state adalah ID Numerik String
+    const roleID = parseInt(selectedRoleDef.id, 10); 
     const departmentID = selectedDepartment ? parseInt(selectedDepartment.departmentID, 10) : null;
     const jobsiteID = selectedJobsite ? parseInt(selectedJobsite.jobsiteID, 10) : null;
 
@@ -310,7 +289,7 @@ export function UserManagement({
         const newUserId = apiResponse.userId;
 
         const newUser: User = {
-          userID: String(newUserId), // Menggunakan ID baru dari API
+          userID: String(newUserId), 
           username: createPayload.username,
           name: createPayload.name,
           roleName: selectedRoleDef.name,
@@ -323,7 +302,7 @@ export function UserManagement({
 
         const updatedUsers = [...users, newUser];
         setUsers(updatedUsers);
-        onUpdateUsers(updatedUsers); // Panggil handler prop untuk update global
+        onUpdateUsers(updatedUsers); 
 
         toast.success(`Pengguna ${newUser.name} berhasil dibuat!`);
 
@@ -335,26 +314,24 @@ export function UserManagement({
     } else {
       const updatePayload: UpdateUserPayload = {
         userID: parseInt(editingUser.userID, 10),
-        username: formData.username, // Username mungkin tidak berubah, tapi tetap dikirim
+        username: formData.username,
         name: formData.name,
         roleID: roleID,
         jobsiteID: jobsiteID,
         departmentID: departmentID,
         email: formData.email,
         phone: formData.phone,
-        isActive: true, // Asumsi default active
+        isActive: true, 
         updatedBy: getCurrentUsername(currentUser),
         isDeleted: false,
         deletedBy: null,
       };
 
       try {
-        // Panggil API PUT
         const apiResponse = await updateApiUser(updatePayload);
 
-        // Buat objek User yang diperbarui untuk state lokal
         const updatedUser: User = {
-          ...editingUser, // Pertahankan properti lama (seperti ID, dll.)
+          ...editingUser, 
           username: updatePayload.username,
           name: updatePayload.name,
           roleName: selectedRoleDef.name,
@@ -362,7 +339,6 @@ export function UserManagement({
           department: selectedDepartment?.name,
           email: updatePayload.email,
           phone: updatePayload.phone,
-          // Properti lain yang mungkin ada: lastPasswordChange
         };
 
         const updatedUsers = users.map(u =>
@@ -424,7 +400,7 @@ export function UserManagement({
       const updatedUsers = users.filter(u => u.userID !== userToDelete.userID);
 
       setUsers(updatedUsers);
-      onUpdateUsers(updatedUsers); // Update global state
+      onUpdateUsers(updatedUsers); 
 
       toast.success(`Pengguna ${userToDelete.name} berhasil dihapus (soft delete).`);
       setDeletingUser(null);
@@ -470,7 +446,6 @@ export function UserManagement({
     }
   };
 
-  // Calculate user statistics
   const userStats = useMemo(() => {
     const safeUsers = Array.isArray(users) ? users : [];
     const safeRoles = Array.isArray(propRoles) ? propRoles : [];
@@ -484,14 +459,14 @@ export function UserManagement({
         const roleDef = safeRoles.find(r => r.name === u.roleName);
         return !!roleDef?.canApprove;
       }).length,
-      active: safeUsers.length, // atau tambah isLocked nanti
+      active: safeUsers.length,
     };
   }, [users, propRoles]);
 
   const resetAllFormStates = () => {
     setFormData({
-      id: '',        // <-- TAMBAHAN: Termasuk properti ID
-      code: '',      // <-- TAMBAHAN: Termasuk properti Code
+      id: '',
+      code: '',
       username: '',
       name: '',
       roleName: '' as any,
@@ -511,7 +486,6 @@ export function UserManagement({
   return (
     <>
       {loading ? (
-        // ── LOADING SCREEN ─────────────────────────────────────
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="flex flex-col items-center gap-6">
             <Loader2 className="w-16 h-16 animate-spin text-teal-600" />
@@ -640,7 +614,7 @@ export function UserManagement({
                             type="button"
                             onClick={(e) => {
                               setRoleSearchTermForFilter('');
-                              e.stopPropagation(); // Penting: mencegah klik menutup Select
+                              e.stopPropagation(); 
                             }}
                             className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 transition-colors"
                             title="Clear search"

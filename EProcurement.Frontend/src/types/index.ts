@@ -427,6 +427,15 @@ export interface Jobsites {
   createdBy: string;
 }
 
+export interface Regions {
+  regionID: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
 export interface ApprovalRoles {
   approvalRoleID: string;
   code: string;

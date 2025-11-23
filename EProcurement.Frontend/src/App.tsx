@@ -23,7 +23,7 @@ import { testProposals } from './data/testProposals';
 import { approvalMatrixData } from './data/approvalMatrix';
 import { defaultRoles } from './data/rolesData';
 import { getMaterials, addMaterial, updateMaterial, deleteMaterial, bulkAddMaterials } from './data/materialsData';
-import { User, Proposal, ApprovalMatrix, VendorRecommendation, Material } from './types';
+import { User, Proposal, ApprovalMatrix, VendorRecommendation, Material, Regions } from './types';
 import { ApprovalRoles, Departments, Jobsites, RoleDefinition,Permission,RoleCategories,PermissionCategories  } from '../types';
 import { initializeProposalHistory, getFirstApprovalStatus } from './utils/approvalHelper';
 import { fetchCurrentUser } from './services/userApi';
@@ -35,6 +35,7 @@ import { fetchApiApprovalRole } from './services/approvalRoleApi';
 import { fetchApiRoleCategory } from './services/roleCategoryApi';
 import { fetchApiPermissionCategory } from './services/permissionCategoryApi';
 import { fetchApiUsers } from './services/userApi';
+import { fetchApiRegion } from './services/regionApi';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -52,6 +53,7 @@ export default function App() {
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
   const [availableDepartments, setAvailableDepartments] = useState<Departments[]>([]);
   const [availableJobsites, setAvailableJobsites] = useState<Jobsites[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<Regions[]>([]);
   const [availableRoleCategories, setAvailableRoleCategories] = useState<RoleCategories[]>([]);
   const [availablePermissionCategories, setAvailablePermissionCategories] = useState<PermissionCategories[]>([]);
   const [availableApprovalRoles, setAvailableApprovalRoles] = useState<ApprovalRoles[]>([]);
@@ -77,6 +79,7 @@ export default function App() {
           const permissionsList : Permission[] | null = await fetchApiPermissions();
           const departmentList : Departments[] | null = await fetchApiDepartment();
           const jobsiteList : Jobsites[] | null = await fetchApiJobsite();
+          const regionList : Regions[] | null = await fetchApiRegion();
           const approvalRoleList : ApprovalRoles[] | null = await fetchApiApprovalRole();
           const roleCategoryList : RoleCategories[] | null = await fetchApiRoleCategory();
           const permissionCategoryList : PermissionCategories[] | null = await fetchApiPermissionCategory();
@@ -89,6 +92,7 @@ export default function App() {
             setAvailablePermissions(permissionsList || []);
             setAvailableDepartments(departmentList || []);
             setAvailableJobsites(jobsiteList || []);
+            setAvailableRegions(regionList || []);
             setAvailableApprovalRoles(approvalRoleList || []);
             setAvailablePermissionCategories(permissionCategoryList || []);
             setAvailableRoleCategories(roleCategoryList || []);
@@ -102,6 +106,7 @@ export default function App() {
             setAvailablePermissions([]);
             setAvailableDepartments([]);
             setAvailableJobsites([]);
+            setAvailableRegions([]);
             setAvailableApprovalRoles([]);
             setAvailablePermissionCategories([]);
             setAvailableRoleCategories([]);
@@ -535,6 +540,7 @@ export default function App() {
           roles={roles} 
           availableDepartments={availableDepartments} 
           availableJobsites={availableJobsites} 
+          availableRegions={availableRegions} 
           availableApprovalRoles={availableApprovalRoles}
           availablePermissionCategories={availablePermissionCategories}
           permissions={availablePermissions}
@@ -554,7 +560,7 @@ export default function App() {
       case 'category-management':
         return <CategoryManagement />;
       case 'matrix-contract':
-        return <MatrixContractManagement />;
+        return <MatrixContractManagement currentUser={currentUser} />;
       case 'annual-purchase-plan':
         return <AnnualPurchasePlan
           user={currentUser}

@@ -21,8 +21,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from './ui/alert-dialog';
-import { getRoleStatistics, ROLE_CONFIG } from '../data/rolesData';
-import { RoleDefinition, Permission, Departments, Jobsites, ApprovalRoles, PermissionCategories, RoleCategories, User } from '../types';
+import { ROLE_CONFIG } from '../data/rolesData';
+import { RoleDefinition, Permission, Departments, Jobsites, ApprovalRoles, PermissionCategories, RoleCategories, User, Regions } from '../types';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { createRoleApi, updateRoleApi } from '../services/roleApi';
@@ -34,11 +34,18 @@ interface RoleManagementProps {
   permissions: Permission[];
   availableDepartments: Departments[];
   availableJobsites: Jobsites[];
+  availableRegions: Regions[];
   availableApprovalRoles: ApprovalRoles[];
   availablePermissionCategories: PermissionCategories[];
   availableRoleCategories: RoleCategories[];
   onUpdateRoles: (roles: RoleDefinition[]) => void;
 }
+
+const CHIEF_OPERATIONS = [
+  { region: 'ADMO', description: 'Chief Operation for ADMO sites (ADMO MINING, ADMO HAULING)' },
+  { region: 'SERA', description: 'Chief Operation for SERA site' },
+  { region: 'MACO', description: 'Chief Operation for MACO sites (MACO MINING, MACO HAULING)' }
+];
 
 export function RoleManagement({
   currentUser: propCurrentUser,
@@ -46,6 +53,7 @@ export function RoleManagement({
   permissions: propPermissions,
   availableDepartments: propDepartment = [],
   availableJobsites: propJobsite = [],
+  availableRegions: propRegion = [],
   availableApprovalRoles: propApprovalRole = [],
   availablePermissionCategories: propPermissionCategory = [],
   availableRoleCategories: propRoleCategory = [],
@@ -92,8 +100,6 @@ export function RoleManagement({
     const foundPerm = permissions.find(p => p.name === name);
     return foundPerm ? String(foundPerm.permissionID) : undefined;
   };
-  const stats = useMemo(() => getRoleStatistics(roles), [roles]);
-
   const currentUserName = propCurrentUser?.username || 'System';
 
   const filteredRoles = useMemo(() => {
@@ -160,7 +166,7 @@ export function RoleManagement({
     )?.name || apiRole.relatedApprovalRole;
 
     return {
-      id: roleIdNumeric, // GUNAKAN String() untuk konversi yang aman
+      id: roleIdNumeric, 
       name: source.name || 'Unknown Role',
       description: source.description || '',
       permissions: mappedPermissions,
@@ -174,11 +180,6 @@ export function RoleManagement({
       category: categoryName as RoleDefinition['category'],
       relatedApprovalRole: approvalRoleName,
     };
-  };
-
-  const generateNewId = () => {
-    const maxId = Math.max(...roles.map(r => parseInt(r.id.replace('role_', '') || '0', 10)), 0);
-    return `role_${(maxId + 1).toString().padStart(6, '0')}`;
   };
 
   const resetForm = () => {
@@ -252,15 +253,13 @@ export function RoleManagement({
       return;
     }
 
-    // 1. Map Category Name ke ID
     const categoryName = formData.category || 'Custom';
     const roleCategory = propRoleCategory.find(c => c.name === categoryName);
-    const roleCategoryId = roleCategory?.roleCategoryID; // Ambil ID
+    const roleCategoryId = roleCategory?.roleCategoryID;
 
-    // 2. Map Related Approval Role Name ke ID
     const approvalRoleName = formData.relatedApprovalRole;
     const approvalRole = propApprovalRole.find(r => r.name === approvalRoleName);
-    const approvalRoleId = approvalRole?.approvalRoleID; // Ambil ID, bisa undefined/null
+    const approvalRoleId = approvalRole?.approvalRoleID;
 
     if (!roleCategoryId) {
       toast.error('Invalid Role Category selected.');
@@ -333,7 +332,6 @@ export function RoleManagement({
       permissionIds: formData.permissions || [],
       updatedBy: currentUserName,
 
-      // UPDATE: isDeleted harus FALSE
       isDeleted: false,
       deletedBy: currentUserName,
     };
@@ -374,34 +372,29 @@ export function RoleManagement({
   const handleDeleteRole = async () => {
     if (!selectedRole) return;
 
-
-    // 2. Tentukan ID Numerik (INT) untuk body payload
     const deletePayload = {
-      id: selectedRole.id, // URL: /Role/359
+      id: selectedRole.id, 
       name: selectedRole.name,
       description: selectedRole.description,
-      roleCategoryId: propRoleCategory.find(c => c.name === selectedRole.category)?.roleCategoryID || 0, // Ambil ID kategori lama
+      roleCategoryId: propRoleCategory.find(c => c.name === selectedRole.category)?.roleCategoryID || 0, 
       approvalRoleId: propApprovalRole.find(r => r.name === selectedRole.relatedApprovalRole)?.approvalRoleID,
       canApprove: selectedRole.canApprove,
       canCreate: selectedRole.canCreate,
       canView: selectedRole.canView,
-      isActive: false, // Peran yang dihapus harus nonaktif
+      isActive: false, 
       permissionIds: selectedRole.permissions || [],
-      updatedBy: currentUserName, // ID pengguna yang menghapus
+      updatedBy: currentUserName, 
 
-      // DELETE: isDeleted harus TRUE
       isDeleted: true,
-      deletedBy: currentUserName, // GANTI dengan ID pengguna nyata
+      deletedBy: currentUserName, 
     };
 
     try {
-      // Panggilan API untuk Soft Delete
       await updateRoleApi(
         deletePayload as any,
         mapApiRoleToDefinitionLocal
       );
 
-      // Sukses: Hapus dari state lokal
       const updated = roles.filter(r => r.id !== selectedRole.id);
       setRoles(updated);
       onUpdateRoles(updated);
@@ -440,7 +433,6 @@ export function RoleManagement({
       code: roleToUpdate.code,
       name: roleToUpdate.name,
       description: roleToUpdate.description,
-      // Ambil ID Category dan Approval Role dari data referensi
       roleCategoryId: propRoleCategory.find(c => c.name === roleToUpdate.category)?.roleCategoryID || 0,
       approvalRoleId: propApprovalRole.find(r => r.name === roleToUpdate.relatedApprovalRole)?.approvalRoleID,
 
@@ -448,8 +440,8 @@ export function RoleManagement({
       canCreate: roleToUpdate.canCreate,
       canView: roleToUpdate.canView,
 
-      isActive: newStatus, // Status BARU
-      isDeleted: false, // TIDAK DIHAPUS
+      isActive: newStatus, 
+      isDeleted: false,
 
       permissionIds: permissionIdsForApi,
       updatedBy: currentUserName,
@@ -521,7 +513,6 @@ export function RoleManagement({
     setSelectedRole(role);
     setIsDeleteDialogOpen(true);
   };
-
   
   return (
     <>
@@ -605,8 +596,8 @@ export function RoleManagement({
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Chief Operations ({ROLE_CONFIG.chiefOperations.length}):</p>
-                  <p className="text-gray-900">{ROLE_CONFIG.chiefOperations.map(co => co.region).join(', ')}</p>
+                  <p className="text-gray-600">Chief Operations ({propRegion.length}):</p>
+                  <p className="text-gray-900">{propRegion.map(region => region.name).join(', ')}</p>
                 </div>
               </div>
             </div>
@@ -637,8 +628,8 @@ export function RoleManagement({
                     <SelectItem value="all">All Categories</SelectItem>
                     {propRoleCategory.map((role) => (
                       <SelectItem
-                        key={role.roleCategoryID}        // 
-                        value={role.name}      // 
+                        key={role.roleCategoryID}        
+                        value={role.name}      
                       >
                         {role.name}
                       </SelectItem>
@@ -958,7 +949,6 @@ export function RoleManagement({
                               <Checkbox
                                 id={`category-${categoryName}`}
                                 checked={allCategoryPermsChecked}
-                                // Properti `indeterminate` dari Shadcn UI untuk tampilan setengah centang
                                 {...(indeterminate ? { checked: 'indeterminate' } : {})}
                                 onCheckedChange={() => toggleCategoryPermissions(categoryPermIds)}
                               />

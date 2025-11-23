@@ -22,24 +22,34 @@ import {
 } from './ui/dialog';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, GripVertical, AlertCircle } from 'lucide-react';
+import { MatrixContractCondition } from '../types/matrixContractTypes';
 import {
-  MatrixContractCondition,
-  getAllMatrixConditions,
-  addMatrixCondition,
-  updateMatrixCondition,
-  deleteMatrixCondition,
-  hardDeleteMatrixCondition,
-  reorderMatrixConditions,
-  isMatrixConditionCodeUnique,
-} from '../data/matrixContractConditions';
+  fetchAllMatrixConditions,
+  createMatrixCondition,
+  updateMatrixConditionApi,
+  reorderMatrixConditionsApi,
+  getMatrixConditionById,
+} from '../services/matrixContractApi';
+import { User } from '../types';
 
-export function MatrixContractManagement() {
+const isCodeUniqueClientSide = (conditions: MatrixContractCondition[], code: string, excludeId?: string): boolean => {
+  return !conditions.some(
+    condition => condition.code === code && condition.id !== excludeId
+  );
+};
+
+interface MatrixContractManagementProps {
+  currentUser: User | null;
+}
+
+export function MatrixContractManagement({ currentUser: propCurrentUser }: MatrixContractManagementProps) {
   const [conditions, setConditions] = useState<MatrixContractCondition[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCondition, setEditingCondition] = useState<MatrixContractCondition | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [conditionToDelete, setConditionToDelete] = useState<MatrixContractCondition | null>(null);
-  
+
   // Form state
   const [code, setCode] = useState('');
   const [label, setLabel] = useState('');
@@ -47,13 +57,23 @@ export function MatrixContractManagement() {
   const [isActive, setIsActive] = useState(true);
   const [order, setOrder] = useState(1);
 
+  const userId = propCurrentUser?.username ?? 'UNKNOWN_USER';
+
   useEffect(() => {
     loadConditions();
   }, []);
 
-  const loadConditions = () => {
-    const allConditions = getAllMatrixConditions();
-    setConditions(allConditions);
+  const loadConditions = async () => {
+    setIsLoading(true);
+    try {
+      const allConditions = await fetchAllMatrixConditions();
+      setConditions(allConditions);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load conditions.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const openAddDialog = () => {
@@ -62,7 +82,9 @@ export function MatrixContractManagement() {
     setLabel('');
     setDescription('');
     setIsActive(true);
-    setOrder(conditions.length + 1);
+    // Set order baru ke setelah order terakhir
+    const maxOrder = conditions.reduce((max, c) => Math.max(max, c.order), 0);
+    setOrder(maxOrder + 1);
     setIsDialogOpen(true);
   };
 
@@ -76,7 +98,7 @@ export function MatrixContractManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validation
     if (!code.trim()) {
       toast.error('Code is required');
@@ -87,46 +109,45 @@ export function MatrixContractManagement() {
       return;
     }
 
-    // Check code uniqueness
-    if (!isMatrixConditionCodeUnique(code, editingCondition?.id)) {
-      toast.error('Condition code already exists');
+    if (!isCodeUniqueClientSide(conditions, code, editingCondition?.id)) {
+      toast.error('Condition code already exists. Please use a unique code.');
       return;
     }
 
-    if (editingCondition) {
-      // Update existing condition
-      const success = updateMatrixCondition(editingCondition.id, {
-        code,
-        label,
-        description,
-        isActive,
-        order,
-      });
+    try {
+      if (editingCondition) {
 
-      if (success) {
+        const currentApiData = await getMatrixConditionById(editingCondition.id);
+        await updateMatrixConditionApi(editingCondition.id, {
+          code,
+          label,
+          description: description || null,
+          isActive,
+          order,
+          isSoftDelete: false,
+        }, currentApiData, userId);
+
         toast.success('Matrix condition updated successfully');
-        loadConditions();
-        setIsDialogOpen(false);
-      } else {
-        toast.error('Failed to update matrix condition');
-      }
-    } else {
-      // Add new condition
-      const newCondition = addMatrixCondition({
-        code,
-        label,
-        description,
-        isActive,
-        order,
-      });
 
-      if (newCondition) {
-        toast.success('Matrix condition added successfully');
-        loadConditions();
-        setIsDialogOpen(false);
       } else {
-        toast.error('Failed to add matrix condition');
+        const newConditionPayload = {
+          code,
+          label,
+          description: description || null,
+          isActive,
+          order,
+        };
+
+        await createMatrixCondition(newConditionPayload, userId);
+        toast.success('Matrix condition added successfully');
       }
+
+      loadConditions();
+      setIsDialogOpen(false);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      toast.error(errorMessage);
     }
   };
 
@@ -135,73 +156,88 @@ export function MatrixContractManagement() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDelete = (permanent: boolean = false) => {
+  const handleDelete = async (permanent: boolean) => {
     if (!conditionToDelete) return;
 
-    let success = false;
-    if (permanent) {
-      success = hardDeleteMatrixCondition(conditionToDelete.id);
-      if (success) {
-        toast.success('Matrix condition permanently deleted');
-      }
-    } else {
-      success = deleteMatrixCondition(conditionToDelete.id);
-      if (success) {
-        toast.success('Matrix condition deactivated');
-      }
-    }
+    const actionType = permanent ? 'permanentDelete' : 'deactivate'; 
+    const successMessage = permanent ? 
+        'Matrix condition marked for permanent deletion.' : 
+        'Matrix condition deactivated successfully.';
+    const failureMessage = permanent ? 
+        'Failed to mark condition for permanent deletion.' : 
+        'Failed to deactivate condition.';
 
-    if (success) {
+
+    try {
+      const currentApiData = await getMatrixConditionById(conditionToDelete.id);
+
+      await updateMatrixConditionApi(conditionToDelete.id, {
+        isActive: false,
+        actionType: actionType,
+      }, currentApiData, userId);
+
+      toast.success(successMessage);
+
       loadConditions();
       setIsDeleteDialogOpen(false);
       setConditionToDelete(null);
-    } else {
-      toast.error('Failed to delete matrix condition');
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : failureMessage;
+      toast.error(errorMessage);
     }
   };
 
-  const handleToggleActive = (condition: MatrixContractCondition) => {
-    const success = updateMatrixCondition(condition.id, {
-      isActive: !condition.isActive,
-    });
+  const handleToggleActive = async (condition: MatrixContractCondition) => {
+    try {
+      const newIsActive = !condition.isActive;
+      const currentApiData = await getMatrixConditionById(condition.id); // <-- Ambil data API saat ini
 
-    if (success) {
-      toast.success(`Matrix condition ${!condition.isActive ? 'activated' : 'deactivated'}`);
+      await updateMatrixConditionApi(condition.id, {
+        isActive: newIsActive,
+      }, currentApiData, userId);
+
+      toast.success(`Matrix condition ${newIsActive ? 'activated' : 'deactivated'}`);
       loadConditions();
-    } else {
-      toast.error('Failed to update status');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update status.';
+      toast.error(errorMessage);
     }
   };
 
-  const moveConditionUp = (condition: MatrixContractCondition) => {
-    if (condition.order === 1) return;
-    
+  const moveCondition = async (conditionToMove: MatrixContractCondition, direction: 'up' | 'down') => {
     const sortedConditions = [...conditions].sort((a, b) => a.order - b.order);
-    const currentIndex = sortedConditions.findIndex(c => c.id === condition.id);
-    
-    if (currentIndex > 0) {
-      const newOrder = [...sortedConditions];
-      [newOrder[currentIndex], newOrder[currentIndex - 1]] = [newOrder[currentIndex - 1], newOrder[currentIndex]];
-      
-      reorderMatrixConditions(newOrder.map(c => c.id));
+    const currentIndex = sortedConditions.findIndex(c => c.id === conditionToMove.id);
+
+    if (currentIndex === -1) return;
+
+    let targetIndex;
+    if (direction === 'up' && currentIndex > 0) {
+      targetIndex = currentIndex - 1;
+    } else if (direction === 'down' && currentIndex < sortedConditions.length - 1) {
+      targetIndex = currentIndex + 1;
+    } else {
+      return;
+    }
+
+    const newOrderArray = [...sortedConditions];
+    [newOrderArray[currentIndex], newOrderArray[targetIndex]] = [newOrderArray[targetIndex], newOrderArray[currentIndex]];
+
+    const newConditionIds = newOrderArray.map(c => c.id);
+
+    try {
+      await reorderMatrixConditionsApi(newConditionIds, userId);
+      toast.success('Order updated successfully');
       loadConditions();
-      toast.success('Order updated');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reorder.';
+      toast.error(errorMessage);
+      loadConditions();
     }
   };
 
-  const moveConditionDown = (condition: MatrixContractCondition) => {
-    const sortedConditions = [...conditions].sort((a, b) => a.order - b.order);
-    const currentIndex = sortedConditions.findIndex(c => c.id === condition.id);
-    
-    if (currentIndex < sortedConditions.length - 1) {
-      const newOrder = [...sortedConditions];
-      [newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]];
-      
-      reorderMatrixConditions(newOrder.map(c => c.id));
-      loadConditions();
-      toast.success('Order updated');
-    }
-  };
+  const moveConditionUp = (condition: MatrixContractCondition) => moveCondition(condition, 'up');
+  const moveConditionDown = (condition: MatrixContractCondition) => moveCondition(condition, 'down');
 
   return (
     <div className="space-y-6">
@@ -234,101 +270,109 @@ export function MatrixContractManagement() {
 
       {/* Matrix Conditions Table */}
       <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Order</TableHead>
-              <TableHead className="w-32">Code</TableHead>
-              <TableHead>Label</TableHead>
-              <TableHead className="w-40">Description</TableHead>
-              <TableHead className="w-24 text-center">Status</TableHead>
-              <TableHead className="w-40 text-center">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {conditions.length === 0 ? (
+        {/* Tampilkan Loading state */}
+        {isLoading ? (
+          <div className="p-8 text-center text-gray-500">
+            Loading conditions...
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                  No matrix conditions found. Add your first condition to get started.
-                </TableCell>
+                <TableHead className="w-12">Order</TableHead>
+                <TableHead className="w-32">Code</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead className="w-40">Description</TableHead>
+                <TableHead className="w-24 text-center">Status</TableHead>
+                <TableHead className="w-40 text-center">Actions</TableHead>
               </TableRow>
-            ) : (
-              conditions.map((condition) => (
-                <TableRow key={condition.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">{condition.order}</span>
-                      <div className="flex flex-col ml-1">
-                        <button
-                          onClick={() => moveConditionUp(condition)}
-                          disabled={condition.order === 1}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move up"
-                        >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => moveConditionDown(condition)}
-                          disabled={condition.order === conditions.length}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move down"
-                        >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {condition.code}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-md">
-                      <p className="text-sm text-gray-900">{condition.label}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-xs text-gray-600 line-clamp-2">
-                      {condition.description || '-'}
-                    </p>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={condition.isActive}
-                      onCheckedChange={() => handleToggleActive(condition)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(condition)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openDeleteDialog(condition)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {conditions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    No matrix conditions found. Add your first condition to get started.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                // Pastikan kondisi selalu di-sort berdasarkan 'order' untuk tampilan
+                conditions.map((condition) => (
+                  <TableRow key={condition.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">{condition.order}</span>
+                        <div className="flex flex-col ml-1">
+                          <button
+                            onClick={() => moveConditionUp(condition)}
+                            disabled={condition.order === 1}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => moveConditionDown(condition)}
+                            disabled={condition.order === conditions.length}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {condition.code}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-md">
+                        <p className="text-sm text-gray-900">{condition.label}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-xs text-gray-600 line-clamp-2">
+                        {condition.description || '-'}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={condition.isActive}
+                        onCheckedChange={() => handleToggleActive(condition)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(condition)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openDeleteDialog(condition)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog (Sama seperti sebelumnya) */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -416,30 +460,25 @@ export function MatrixContractManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog  */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Matrix Condition</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this condition?
+              Are you sure you want to proceed?
             </DialogDescription>
           </DialogHeader>
 
           {conditionToDelete && (
             <div className="py-4">
-              <div className="bg-gray-50 rounded-lg p-3 border">
-                <p className="text-sm">
-                  <strong>Code:</strong> {conditionToDelete.code}
-                </p>
-                <p className="text-sm mt-1">
-                  <strong>Label:</strong> {conditionToDelete.label}
-                </p>
-              </div>
+              {/* ... (Detail Kondisi) ... */}
 
               <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-sm text-yellow-900">
-                  <strong>Note:</strong> Deactivating will hide this condition from forms but keep the data. Permanent deletion will remove it completely.
+                  <strong>Note:</strong>
+                  Deactivate hanya menonaktifkan status `IsActive`.
+                  Permanent Delete (Soft Delete) akan menonaktifkan status **DAN** mengisi kolom `DeletedAt/DeletedBy` untuk tujuan audit.
                 </p>
               </div>
             </div>
@@ -454,14 +493,14 @@ export function MatrixContractManagement() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => handleDelete(false)}
+              onClick={() => handleDelete(false)} // false = Deactivate
               className="border-yellow-600 text-yellow-700 hover:bg-yellow-50"
             >
               Deactivate Only
             </Button>
             <Button
               variant="destructive"
-              onClick={() => handleDelete(true)}
+              onClick={() => handleDelete(true)} // true = Permanent Delete (Soft Delete Logis)
             >
               Permanent Delete
             </Button>

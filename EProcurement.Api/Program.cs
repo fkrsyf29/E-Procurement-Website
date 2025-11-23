@@ -47,7 +47,10 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IApprovalRoleService, ApprovalRoleService>();
 builder.Services.AddScoped<IPermissionCategoryService, PermissionCategoryService>();
 builder.Services.AddScoped<IRoleCategoryService, RoleCategoryService>();
+builder.Services.AddScoped<IRegionService, RegionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IMatrixCategoryService, MatrixCategoryService>();
+builder.Services.AddScoped<IMatrixContractService, MatrixContractService>();
 
 // ================================================
 // DAPPER FUNDAMENTALS
@@ -65,6 +68,9 @@ builder.Services.AddScoped<IPermissionCategoryRepository, PermissionCategoryRepo
 builder.Services.AddScoped<IRoleCategoryRepository, RoleCategoryRepository>();
 builder.Services.AddScoped<IApprovalRoleRepository, ApprovalRoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IMatrixCategoryRepository, MatrixCategoryRepository>();
+builder.Services.AddScoped<IMatrixContractRepository, MatrixContractRepository>();
 
 // Base Dapper Repositories (Generic)
 builder.Services.AddScoped<IQueryRepository, DapperRepository>();
