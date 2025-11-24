@@ -8,18 +8,18 @@ using System.Data;
 namespace EProcurement.Api.Repositories.Implementations
 {
     // INTERFACE
-    public interface IMatrixRepository
+    public interface ITorTerMatrixRepository
     {
         Task<IEnumerable<MatrixAssignmentDto>> GetBySubClassificationAsync(int subClassificationId);
-        Task SaveMatrixAsync(MatrixSaveRequest req);
+        Task SaveMatrixAsync(TorTerMatrixSaveRequest req);
     }
 
     // IMPLEMENTATION
-    public class MatrixRepository : DapperRepository, IMatrixRepository
+    public class TorTerMatrixRepository : DapperRepository, ITorTerMatrixRepository
     {
         private readonly DbConnectionFactory _connectionFactory;
 
-        public MatrixRepository(DbConnectionFactory connectionFactory) : base(connectionFactory)
+        public TorTerMatrixRepository(DbConnectionFactory connectionFactory) : base(connectionFactory)
         {
             _connectionFactory = connectionFactory;
         }
@@ -27,12 +27,12 @@ namespace EProcurement.Api.Repositories.Implementations
         public async Task<IEnumerable<MatrixAssignmentDto>> GetBySubClassificationAsync(int subClassificationId)
         {
             return await QueryAsync<MatrixAssignmentDto>(
-                "EXEC SP_Matrix_GetBySubClassification @SubClassificationID",
+                "EXEC SP_TorTerMatrix_GetBySubClassification @SubClassificationID",
                 new { SubClassificationID = subClassificationId }
             );
         }
 
-        public async Task SaveMatrixAsync(MatrixSaveRequest req)
+        public async Task SaveMatrixAsync(TorTerMatrixSaveRequest req)
         {
             var table = new DataTable();
             table.Columns.Add("ItemDefinitionID", typeof(int));
@@ -50,7 +50,7 @@ namespace EProcurement.Api.Repositories.Implementations
             parameters.Add("@ItemList", table.AsTableValuedParameter("dbo.MatrixAssignmentType"));
             parameters.Add("@CreatedBy", req.CreatedBy);
 
-            await ExecuteAsync("EXEC SP_Matrix_Save @SubClassificationID, @ItemList, @CreatedBy", parameters);
+            await ExecuteAsync("EXEC SP_TorTerMatrix_Save @SubClassificationID, @ItemList, @CreatedBy", parameters);
         }
     }
 }

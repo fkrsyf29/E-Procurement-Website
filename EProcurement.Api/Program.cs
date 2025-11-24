@@ -37,22 +37,71 @@ builder.Services.Configure<SoapConfig>(builder.Configuration.GetSection("SOAP"))
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // ================================================
-// DEPENDENCY INJECTION — SERVICES (Business Logic)
+// DEPENDENCY INJECTION — REPOSITORIES & SERVICES
 // ================================================
-builder.Services.AddScoped<ISsoService, SsoService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-builder.Services.AddScoped<IJobsiteService, JobsiteService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
+
+// ---- Approval Matrix
+builder.Services.AddScoped<IApprovalMatrixRepository, ApprovalMatrixRepository>();
+builder.Services.AddScoped<IApprovalMatrixService, ApprovalMatrixService>();
+
+// ---- Approval Role
+builder.Services.AddScoped<IApprovalRoleRepository, ApprovalRoleRepository>();
 builder.Services.AddScoped<IApprovalRoleService, ApprovalRoleService>();
-builder.Services.AddScoped<IPermissionCategoryService, PermissionCategoryService>();
-builder.Services.AddScoped<IRoleCategoryService, RoleCategoryService>();
-builder.Services.AddScoped<IRegionService, RegionService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IMatrixCategoryService, MatrixCategoryService>();
-builder.Services.AddScoped<IMatrixContractService, MatrixContractService>();
+
+// ---- Category Management
+builder.Services.AddScoped<ICategoryManagementRepository, CategoryManagementRepository>();
+builder.Services.AddScoped<ICategoryManagementService, CategoryManagementService>();
+
+// ---- Department
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+
+// ---- Item Definition
+builder.Services.AddScoped<IItemDefinitionRepository, ItemDefinitionRepository>();
 builder.Services.AddScoped<IItemDefinitionService, ItemDefinitionService>();
-builder.Services.AddScoped<IMatrixService, MatrixService>();
+
+// ---- Jobsite
+builder.Services.AddScoped<IJobsiteRepository, JobsiteRepository>();
+builder.Services.AddScoped<IJobsiteService, JobsiteService>();
+
+// ---- Matrix
+builder.Services.AddScoped<ITorTerMatrixRepository, TorTerMatrixRepository>();
+builder.Services.AddScoped<ITorTerMatrixService, TorTerMatrixService>();
+
+// ---- Matrix Category
+builder.Services.AddScoped<IMatrixCategoryRepository, MatrixCategoryRepository>();
+builder.Services.AddScoped<IMatrixCategoryService, MatrixCategoryService>();
+
+// ---- Matrix Contract
+builder.Services.AddScoped<IMatrixContractRepository, MatrixContractRepository>();
+builder.Services.AddScoped<IMatrixContractService, MatrixContractService>();
+
+// ---- Permission
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+
+// ---- Permission Category
+builder.Services.AddScoped<IPermissionCategoryRepository, PermissionCategoryRepository>();
+builder.Services.AddScoped<IPermissionCategoryService, PermissionCategoryService>();
+
+// ---- Region
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IRegionService, RegionService>();
+
+// ---- Role
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+
+// ---- Role Category
+builder.Services.AddScoped<IRoleCategoryRepository, RoleCategoryRepository>();
+builder.Services.AddScoped<IRoleCategoryService, RoleCategoryService>();
+
+// ---- SSO
+builder.Services.AddScoped<ISsoService, SsoService>();
+
+// ---- User
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // ================================================
 // DAPPER FUNDAMENTALS
@@ -61,23 +110,7 @@ builder.Services.AddScoped<IMatrixService, MatrixService>();
 // Connection Factory
 builder.Services.AddSingleton<DbConnectionFactory>();
 
-// Repository Specific
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-builder.Services.AddScoped<IJobsiteRepository, JobsiteRepository>();
-builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
-builder.Services.AddScoped<IPermissionCategoryRepository, PermissionCategoryRepository>();
-builder.Services.AddScoped<IRoleCategoryRepository, RoleCategoryRepository>();
-builder.Services.AddScoped<IApprovalRoleRepository, ApprovalRoleRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRegionRepository, RegionRepository>();
-builder.Services.AddScoped<IMatrixCategoryRepository, MatrixCategoryRepository>();
-builder.Services.AddScoped<IMatrixContractRepository, MatrixContractRepository>();
-builder.Services.AddScoped<IItemDefinitionRepository, ItemDefinitionRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IMatrixRepository, MatrixRepository>();
-
-// Base Dapper Repositories (Generic)
+// Generic Dapper Repositories
 builder.Services.AddScoped<IQueryRepository, DapperRepository>();
 builder.Services.AddScoped<ICommandRepository, DapperRepository>();
 
@@ -86,7 +119,6 @@ builder.Services.AddScoped<ICommandRepository, DapperRepository>();
 // ================================================
 Dapper.SqlMapper.AddTypeHandler(new CsvToIntListHandler());
 Dapper.SqlMapper.AddTypeHandler(new CsvToStringListHandler());
-
 
 // ================================================
 // BUILD APP
@@ -108,7 +140,6 @@ else
     app.UseHsts();
 }
 
-// Security Middleware
 app.UseHttpsRedirection();
 app.UseAuthorization();
 

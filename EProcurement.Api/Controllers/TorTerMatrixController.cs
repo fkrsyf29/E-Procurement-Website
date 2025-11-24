@@ -7,11 +7,11 @@ namespace EProcurement.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MatrixController : ControllerBase
+    public class TorTerMatrixController : ControllerBase
     {
-        private readonly IMatrixService _service;
+        private readonly ITorTerMatrixService _service;
 
-        public MatrixController(IMatrixService service)
+        public TorTerMatrixController(ITorTerMatrixService service)
         {
             _service = service;
         }
@@ -24,7 +24,7 @@ namespace EProcurement.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveMatrix(MatrixSaveRequest req)
+        public async Task<IActionResult> SaveMatrix(TorTerMatrixSaveRequest req)
         {
             try
             {

@@ -1,6 +1,6 @@
 ﻿namespace EProcurement.Api.DTOs.Requests
 {
-    public class CategoryEntityRequest
+    public class CategoryManagementEntityRequest
     {
         public string Code { get; set; }
         public string Name { get; set; }
@@ -12,30 +12,30 @@
         public string? DeletedBy { get; set; }
     }
 
-    public class CategoryCreateRequest : CategoryEntityRequest { }
-    public class CategoryUpdateRequest : CategoryEntityRequest
+    public class CategoryManagementCreateRequest : CategoryManagementEntityRequest { }
+    public class CategoryManagementUpdateRequest : CategoryManagementEntityRequest
     {
         public int CategoryID { get; set; }
     }
 
-    public class ClassificationCreateRequest : CategoryEntityRequest
+    public class ClassificationCreateRequest : CategoryManagementEntityRequest
     {
         public int CategoryID { get; set; }
     }
 
-    public class ClassificationUpdateRequest : CategoryEntityRequest
+    public class ClassificationUpdateRequest : CategoryManagementEntityRequest
     {
         public int ClassificationID { get; set; }
         public int CategoryID { get; set; }
     }
 
 
-    public class SubClassificationCreateRequest : CategoryEntityRequest
+    public class SubClassificationCreateRequest : CategoryManagementEntityRequest
     {
         public int ClassificationID { get; set; }
     }
 
-    public class SubClassificationUpdateRequest : CategoryEntityRequest
+    public class SubClassificationUpdateRequest : CategoryManagementEntityRequest
     {
         public int SubClassificationID { get; set; }
         public int ClassificationID { get; set; }

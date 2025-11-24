@@ -37,14 +37,16 @@ interface CategoryManagementProps {
   currentUser: User | null;
 }
 
-export function CategoryManagement({ currentUser }: CategoryManagementProps) {
+export function CategoryManagement({ 
+  currentUser: propCurrentUser
+}: CategoryManagementProps) {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   const [expandedClassifications, setExpandedClassifications] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const userId = currentUser?.username ?? 'SYSTEM';
+  const userId = propCurrentUser?.username ?? 'SYSTEM';
   
   // Dialog states
   const [showDialog, setShowDialog] = useState(false);

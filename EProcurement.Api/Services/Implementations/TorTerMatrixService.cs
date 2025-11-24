@@ -7,23 +7,23 @@ using EProcurement.Api.Services.Interfaces;
 namespace EProcurement.Api.Services.Implementations
 {
     // INTERFACE
-    public interface IMatrixService
+    public interface ITorTerMatrixService
     {
         Task<IEnumerable<MatrixAssignmentDto>> GetBySubClassificationAsync(int subClassificationId);
-        Task SaveMatrixAsync(MatrixSaveRequest req);
+        Task SaveMatrixAsync(TorTerMatrixSaveRequest req);
     }
 
     // IMPLEMENTATION
-    public class MatrixService : IMatrixService
+    public class TorTerMatrixService : ITorTerMatrixService
     {
-        private readonly IMatrixRepository _repo;
+        private readonly ITorTerMatrixRepository _repo;
 
-        public MatrixService(IMatrixRepository repo)
+        public TorTerMatrixService(ITorTerMatrixRepository repo)
         {
             _repo = repo;
         }
 
         public Task<IEnumerable<MatrixAssignmentDto>> GetBySubClassificationAsync(int id) => _repo.GetBySubClassificationAsync(id);
-        public Task SaveMatrixAsync(MatrixSaveRequest req) => _repo.SaveMatrixAsync(req);
+        public Task SaveMatrixAsync(TorTerMatrixSaveRequest req) => _repo.SaveMatrixAsync(req);
     }
 }

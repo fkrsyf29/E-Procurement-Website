@@ -4,14 +4,14 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 // --- FETCH ---
 export async function fetchCategoryHierarchy(): Promise<CategoryDto[]> {
-    const response = await fetch(`${API_BASE}/Category/Hierarchy`);
+    const response = await fetch(`${API_BASE}/CategoryManagement/Hierarchy`);
     if (!response.ok) throw new Error('Failed to fetch category hierarchy');
     return response.json();
 }
 
 // --- CATEGORY ---
 export async function createCategoryApi(data: { code: string, name: string, user: string }) {
-    const response = await fetch(`${API_BASE}/Category/Category`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/Category`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -21,7 +21,7 @@ export async function createCategoryApi(data: { code: string, name: string, user
 }
 
 export async function updateCategoryApi(id: number, data: any) { // data includes isActive, isDeleted etc
-    const response = await fetch(`${API_BASE}/Category/Category/${id}`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/Category/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -32,7 +32,7 @@ export async function updateCategoryApi(id: number, data: any) { // data include
 
 // --- CLASSIFICATION ---
 export async function createClassificationApi(data: { categoryID: number, code: string, name: string, user: string }) {
-    const response = await fetch(`${API_BASE}/Category/Classification`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/Classification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -42,7 +42,7 @@ export async function createClassificationApi(data: { categoryID: number, code: 
 }
 
 export async function updateClassificationApi(id: number, data: any) {
-    const response = await fetch(`${API_BASE}/Category/Classification/${id}`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/Classification/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -53,7 +53,7 @@ export async function updateClassificationApi(id: number, data: any) {
 
 // --- SUBCLASSIFICATION ---
 export async function createSubClassificationApi(data: { classificationID: number, code: string, name: string, user: string }) {
-    const response = await fetch(`${API_BASE}/Category/SubClassification`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/SubClassification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -63,7 +63,7 @@ export async function createSubClassificationApi(data: { classificationID: numbe
 }
 
 export async function updateSubClassificationApi(id: number, data: any) {
-    const response = await fetch(`${API_BASE}/Category/SubClassification/${id}`, {
+    const response = await fetch(`${API_BASE}/CategoryManagement/SubClassification/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

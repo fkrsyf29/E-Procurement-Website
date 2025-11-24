@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { ApprovalMatrix, ApprovalStep, Department, Jobsite, ApprovalRole } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -32,291 +31,298 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { toast } from 'sonner';
+// IMPORTS TYPES & API
+import { ApprovalMatrixDto, ApprovalStepRequest, ApprovalMatrixSaveRequest } from '../types/approvalMatrixTypes';
+import { Departments, Jobsites, ApprovalRoles, User } from '../types';
+import { fetchApprovalMatrices, saveApprovalMatrix, deleteApprovalMatrix } from '../services/approvalMatrixApi';
 
 interface ApprovalMatrixManagementProps {
-  matrices: ApprovalMatrix[];
-  onUpdateMatrices: (matrices: ApprovalMatrix[]) => void;
+  user: User;
+  departments: Departments[];
+  jobsites: Jobsites[];
+  roles: ApprovalRoles[];
 }
 
-const DEPARTMENTS: Department[] = ['Plant', 'Logistic', 'HR', 'GA', 'SHE', 'Finance', 'Production', 'Engineering'];
-const JOBSITES: Jobsite[] = ['ADMO MINING', 'ADMO HAULING', 'SERA', 'MACO MINING', 'MACO HAULING', 'JAHO', 'NARO'];
-const APPROVAL_ROLES: ApprovalRole[] = [
-  'UH User',
-  'SH User',
-  'Manager Site',
-  'DH User',
-  'DIV User',
-  'Chief Operation Site',
-  'Dir User',
-  'President Director',
-  'Chief Operational Site',
-];
+const STEP_NAMES = ['Verificator', 'Viewer 1', 'Viewer 2', 'Approval 1', 'Approval 2', 'Approval 3', 'Approval 4'];
 
-const STEP_NAMES = ['Verificator', 'Viewer 1', 'Viewer 2', 'Approval 1', 'Approval 2'];
+// Form Data Interface (State Lokal Form)
+interface MatrixFormData {
+  matrixID?: number;
+  departmentID: string;
+  jobsiteID: string;
+  amountMin: number;
+  amountMax: number | null;
+  groupName: string;
+  steps: {
+    tempId: number;
+    stepName: string;
+    approvalRoleID: string;
+  }[];
+}
 
 type SortField = 'department' | 'jobsite' | 'amountMin' | 'group';
 type SortDirection = 'asc' | 'desc';
 
-export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: ApprovalMatrixManagementProps) {
+export function ApprovalMatrixManagement({ user, departments, jobsites, roles }: ApprovalMatrixManagementProps) {
+  // --- State ---
+  const [matrices, setMatrices] = useState<ApprovalMatrixDto[]>([]); // Hanya fetch matrices
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- UI State ---
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterJobsite, setFilterJobsite] = useState<string>('all');
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedMatrix, setSelectedMatrix] = useState<ApprovalMatrix | null>(null);
+
+  const [selectedMatrix, setSelectedMatrix] = useState<ApprovalMatrixDto | null>(null);
   const [sortField, setSortField] = useState<SortField>('department');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  
+
   // Pagination state
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Form state
-  const [formData, setFormData] = useState<Partial<ApprovalMatrix>>({
-    department: 'Plant',
-    jobsite: 'ADMO MINING',
+  const [formData, setFormData] = useState<MatrixFormData>({
+    departmentID: '',
+    jobsiteID: '',
     amountMin: 0,
-    amountMax: 10000,
-    group: 'Creator plant Development',
-    approvalPath: [],
+    amountMax: null,
+    groupName: '',
+    steps: [],
   });
 
-  // Filter matrices
-  const filteredMatrices = matrices.filter(matrix => {
-    const matchesSearch = 
-      matrix.group.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      matrix.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      matrix.jobsite.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = filterDepartment === 'all' || matrix.department === filterDepartment;
-    const matchesJobsite = filterJobsite === 'all' || matrix.jobsite === filterJobsite;
-    
-    return matchesSearch && matchesDepartment && matchesJobsite;
-  });
+  useEffect(() => {
+    loadMatrices();
+  }, []);
 
-  // Sort matrices based on selected field and direction
-  const sortedMatrices = [...filteredMatrices].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'department':
-        comparison = a.department.localeCompare(b.department);
-        break;
-      case 'jobsite':
-        comparison = a.jobsite.localeCompare(b.jobsite);
-        break;
-      case 'amountMin':
-        comparison = a.amountMin - b.amountMin;
-        break;
-      case 'group':
-        comparison = a.group.localeCompare(b.group);
-        break;
-      default:
-        comparison = 0;
+  const loadMatrices = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchApprovalMatrices();
+      if (data) setMatrices(data);
+    } catch (error) {
+      toast.error('Failed to load approval matrices');
+    } finally {
+      setIsLoading(false);
     }
-    
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
+  };
 
-  // Pagination calculation
-  const totalPages = Math.ceil(sortedMatrices.length / pageSize);
-  const paginatedMatrices = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return sortedMatrices.slice(start, end);
-  }, [sortedMatrices, currentPage, pageSize]);
-
-  // Reset to first page when filters/search/pageSize change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterDepartment, filterJobsite, pageSize]);
 
-  // Handle sort column click
+  // Filter matrices
+  const filteredMatrices = useMemo(() => {
+    return matrices.filter(matrix => {
+      const matchesSearch =
+        matrix.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        matrix.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        matrix.jobsiteName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesDepartment = filterDepartment === 'all' || matrix.departmentID.toString() === filterDepartment;
+      const matchesJobsite = filterJobsite === 'all' || matrix.jobsiteID.toString() === filterJobsite;
+
+      return matchesSearch && matchesDepartment && matchesJobsite;
+    });
+  }, [matrices, searchTerm, filterDepartment, filterJobsite]);
+
+  // Sort matrices based on selected field and direction
+  const sortedMatrices = useMemo(() => {
+    return [...filteredMatrices].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'department': comparison = a.departmentName.localeCompare(b.departmentName); break;
+        case 'jobsite': comparison = a.jobsiteName.localeCompare(b.jobsiteName); break;
+        case 'amountMin': comparison = a.amountMin - b.amountMin; break;
+        case 'group': comparison = a.groupName.localeCompare(b.groupName); break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredMatrices, sortField, sortDirection]);
+
+  // Pagination calculation
+  const paginatedMatrices = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedMatrices.slice(start, start + pageSize);
+  }, [sortedMatrices, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(sortedMatrices.length / pageSize);
+
+  const resetForm = () => {
+    setFormData({
+      departmentID: '',
+      jobsiteID: '',
+      amountMin: 0,
+      amountMax: null,
+      groupName: '',
+      steps: [],
+    });
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.departmentID || !formData.jobsiteID || !formData.groupName) {
+      toast.error('Please fill in Department, Jobsite, and Group Name');
+      return false;
+    }
+    if (formData.amountMin < 0) {
+      toast.error('Minimum amount cannot be negative');
+      return false;
+    }
+    if (formData.amountMax !== null && formData.amountMax <= formData.amountMin) {
+      toast.error('Maximum amount must be greater than minimum amount');
+      return false;
+    }
+    if (formData.steps.length === 0) {
+      toast.error('Please add at least one approval step');
+      return false;
+    }
+    if (formData.steps.some(s => !s.stepName || !s.approvalRoleID)) {
+      toast.error('All approval steps must have a Name and a Role selected');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const payload: ApprovalMatrixSaveRequest = {
+        matrixID: formData.matrixID || null,
+        departmentID: parseInt(formData.departmentID),
+        jobsiteID: parseInt(formData.jobsiteID),
+        amountMin: formData.amountMin,
+        amountMax: formData.amountMax,
+        groupName: formData.groupName,
+        isActive: true,
+        user: user?.username || 'SYSTEM',
+        steps: formData.steps.map((s, index) => ({
+          stepNumber: index + 1,
+          stepName: s.stepName,
+          approvalRoleID: parseInt(s.approvalRoleID)
+        }))
+      };
+
+      await saveApprovalMatrix(payload);
+      toast.success(`Approval matrix ${formData.matrixID ? 'updated' : 'added'} successfully`);
+
+      loadMatrices();
+      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save matrix');
+    }
+  };
+
+  const handleEditClick = (matrix: ApprovalMatrixDto) => {
+    setSelectedMatrix(matrix);
+    setFormData({
+      matrixID: matrix.matrixID,
+      departmentID: matrix.departmentID.toString(),
+      jobsiteID: matrix.jobsiteID.toString(),
+      amountMin: matrix.amountMin,
+      amountMax: matrix.amountMax,
+      groupName: matrix.groupName,
+      steps: matrix.approvalPath.map((step, idx) => ({
+        tempId: Date.now() + idx,
+        stepName: step.stepName,
+        approvalRoleID: step.approvalRoleID.toString()
+      }))
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (matrix: ApprovalMatrixDto) => {
+    setSelectedMatrix(matrix);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteMatrix = async () => {
+    if (!selectedMatrix) return;
+    try {
+        await deleteApprovalMatrix(selectedMatrix.matrixID);
+        toast.success('Matrix deleted successfully');
+        loadMatrices();
+    } catch (error) {
+        toast.error('Failed to delete matrix');
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setSelectedMatrix(null);
+    }
+  };
+
+  // --- STEP HANDLERS (Sama) ---
+  const addStep = () => {
+    setFormData(prev => ({
+      ...prev,
+      steps: [...prev.steps, { tempId: Date.now(), stepName: 'Approval 1', approvalRoleID: '' }]
+    }));
+  };
+
+  const removeStep = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      steps: prev.steps.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateStep = (index: number, field: string, value: string) => {
+    const newSteps = [...formData.steps];
+    newSteps[index] = { ...newSteps[index], [field]: value };
+    setFormData(prev => ({ ...prev, steps: newSteps }));
+  };
+
+  // --- RENDER FORM (Menggunakan props departments, jobsites, roles) ---
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 inline-block text-gray-400" />;
+    }
+    return sortDirection === 'asc'
+      ? <ArrowUp className="h-4 w-4 ml-1 inline-block text-blue-600" />
+      : <ArrowDown className="h-4 w-4 ml-1 inline-block text-blue-600" />;
+  };
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // Toggle direction if same field
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      // Set new field with ascending direction
       setSortField(field);
       setSortDirection('asc');
     }
   };
 
-  // Render sort icon based on current state
-  const renderSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="h-4 w-4 ml-1 inline-block text-gray-400" />;
-    }
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-4 w-4 ml-1 inline-block text-blue-600" />
-      : <ArrowDown className="h-4 w-4 ml-1 inline-block text-blue-600" />;
-  };
-
-  const handleAddMatrix = () => {
-    if (!validateForm()) return;
-
-    const newMatrix: ApprovalMatrix = {
-      id: `AM${Date.now()}`,
-      department: formData.department as Department,
-      jobsite: formData.jobsite as Jobsite,
-      amountMin: formData.amountMin || 0,
-      amountMax: formData.amountMax || null,
-      group: formData.group || 'Creator plant Development',
-      approvalPath: formData.approvalPath || [],
-      createdDate: new Date().toISOString(),
-    };
-
-    onUpdateMatrices([...matrices, newMatrix]);
-    toast.success('Approval matrix added successfully');
-    resetForm();
-    setIsAddDialogOpen(false);
-  };
-
-  const handleEditMatrix = () => {
-    if (!selectedMatrix || !validateForm()) return;
-
-    const updatedMatrices = matrices.map(matrix =>
-      matrix.id === selectedMatrix.id
-        ? {
-            ...matrix,
-            ...formData,
-            updatedDate: new Date().toISOString(),
-          }
-        : matrix
-    );
-
-    onUpdateMatrices(updatedMatrices);
-    toast.success('Approval matrix updated successfully');
-    resetForm();
-    setIsEditDialogOpen(false);
-    setSelectedMatrix(null);
-  };
-
-  const handleDeleteMatrix = () => {
-    if (!selectedMatrix) return;
-
-    const updatedMatrices = matrices.filter(matrix => matrix.id !== selectedMatrix.id);
-    onUpdateMatrices(updatedMatrices);
-    toast.success('Approval matrix deleted successfully');
-    setIsDeleteDialogOpen(false);
-    setSelectedMatrix(null);
-  };
-
-  const validateForm = (): boolean => {
-    if (!formData.department || !formData.jobsite) {
-      toast.error('Please fill in all required fields');
-      return false;
-    }
-
-    if (formData.amountMin === undefined || formData.amountMin < 0) {
-      toast.error('Please enter a valid minimum amount');
-      return false;
-    }
-
-    if (formData.amountMax !== null && formData.amountMax !== undefined && formData.amountMax <= (formData.amountMin || 0)) {
-      toast.error('Maximum amount must be greater than minimum amount');
-      return false;
-    }
-
-    if (!formData.approvalPath || formData.approvalPath.length === 0) {
-      toast.error('Please add at least one approval step');
-      return false;
-    }
-
-    return true;
-  };
-
-  const resetForm = () => {
-    setFormData({
-      department: 'Plant',
-      jobsite: 'ADMO MINING',
-      amountMin: 0,
-      amountMax: 10000,
-      group: 'Creator plant Development',
-      approvalPath: [],
-    });
-  };
-
-  const openEditDialog = (matrix: ApprovalMatrix) => {
-    setSelectedMatrix(matrix);
-    setFormData({
-      department: matrix.department,
-      jobsite: matrix.jobsite,
-      amountMin: matrix.amountMin,
-      amountMax: matrix.amountMax,
-      group: matrix.group,
-      approvalPath: [...matrix.approvalPath],
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openDeleteDialog = (matrix: ApprovalMatrix) => {
-    setSelectedMatrix(matrix);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const addApprovalStep = () => {
-    const newStep: ApprovalStep = {
-      stepNumber: (formData.approvalPath?.length || 0) + 1,
-      stepName: 'Approval 1',
-      role: 'DH User',
-    };
-    setFormData({
-      ...formData,
-      approvalPath: [...(formData.approvalPath || []), newStep],
-    });
-  };
-
-  const updateApprovalStep = (index: number, field: keyof ApprovalStep, value: any) => {
-    const updatedPath = [...(formData.approvalPath || [])];
-    updatedPath[index] = { ...updatedPath[index], [field]: value };
-    setFormData({ ...formData, approvalPath: updatedPath });
-  };
-
-  const removeApprovalStep = (index: number) => {
-    const updatedPath = (formData.approvalPath || []).filter((_, i) => i !== index);
-    // Renumber steps
-    const renumberedPath = updatedPath.map((step, i) => ({
-      ...step,
-      stepNumber: i + 1,
-    }));
-    setFormData({ ...formData, approvalPath: renumberedPath });
-  };
-
-  const renderMatrixForm = () => (
-    <div className="space-y-4">
+  const renderFormContent = () => (
+    <div className="space-y-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="department">Department *</Label>
+          <Label>Department *</Label>
           <Select
-            value={formData.department}
-            onValueChange={(value: string) => setFormData({ ...formData, department: value as Department })}
+            value={formData.departmentID}
+            onValueChange={(v) => setFormData({ ...formData, departmentID: v })}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select department" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
             <SelectContent>
-              {DEPARTMENTS.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              {departments.map(d => (
+                <SelectItem key={d.departmentID} value={d.departmentID.toString()}>{d.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-
         <div>
-          <Label htmlFor="jobsite">Jobsite *</Label>
+          <Label>Jobsite *</Label>
           <Select
-            value={formData.jobsite}
-            onValueChange={(value: string) => setFormData({ ...formData, jobsite: value as Jobsite })}
+            value={formData.jobsiteID}
+            onValueChange={(v) => setFormData({ ...formData, jobsiteID: v })}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select jobsite" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Select Jobsite" /></SelectTrigger>
             <SelectContent>
-              {JOBSITES.map(site => (
-                <SelectItem key={site} value={site}>{site}</SelectItem>
+              {jobsites.map(j => (
+                <SelectItem key={j.jobsiteID} value={j.jobsiteID.toString()}>{j.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -325,94 +331,67 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="amountMin">Minimum Amount (USD) *</Label>
+          <Label>Min Amount (USD)</Label>
           <Input
-            id="amountMin"
             type="number"
             value={formData.amountMin}
-            onChange={(e) => setFormData({ ...formData, amountMin: parseFloat(e.target.value) || 0 })}
-            placeholder="0"
+            onChange={e => setFormData({ ...formData, amountMin: parseFloat(e.target.value) || 0 })}
           />
         </div>
-
         <div>
-          <Label htmlFor="amountMax">Maximum Amount (USD)</Label>
+          <Label>Max Amount (USD)</Label>
           <Input
-            id="amountMax"
             type="number"
-            value={formData.amountMax || ''}
-            onChange={(e) => setFormData({ ...formData, amountMax: e.target.value ? parseFloat(e.target.value) : null })}
-            placeholder="Leave empty for unlimited"
+            placeholder="Unlimited"
+            value={formData.amountMax === null ? '' : formData.amountMax}
+            onChange={e => setFormData({ ...formData, amountMax: e.target.value ? parseFloat(e.target.value) : null })}
           />
         </div>
       </div>
 
       <div>
-        <Label htmlFor="group">Creator Group *</Label>
+        <Label>Group Name *</Label>
         <Input
-          id="group"
-          value={formData.group}
-          onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-          placeholder="e.g., Creator plant Development"
+          value={formData.groupName}
+          onChange={e => setFormData({ ...formData, groupName: e.target.value })}
+          placeholder="e.g. Creator Plant Development"
         />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label>Approval Path *</Label>
-          <Button type="button" variant="outline" size="sm" onClick={addApprovalStep}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Step
+      <div className="border rounded-md p-3 bg-gray-50">
+        <div className="flex justify-between items-center mb-2">
+          <Label>Approval Path</Label>
+          <Button type="button" size="sm" variant="outline" onClick={addStep}>
+            <Plus className="w-4 h-4 mr-1" /> Add Step
           </Button>
         </div>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {formData.steps.map((step, idx) => (
+            <div key={step.tempId} className="flex gap-2 items-center bg-white p-2 rounded border">
+              <span className="text-sm font-bold w-6 text-center">{idx + 1}</span>
 
-        <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-2">
-          {formData.approvalPath && formData.approvalPath.length > 0 ? (
-            formData.approvalPath.map((step, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                <span className="text-sm font-medium w-8">#{step.stepNumber}</span>
-                
-                <Select
-                  value={step.stepName}
-                  onValueChange={(value: string) => updateApprovalStep(index, 'stepName', value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STEP_NAMES.map(name => (
-                      <SelectItem key={name} value={name}>{name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select value={step.stepName} onValueChange={v => updateStep(idx, 'stepName', v)}>
+                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STEP_NAMES.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
 
-                <Select
-                  value={step.roleName}
-                  onValueChange={(value: string) => updateApprovalStep(index, 'role', value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {APPROVAL_ROLES.map(role => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <Select value={step.approvalRoleID} onValueChange={v => updateStep(idx, 'approvalRoleID', v)}>
+                <SelectTrigger className="flex-1"><SelectValue placeholder="Select Role" /></SelectTrigger>
+                <SelectContent>
+                  {roles.map(r => (
+                    <SelectItem key={r.approvalRoleID} value={r.approvalRoleID.toString()}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeApprovalStep(index)}
-                >
-                  <X className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-4">No approval steps added. Click "Add Step" to start.</p>
-          )}
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeStep(idx)}>
+                <X className="w-4 h-4 text-red-500" />
+              </Button>
+            </div>
+          ))}
+          {formData.steps.length === 0 && <p className="text-xs text-center text-gray-400">No steps defined</p>}
         </div>
       </div>
     </div>
@@ -430,7 +409,7 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Add Matrix
             </Button>
@@ -442,12 +421,12 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                 Define approval workflow for specific department, jobsite, and amount range
               </DialogDescription>
             </DialogHeader>
-            {renderMatrixForm()}
+            {renderFormContent()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddMatrix}>Add Matrix</Button>
+              <Button onClick={handleSave} className="bg-blue-600 text-white">Save Matrix</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -472,8 +451,8 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
-            {DEPARTMENTS.map(dept => (
-              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+            {departments.map(dept => (
+              <SelectItem key={dept.departmentID} value={dept.name}>{dept.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -485,8 +464,8 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Jobsites</SelectItem>
-            {JOBSITES.map(site => (
-              <SelectItem key={site} value={site}>{site}</SelectItem>
+            {jobsites.map(site => (
+              <SelectItem key={site.jobsiteID} value={site.name}>{site.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -501,13 +480,13 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="text-sm text-green-600">Active Departments</div>
           <div className="text-2xl mt-1">
-            {new Set(matrices.map(m => m.department)).size}
+            {new Set(matrices.filter(a => a.isActive).map(m => m.departmentID)).size}
           </div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="text-sm text-purple-600">Active Jobsites</div>
           <div className="text-2xl mt-1">
-            {new Set(matrices.map(m => m.jobsite)).size}
+            {new Set(matrices.filter(a => a.isActive).map(m => m.jobsiteID)).size}
           </div>
         </div>
       </div>
@@ -518,40 +497,26 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
           <table className="w-full">
             <thead style={{ backgroundColor: '#E6F2FF' }} className="border-b border-gray-200">
               <tr>
-                <th 
-                  className="px-4 py-3 text-left text-sm cursor-pointer hover:bg-blue-100 transition-colors select-none"
-                  onClick={() => handleSort('department')}
-                >
-                  Department
-                  {renderSortIcon('department')}
+                <th className="px-4 py-3 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('department')}>
+                  Department {renderSortIcon('department')}
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-sm cursor-pointer hover:bg-blue-100 transition-colors select-none"
-                  onClick={() => handleSort('jobsite')}
-                >
-                  Jobsite
-                  {renderSortIcon('jobsite')}
+                <th className="px-4 py-3 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('jobsite')}>
+                  Jobsite {renderSortIcon('jobsite')}
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-sm cursor-pointer hover:bg-blue-100 transition-colors select-none"
-                  onClick={() => handleSort('amountMin')}
-                >
-                  Amount Range
-                  {renderSortIcon('amountMin')}
+                <th className="px-4 py-3 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('amountMin')}>
+                  Amount Range {renderSortIcon('amountMin')}
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-sm cursor-pointer hover:bg-blue-100 transition-colors select-none"
-                  onClick={() => handleSort('group')}
-                >
-                  Group
-                  {renderSortIcon('group')}
+                <th className="px-4 py-3 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('group')}>
+                  Group {renderSortIcon('group')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm">Approval Path</th>
                 <th className="px-4 py-3 text-right text-sm">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedMatrices.length === 0 ? (
+              {isLoading ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Loading data...</td></tr>
+              ) : paginatedMatrices.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No approval matrices found. Add one to get started.
@@ -559,15 +524,15 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                 </tr>
               ) : (
                 paginatedMatrices.map((matrix) => (
-                  <tr key={matrix.id} className="hover:bg-gray-50">
+                  <tr key={matrix.matrixID} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                        {matrix.department}
+                        {matrix.departmentName}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                        {matrix.jobsite}
+                        {matrix.jobsiteName}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -578,12 +543,12 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm">{matrix.group}</td>
+                    <td className="px-4 py-3 text-sm">{matrix.groupName}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {matrix.approvalPath.map((step, idx) => (
+                        {matrix.approvalPath.map(step => (
                           <span
-                            key={idx}
+                            key={step.stepNumber}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700 border border-gray-300"
                             title={`${step.stepName}: ${step.roleName}`}
                           >
@@ -597,14 +562,14 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openEditDialog(matrix)}
+                          onClick={() => handleEditClick(matrix)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openDeleteDialog(matrix)}
+                          onClick={() => handleDeleteClick(matrix)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -680,12 +645,12 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
               Modify approval workflow configuration
             </DialogDescription>
           </DialogHeader>
-          {renderMatrixForm()}
+          {renderFormContent()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditMatrix}>Save Changes</Button>
+            <Button onClick={handleSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -700,8 +665,8 @@ export function ApprovalMatrixManagement({ matrices, onUpdateMatrices }: Approva
               {selectedMatrix && (
                 <div className="mt-4 p-3 bg-gray-50 rounded border">
                   <div className="text-sm">
-                    <div><strong>Department:</strong> {selectedMatrix.department}</div>
-                    <div><strong>Jobsite:</strong> {selectedMatrix.jobsite}</div>
+                    <div><strong>Department:</strong> {selectedMatrix.departmentName}</div>
+                    <div><strong>Jobsite:</strong> {selectedMatrix.jobsiteName}</div>
                     <div><strong>Amount:</strong> {formatCurrency(selectedMatrix.amountMin)} - {selectedMatrix.amountMax ? formatCurrency(selectedMatrix.amountMax) : '∞'}</div>
                   </div>
                 </div>

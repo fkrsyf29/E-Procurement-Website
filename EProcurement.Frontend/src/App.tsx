@@ -24,7 +24,7 @@ import { approvalMatrixData } from './data/approvalMatrix';
 import { defaultRoles } from './data/rolesData';
 import { getMaterials, addMaterial, updateMaterial, deleteMaterial, bulkAddMaterials } from './data/materialsData';
 import { User, Proposal, ApprovalMatrix, VendorRecommendation, Material, Regions } from './types';
-import { ApprovalRoles, Departments, Jobsites, RoleDefinition,Permission,RoleCategories,PermissionCategories  } from '../types';
+import { ApprovalRoles, Departments, Jobsites, RoleDefinition, Permission, RoleCategories, PermissionCategories } from '../types';
 import { initializeProposalHistory, getFirstApprovalStatus } from './utils/approvalHelper';
 import { fetchCurrentUser } from './services/userApi';
 import { fetchApiRoles } from './services/roleApi';
@@ -59,110 +59,110 @@ export default function App() {
   const [availableApprovalRoles, setAvailableApprovalRoles] = useState<ApprovalRoles[]>([]);
 
   const handleLogin = useCallback((user: User) => {
-      setCurrentUser(user);
-      setCurrentPage('dashboard');
+    setCurrentUser(user);
+    setCurrentPage('dashboard');
   }, [setCurrentUser, setCurrentPage]);
 
   const handleLogout = useCallback(() => {
-        setCurrentUser(null);
-        setCurrentPage('dashboard');
-        localStorage.removeItem('authToken');
-    }, [setCurrentUser, setCurrentPage]);
+    setCurrentUser(null);
+    setCurrentPage('dashboard');
+    localStorage.removeItem('authToken');
+  }, [setCurrentUser, setCurrentPage]);
 
   useEffect(() => {
-      let isMounted = true; // biar tidak setState kalau component unmount
-  
-      const fetchData = async () => {
-        try {
-          // 1. Fetch Data Master
-          const mappedRoles: RoleDefinition[] = await fetchApiRoles();
-          const permissionsList : Permission[] | null = await fetchApiPermissions();
-          const departmentList : Departments[] | null = await fetchApiDepartment();
-          const jobsiteList : Jobsites[] | null = await fetchApiJobsite();
-          const regionList : Regions[] | null = await fetchApiRegion();
-          const approvalRoleList : ApprovalRoles[] | null = await fetchApiApprovalRole();
-          const roleCategoryList : RoleCategories[] | null = await fetchApiRoleCategory();
-          const permissionCategoryList : PermissionCategories[] | null = await fetchApiPermissionCategory();
-          const mappedUsers: User[] | null = await fetchApiUsers();
+    let isMounted = true; // biar tidak setState kalau component unmount
 
-          // Hanya update state kalau component masih mounted
-          if (isMounted) {
-            setUsers(mappedUsers || []);
-            setRoles(mappedRoles);
-            setAvailablePermissions(permissionsList || []);
-            setAvailableDepartments(departmentList || []);
-            setAvailableJobsites(jobsiteList || []);
-            setAvailableRegions(regionList || []);
-            setAvailableApprovalRoles(approvalRoleList || []);
-            setAvailablePermissionCategories(permissionCategoryList || []);
-            setAvailableRoleCategories(roleCategoryList || []);
-          }
-  
-        } catch (err) {
-          if (isMounted) {
-            console.error('Koneksi ke server gagal:', err);
-            setUsers([]);
-            setRoles([]);
-            setAvailablePermissions([]);
-            setAvailableDepartments([]);
-            setAvailableJobsites([]);
-            setAvailableRegions([]);
-            setAvailableApprovalRoles([]);
-            setAvailablePermissionCategories([]);
-            setAvailableRoleCategories([]);
-          }
+    const fetchData = async () => {
+      try {
+        // 1. Fetch Data Master
+        const mappedRoles: RoleDefinition[] = await fetchApiRoles();
+        const permissionsList: Permission[] | null = await fetchApiPermissions();
+        const departmentList: Departments[] | null = await fetchApiDepartment();
+        const jobsiteList: Jobsites[] | null = await fetchApiJobsite();
+        const regionList: Regions[] | null = await fetchApiRegion();
+        const approvalRoleList: ApprovalRoles[] | null = await fetchApiApprovalRole();
+        const roleCategoryList: RoleCategories[] | null = await fetchApiRoleCategory();
+        const permissionCategoryList: PermissionCategories[] | null = await fetchApiPermissionCategory();
+        const mappedUsers: User[] | null = await fetchApiUsers();
+
+        // Hanya update state kalau component masih mounted
+        if (isMounted) {
+          setUsers(mappedUsers || []);
+          setRoles(mappedRoles);
+          setAvailablePermissions(permissionsList || []);
+          setAvailableDepartments(departmentList || []);
+          setAvailableJobsites(jobsiteList || []);
+          setAvailableRegions(regionList || []);
+          setAvailableApprovalRoles(approvalRoleList || []);
+          setAvailablePermissionCategories(permissionCategoryList || []);
+          setAvailableRoleCategories(roleCategoryList || []);
         }
-      };
-  
-      fetchData();
-  
-      return () => {
-        isMounted = false;
-      };
-    }, []);
+
+      } catch (err) {
+        if (isMounted) {
+          console.error('Koneksi ke server gagal:', err);
+          setUsers([]);
+          setRoles([]);
+          setAvailablePermissions([]);
+          setAvailableDepartments([]);
+          setAvailableJobsites([]);
+          setAvailableRegions([]);
+          setAvailableApprovalRoles([]);
+          setAvailablePermissionCategories([]);
+          setAvailableRoleCategories([]);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
-        const checkSession = async () => {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                const user = await fetchCurrentUser(token);
-                
-                if (user) {
-                   // console.log('✅ [APP] Token valid. Sesi dipulihkan.');
-                    
-                    handleLogin(user);
-                } else {
-                   // console.log('❌ [APP] Token tidak valid/expired. Menghapus sesi.');
-                    localStorage.removeItem('authToken');
-                }
-            }
-            setIsCheckingSession(false);
-        };
-        
-        checkSession();
-    }, [handleLogin]);
+    const checkSession = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        const user = await fetchCurrentUser(token);
+
+        if (user) {
+          // console.log('✅ [APP] Token valid. Sesi dipulihkan.');
+
+          handleLogin(user);
+        } else {
+          // console.log('❌ [APP] Token tidak valid/expired. Menghapus sesi.');
+          localStorage.removeItem('authToken');
+        }
+      }
+      setIsCheckingSession(false);
+    };
+
+    checkSession();
+  }, [handleLogin]);
 
   // ✅ DEBUG: Log when proposals state changes
   useEffect(() => {
-   // console.log('📢 [APP] proposals state updated!');
-   // console.log('   - Total proposals:', proposals.length);
-   // console.log('   - Proposal IDs:', proposals.map(p => p.id).join(', '));
+    // console.log('📢 [APP] proposals state updated!');
+    // console.log('   - Total proposals:', proposals.length);
+    // console.log('   - Proposal IDs:', proposals.map(p => p.id).join(', '));
   }, [proposals]);
-  
+
 
   // ✅ CRITICAL: Sync materials from localStorage on mount and storage events
   useEffect(() => {
     // Load from localStorage on mount
     const loadedMaterials = getMaterials();
     setMaterials(loadedMaterials);
-   // console.log('✅ Materials loaded on mount:', loadedMaterials.length);
+    // console.log('✅ Materials loaded on mount:', loadedMaterials.length);
 
     // Listen for localStorage changes (from other tabs or components)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'eproposal_materials_data') {
         const updatedMaterials = getMaterials();
         setMaterials(updatedMaterials);
-       // console.log('🔄 Materials synced from localStorage:', updatedMaterials.length);
+        // console.log('🔄 Materials synced from localStorage:', updatedMaterials.length);
       }
     };
 
@@ -171,42 +171,42 @@ export default function App() {
   }, []);
 
   const handleSaveProposal = (proposalData: any, isDraft: boolean) => {
-   // console.log('💾 [APP] handleSaveProposal called');
-   // console.log('   - Is Draft:', isDraft);
-   // console.log('   - Proposal ID:', proposalData.id);
-   // console.log('   - Proposal No:', proposalData.proposalNo);
-    
+    // console.log('💾 [APP] handleSaveProposal called');
+    // console.log('   - Is Draft:', isDraft);
+    // console.log('   - Proposal ID:', proposalData.id);
+    // console.log('   - Proposal No:', proposalData.proposalNo);
+
     // ✅ CHECK: Is this an UPDATE (edit) or CREATE (new)?
     const isEdit = proposalData.id && proposals.some(p => p.id === proposalData.id);
-    
+
     if (isEdit) {
       // ✅ UPDATE EXISTING PROPOSAL
-     // console.log('📝 [APP] Updating existing proposal:', proposalData.id);
-      
+      // console.log('📝 [APP] Updating existing proposal:', proposalData.id);
+
       // Get the original proposal to check if it's Rejected
       const originalProposal = proposals.find(p => p.id === proposalData.id);
       const isResubmit = originalProposal?.status === 'Rejected' && !isDraft;
-      
-     // console.log('   - Original Status:', originalProposal?.status);
-     // console.log('   - Is Resubmit:', isResubmit);
-      
-      setProposals(prevProposals => 
+
+      // console.log('   - Original Status:', originalProposal?.status);
+      // console.log('   - Is Resubmit:', isResubmit);
+
+      setProposals(prevProposals =>
         prevProposals.map(p => {
           if (p.id === proposalData.id) {
             let newStatus = p.status;
             let newHistory = p.history;
-            
+
             // ✅ RESUBMIT LOGIC: Reset status and history for rejected proposals
             if (isResubmit) {
-             // console.log('🔄 [RESUBMIT] Resetting approval flow for rejected proposal');
-              
+              // console.log('🔄 [RESUBMIT] Resetting approval flow for rejected proposal');
+
               // Get new initial status based on updated amount and routing
               newStatus = getFirstApprovalStatus(
                 proposalData.amount,
                 currentUser?.department || proposalData.department,
                 currentUser?.jobsite || proposalData.jobsite
               );
-              
+
               // Initialize new approval history
               newHistory = initializeProposalHistory(
                 currentUser?.name || p.creator,
@@ -217,23 +217,23 @@ export default function App() {
                 currentUser?.jobsite || proposalData.jobsite,
                 proposalData.jobsite // Procurement jobsite for Chief Operation
               );
-              
-             // console.log('   - New Status:', newStatus);
-             // console.log('   - New History Length:', newHistory.length);
+
+              // console.log('   - New Status:', newStatus);
+              // console.log('   - New History Length:', newHistory.length);
             } else if (isDraft) {
               // If saving as draft, set to Draft
               newStatus = 'Draft';
             } else if (p.status === 'Draft' && !isDraft) {
               // ✅ FIX (Nov 13): Draft proposal being submitted for first time
-             // console.log('📤 [SUBMIT DRAFT] Converting draft to submitted proposal');
-              
+              // console.log('📤 [SUBMIT DRAFT] Converting draft to submitted proposal');
+
               // Get initial approval status
               newStatus = getFirstApprovalStatus(
                 proposalData.amount,
                 currentUser?.department || proposalData.department,
                 currentUser?.jobsite || proposalData.jobsite
               );
-              
+
               // Initialize approval history
               newHistory = initializeProposalHistory(
                 currentUser?.name || p.creator,
@@ -244,12 +244,12 @@ export default function App() {
                 currentUser?.jobsite || proposalData.jobsite,
                 proposalData.jobsite // Procurement jobsite for Chief Operation
               );
-              
-             // console.log('   - New Status:', newStatus);
-             // console.log('   - New History Length:', newHistory.length);
+
+              // console.log('   - New Status:', newStatus);
+              // console.log('   - New History Length:', newHistory.length);
             }
             // Otherwise keep existing status (for normal updates)
-            
+
             // Keep original metadata, update fields
             return {
               ...p,
@@ -297,36 +297,36 @@ export default function App() {
           return p;
         })
       );
-      
-     // console.log('✅ [APP] Proposal updated successfully');
+
+      // console.log('✅ [APP] Proposal updated successfully');
       return;
     }
-    
+
     // ✅ CREATE NEW PROPOSAL
-   // console.log('➕ [APP] Creating new proposal');
-   // console.log('   - 🔍 CURRENT USER INFO:');
-   // console.log('      • ID:', currentUser?.userID);
-   // console.log('      • Username:', currentUser?.username);
-   // console.log('      • Name:', currentUser?.name);
-   // console.log('      • Role:', currentUser?.roleName);
-   // console.log('      • Jobsite:', currentUser?.jobsite);
-   // console.log('      • Department:', currentUser?.department);
-    
+    // console.log('➕ [APP] Creating new proposal');
+    // console.log('   - 🔍 CURRENT USER INFO:');
+    // console.log('      • ID:', currentUser?.userID);
+    // console.log('      • Username:', currentUser?.username);
+    // console.log('      • Name:', currentUser?.name);
+    // console.log('      • Role:', currentUser?.roleName);
+    // console.log('      • Jobsite:', currentUser?.jobsite);
+    // console.log('      • Department:', currentUser?.department);
+
     // IMPORTANT: Use CREATOR's jobsite and department for approval routing
     // EXCEPTION: Chief Operation uses PROCUREMENT jobsite
     const creatorJobsite = currentUser?.jobsite;
     const creatorDepartment = currentUser?.department;
     const procurementJobsite = proposalData.jobsite; // Procurement jobsite for Chief Operation
-    
+
     // Get initial status based on approval matrix using CREATOR's jobsite/department
-    const initialStatus = isDraft 
-      ? 'Draft' 
+    const initialStatus = isDraft
+      ? 'Draft'
       : getFirstApprovalStatus(
-          proposalData.amount,
-          creatorDepartment || proposalData.department,
-          creatorJobsite || proposalData.jobsite
-        );
-    
+        proposalData.amount,
+        creatorDepartment || proposalData.department,
+        creatorJobsite || proposalData.jobsite
+      );
+
     // Initialize approval history using helper with CREATOR's jobsite/department
     // Pass procurement jobsite for Chief Operation exception
     const history = initializeProposalHistory(
@@ -338,7 +338,7 @@ export default function App() {
       creatorJobsite || proposalData.jobsite,
       procurementJobsite // For Chief Operation approval
     );
-    
+
     const newProposal: Proposal = {
       id: `${proposals.length + 1}`,
       proposalNo: proposalData.proposalNo,
@@ -390,58 +390,58 @@ export default function App() {
     };
 
     // ✅ CRITICAL: Force new array reference to trigger React re-render
-   // console.log('🔄 [APP] About to call setProposals...');
-   // console.log('   - Current proposals length:', proposals.length);
-    
+    // console.log('🔄 [APP] About to call setProposals...');
+    // console.log('   - Current proposals length:', proposals.length);
+
     setProposals(prevProposals => {
-     // console.log('📦 [APP] Inside setProposals updater function');
-     // console.log('   - Previous proposals length:', prevProposals.length);
-      
+      // console.log('📦 [APP] Inside setProposals updater function');
+      // console.log('   - Previous proposals length:', prevProposals.length);
+
       const updated = [...prevProposals, newProposal];
-      
-     // console.log('✅ [APP] New proposal created successfully');
-     // console.log('   - Total proposals now:', updated.length);
-     // console.log('   - New proposal:', newProposal.proposalNo);
-     // console.log('   - Proposal IDs:', updated.map(p => p.id).join(', '));
-     // console.log('   - 🔍 NEW PROPOSAL DETAILS:');
-     // console.log('      • ID:', newProposal.id);
-     // console.log('      • Proposal No:', newProposal.proposalNo);
-     // console.log('      • Status:', newProposal.status);
-     // console.log('      • Creator ID:', newProposal.creatorId);
-     // console.log('      • Creator:', newProposal.creator);
-     // console.log('      • Title:', newProposal.title);
-     // console.log('      • Jobsite:', newProposal.jobsite);
-     // console.log('      • Department:', newProposal.department);
-      
-     // console.log('📤 [APP] Returning updated array from setProposals');
+
+      // console.log('✅ [APP] New proposal created successfully');
+      // console.log('   - Total proposals now:', updated.length);
+      // console.log('   - New proposal:', newProposal.proposalNo);
+      // console.log('   - Proposal IDs:', updated.map(p => p.id).join(', '));
+      // console.log('   - 🔍 NEW PROPOSAL DETAILS:');
+      // console.log('      • ID:', newProposal.id);
+      // console.log('      • Proposal No:', newProposal.proposalNo);
+      // console.log('      • Status:', newProposal.status);
+      // console.log('      • Creator ID:', newProposal.creatorId);
+      // console.log('      • Creator:', newProposal.creator);
+      // console.log('      • Title:', newProposal.title);
+      // console.log('      • Jobsite:', newProposal.jobsite);
+      // console.log('      • Department:', newProposal.department);
+
+      // console.log('📤 [APP] Returning updated array from setProposals');
       return updated;
     });
-    
+
     // ✅ Additional log to confirm state update triggered
-   // console.log('✅ [APP] setProposals called - React will re-render with new state');
-   // console.log('🕐 [APP] Waiting for MyProposals component to receive new props...');
+    // console.log('✅ [APP] setProposals called - React will re-render with new state');
+    // console.log('🕐 [APP] Waiting for MyProposals component to receive new props...');
   };
 
   const handleUpdateProposal = (proposalId: string, updates: Partial<Proposal>) => {
-   // console.log('═══════════════════════════════════════════════════════');
-   // console.log('🔄 [APP] handleUpdateProposal called');
-   // console.log('   - Proposal ID:', proposalId);
-   // console.log('   - vendorConfirmationStatus:', updates.vendorConfirmationStatus);
-   // console.log('   - All updates:', updates);
-    
+    // console.log('═══════════════════════════════════════════════════════');
+    // console.log('🔄 [APP] handleUpdateProposal called');
+    // console.log('   - Proposal ID:', proposalId);
+    // console.log('   - vendorConfirmationStatus:', updates.vendorConfirmationStatus);
+    // console.log('   - All updates:', updates);
+
     setProposals(prevProposals => {
       const before = prevProposals.find(p => p.id === proposalId);
-      const updated = prevProposals.map(p => 
+      const updated = prevProposals.map(p =>
         p.id === proposalId ? { ...p, ...updates } : p
       );
       const after = updated.find(p => p.id === proposalId);
-      
-     // console.log('✅ [APP] Proposal updated');
-     // console.log('   - Proposal No:', after?.proposalNo);
-     // console.log('   - BEFORE vendorConfirmationStatus:', before?.vendorConfirmationStatus);
-     // console.log('   - AFTER vendorConfirmationStatus:', after?.vendorConfirmationStatus);
-     // console.log('═══════════════════════════════════════════════════════');
-      
+
+      // console.log('✅ [APP] Proposal updated');
+      // console.log('   - Proposal No:', after?.proposalNo);
+      // console.log('   - BEFORE vendorConfirmationStatus:', before?.vendorConfirmationStatus);
+      // console.log('   - AFTER vendorConfirmationStatus:', after?.vendorConfirmationStatus);
+      // console.log('═══════════════════════════════════════════════════════');
+
       return updated;
     });
   };
@@ -455,25 +455,25 @@ export default function App() {
   };
 
   const handleUpdateVendorRecommendation = (vendorReqId: string, updates: Partial<VendorRecommendation>) => {
-   // console.log('═══════════════════════════════════════════════════════');
-   // console.log('🔄 [APP] handleUpdateVendorRecommendation called');
-   // console.log('   - Vendor Rec ID:', vendorReqId);
-   // console.log('   - New status:', updates.status);
-   // console.log('   - All updates:', updates);
-    
+    // console.log('═══════════════════════════════════════════════════════');
+    // console.log('🔄 [APP] handleUpdateVendorRecommendation called');
+    // console.log('   - Vendor Rec ID:', vendorReqId);
+    // console.log('   - New status:', updates.status);
+    // console.log('   - All updates:', updates);
+
     setVendorRecommendations(prevRecs => {
       const before = prevRecs.find(vr => vr.id === vendorReqId);
       const updated = prevRecs.map(vr =>
         vr.id === vendorReqId ? { ...vr, ...updates } : vr
       );
       const after = updated.find(vr => vr.id === vendorReqId);
-      
-     // console.log('✅ [APP] Vendor Recommendation updated');
-     // console.log('   - Proposal No:', after?.proposalNo);
-     // console.log('   - BEFORE status:', before?.status);
-     // console.log('   - AFTER status:', after?.status);
-     // console.log('═══════════════════════════════════════════════════════');
-      
+
+      // console.log('✅ [APP] Vendor Recommendation updated');
+      // console.log('   - Proposal No:', after?.proposalNo);
+      // console.log('   - BEFORE status:', before?.status);
+      // console.log('   - AFTER status:', after?.status);
+      // console.log('═══════════════════════════════════════════════════════');
+
       return updated;
     });
   };
@@ -510,43 +510,43 @@ export default function App() {
       case 'my-approvals':
         return <MyApprovals user={currentUser} proposals={proposals} onUpdateProposal={handleUpdateProposal} />;
       case 'sourcing-documents':
-        return <SourcingDocuments 
-          user={currentUser} 
-          proposals={proposals} 
+        return <SourcingDocuments
+          user={currentUser}
+          proposals={proposals}
           onUpdateProposal={handleUpdateProposal}
           onRequestVendors={handleRequestVendors}
         />;
       case 'sourcing':
-        return <SourcingPage 
-          user={currentUser} 
+        return <SourcingPage
+          user={currentUser}
           vendorRecommendations={vendorRecommendations}
           onUpdateVendorRecommendation={handleUpdateVendorRecommendation}
           onUpdateProposal={handleUpdateProposal}
           proposals={proposals}
         />;
       case 'users':
-        return <UserManagement 
+        return <UserManagement
           users={users}
           currentUser={currentUser}
           onUpdateUsers={setUsers}
-          roles={roles} 
-          availableDepartments={availableDepartments} 
-          availableJobsites={availableJobsites} 
+          roles={roles}
+          availableDepartments={availableDepartments}
+          availableJobsites={availableJobsites}
           onNavigateToRoleManagement={() => setCurrentPage('role-management')}
         />;
       case 'role-management':
-        return <RoleManagement 
+        return <RoleManagement
           currentUser={currentUser}
-          roles={roles} 
-          availableDepartments={availableDepartments} 
-          availableJobsites={availableJobsites} 
-          availableRegions={availableRegions} 
+          roles={roles}
+          availableDepartments={availableDepartments}
+          availableJobsites={availableJobsites}
+          availableRegions={availableRegions}
           availableApprovalRoles={availableApprovalRoles}
           availablePermissionCategories={availablePermissionCategories}
           permissions={availablePermissions}
           availableRoleCategories={availableRoleCategories}
           onUpdateRoles={setRoles}
-          />;
+        />;
       case 'matrix-management':
         return <MatrixManagement user={currentUser} onNavigateToItemDefinitions={() => setCurrentPage('item-definitions')} />;
       case 'item-definitions':
@@ -556,9 +556,14 @@ export default function App() {
       case 'vendor-database':
         return <VendorDatabaseManagementNew user={currentUser} />;
       case 'approval-matrix':
-        return <ApprovalMatrixManagement matrices={approvalMatrices} onUpdateMatrices={setApprovalMatrices} />;
+          return <ApprovalMatrixManagement
+            user={currentUser} 
+            departments={availableDepartments} 
+            jobsites={availableJobsites}       
+            roles={availableApprovalRoles}     
+          />
       case 'category-management':
-        return <CategoryManagement />;
+        return <CategoryManagement currentUser={currentUser} />;
       case 'matrix-contract':
         return <MatrixContractManagement currentUser={currentUser} />;
       case 'annual-purchase-plan':
@@ -576,11 +581,11 @@ export default function App() {
   };
 
   if (isCheckingSession) {
-      return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-              <p className="text-lg font-medium text-blue-600">Loading Session...</p> 
-          </div>
-      );
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-lg font-medium text-blue-600">Loading Session...</p>
+      </div>
+    );
   }
 
   if (!currentUser) {
@@ -592,11 +597,11 @@ export default function App() {
         </>
       );
     }
-    
+
     return (
       <>
-        <Login 
-          onLogin={handleLogin} 
+        <Login
+          onLogin={handleLogin}
           onForgotPassword={() => setShowForgotPassword(true)}
         />
         <Toaster />

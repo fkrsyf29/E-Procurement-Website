@@ -1,39 +1,38 @@
-﻿using EProcurement.Api.DTOs.Requests;
-using EProcurement.Api.Repositories.Implementations;
-using EProcurement.Api.Repositories.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using EProcurement.Api.DTOs.Requests;
+using EProcurement.Api.Services.Interfaces;
 
 namespace EProcurement.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CategoryController : ControllerBase
+    public class CategoryManagementController : ControllerBase
     {
-        private readonly ICategoryRepository _repo; // Gunakan Service Layer di project nyata, disini langsung Repo untuk ringkas
+        private readonly ICategoryManagementService _service;
 
-        public CategoryController(ICategoryRepository repo)
+        public CategoryManagementController(ICategoryManagementService service)
         {
-            _repo = repo;
+            _service = service;
         }
 
         [HttpGet("Hierarchy")]
         public async Task<IActionResult> GetAllHierarchy()
         {
-            return Ok(await _repo.GetAllHierarchyAsync());
+            return Ok(await _service.GetAllHierarchyAsync());
         }
 
         // --- CATEGORY ---
         [HttpPost("Category")]
-        public async Task<IActionResult> CreateCategory(CategoryCreateRequest req)
+        public async Task<IActionResult> CreateCategory(CategoryManagementCreateRequest req)
         {
-            var id = await _repo.CreateCategory(req);
+            var id = await _service.CreateCategory(req);
             return Ok(new { message = "Category created", id });
         }
         [HttpPut("Category/{id}")]
-        public async Task<IActionResult> UpdateCategory(int id, CategoryUpdateRequest req)
+        public async Task<IActionResult> UpdateCategory(int id, CategoryManagementUpdateRequest req)
         {
             req.CategoryID = id;
-            await _repo.UpdateCategory(req);
+            await _service.UpdateCategory(req);
             return Ok(new { message = "Category updated" });
         }
 
@@ -41,14 +40,14 @@ namespace EProcurement.Api.Controllers
         [HttpPost("Classification")]
         public async Task<IActionResult> CreateClassification(ClassificationCreateRequest req)
         {
-            var id = await _repo.CreateClassification(req);
+            var id = await _service.CreateClassification(req);
             return Ok(new { message = "Classification created", id });
         }
         [HttpPut("Classification/{id}")]
         public async Task<IActionResult> UpdateClassification(int id, ClassificationUpdateRequest req)
         {
             req.ClassificationID = id;
-            await _repo.UpdateClassification(req);
+            await _service.UpdateClassification(req);
             return Ok(new { message = "Classification updated" });
         }
 
@@ -56,14 +55,14 @@ namespace EProcurement.Api.Controllers
         [HttpPost("SubClassification")]
         public async Task<IActionResult> CreateSubClassification(SubClassificationCreateRequest req)
         {
-            var id = await _repo.CreateSubClassification(req);
+            var id = await _service.CreateSubClassification(req);
             return Ok(new { message = "SubClassification created", id });
         }
         [HttpPut("SubClassification/{id}")]
         public async Task<IActionResult> UpdateSubClassification(int id, SubClassificationUpdateRequest req)
         {
             req.SubClassificationID = id;
-            await _repo.UpdateSubClassification(req);
+            await _service.UpdateSubClassification(req);
             return Ok(new { message = "SubClassification updated" });
         }
     }

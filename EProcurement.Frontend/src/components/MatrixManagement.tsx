@@ -18,7 +18,7 @@ import {
 } from '../services/categoryApi';
 
 import { fetchAllItemDefinitions } from '../services/itemDefinitionApi';
-import { fetchMatrixBySubId, saveMatrixApi } from '../services/matrixApi';
+import { fetchMatrixBySubId, saveMatrixApi } from '../services/torTerMatrixApi';
 
 // --- TYPES ---
 import { CategoryDto, ClassificationDto, SubClassificationDto } from '../types/categoryTypes';
