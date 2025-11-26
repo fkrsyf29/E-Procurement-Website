@@ -29,7 +29,7 @@ import { createRoleApi, updateRoleApi } from '../services/roleApi';
 
 
 interface RoleManagementProps {
-  currentUser: User[];
+  user: User | null;
   roles: RoleDefinition[];
   permissions: Permission[];
   availableDepartments: Departments[];
@@ -48,7 +48,7 @@ const CHIEF_OPERATIONS = [
 ];
 
 export function RoleManagement({
-  currentUser: propCurrentUser,
+  user: propCurrentUser,
   roles: propRoles,
   permissions: propPermissions,
   availableDepartments: propDepartment = [],
@@ -333,7 +333,7 @@ export function RoleManagement({
       updatedBy: currentUserName,
 
       isDeleted: false,
-      deletedBy: currentUserName,
+      deletedBy: null,
     };
 
     try {

@@ -34,11 +34,11 @@ interface FormData {
 }
 
 interface CategoryManagementProps {
-  currentUser: User | null;
+  user: User | null;
 }
 
 export function CategoryManagement({ 
-  currentUser: propCurrentUser
+  user: propCurrentUser
 }: CategoryManagementProps) {
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());

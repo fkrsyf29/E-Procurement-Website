@@ -27,7 +27,7 @@ import { fetchUserFromSSO, createApiUser, updateApiUser } from '../services/user
 
 interface UserManagementProps {
   roles: RoleDefinition[];
-  currentUser: User[];
+  currentUser: User | null;
   onNavigateToRoleManagement: () => void;
   users: User[];
   availableDepartments: Departments[];
@@ -79,13 +79,14 @@ function getRoleTotalCount(roles: RoleDefinition[]): number {
 export function UserManagement({
   roles: propRoles,
   users: propUsers,
-  currentUser = propCurrentUser,
+  currentUser: propCurrentUser,
   availableDepartments: propDepartment = [],
   availableJobsites: propJobsite = [],
   onUpdateUsers,
   onNavigateToRoleManagement
 }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>(propUsers ?? []);
+  const currentUserName = propCurrentUser?.username || 'System';
 
   useEffect(() => {
     if (propUsers.length > 0) {
@@ -239,7 +240,6 @@ export function UserManagement({
     setShowForm(true);
   };
 
-  const getCurrentUsername = (currentUser: User[]) => currentUser?.[0]?.username || 'System';
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -281,7 +281,7 @@ export function UserManagement({
         departmentID: departmentID,
         email: formData.email,
         phone: formData.phone,
-        createdBy: getCurrentUsername(currentUser),
+        createdBy: currentUserName,
       };
 
       try {
@@ -322,7 +322,7 @@ export function UserManagement({
         email: formData.email,
         phone: formData.phone,
         isActive: true, 
-        updatedBy: getCurrentUsername(currentUser),
+        updatedBy: currentUserName,
         isDeleted: false,
         deletedBy: null,
       };
@@ -389,9 +389,9 @@ export function UserManagement({
       email: userToDelete.email || '',
       phone: userToDelete.phone || '',
       isActive: false,
-      updatedBy: getCurrentUsername(currentUser),
+      updatedBy: currentUserName,
       isDeleted: true,
-      deletedBy: getCurrentUsername(currentUser),
+      deletedBy: currentUserName,
     };
 
     try {
@@ -1059,6 +1059,18 @@ export function UserManagement({
                       </div>
                     </div>
 
+                    {formData.roleName && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-green-900">Selected Role:</p>
+                            <p className="text-sm text-green-700">{formData.roleName}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-3">
                       <ScrollArea className="h-[300px] rounded-md border p-3">
                         {rolesByCategory.length === 0 ? (
@@ -1108,17 +1120,7 @@ export function UserManagement({
                       </ScrollArea>
                     </div>
 
-                    {formData.roleName && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium text-green-900">Selected Role:</p>
-                            <p className="text-sm text-green-700">{formData.roleName}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    
 
                     <p className="text-xs text-gray-500 mt-2">
                       {roleStats.totalRoles} roles available. Need a different role?{' '}

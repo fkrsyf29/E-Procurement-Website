@@ -39,10 +39,10 @@ const isCodeUniqueClientSide = (conditions: MatrixContractCondition[], code: str
 };
 
 interface MatrixContractManagementProps {
-  currentUser: User | null;
+  user: User | null;
 }
 
-export function MatrixContractManagement({ currentUser: propCurrentUser }: MatrixContractManagementProps) {
+export function MatrixContractManagement({ user: propCurrentUser }: MatrixContractManagementProps) {
   const [conditions, setConditions] = useState<MatrixContractCondition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

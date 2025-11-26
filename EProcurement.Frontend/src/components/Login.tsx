@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { mockUsers } from '../data/mockData';
 import { User } from '../types';
 import logoImage from 'figma:asset/904487f40e518b88e2b9435d33aa8cfa6557436d.png';
@@ -73,6 +73,7 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -85,6 +86,7 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -104,8 +106,15 @@ export function Login({ onLogin, onForgotPassword }: LoginProps) {
             </button>
           </div>
 
-          <Button type="submit" className="w-full">
-            Sign In
+          <Button type="submit" className="w-full"disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> {/* 👈 Icon muter */}
+                Signing In...
+              </>
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </form>
 

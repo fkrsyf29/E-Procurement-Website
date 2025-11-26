@@ -96,12 +96,16 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IRoleCategoryRepository, RoleCategoryRepository>();
 builder.Services.AddScoped<IRoleCategoryService, RoleCategoryService>();
 
+
 // ---- SSO
 builder.Services.AddScoped<ISsoService, SsoService>();
 
 // ---- User
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<ISystemDataRepository, SystemDataRepository>();
+builder.Services.AddScoped<ISystemDataService, SystemDataService>();
 
 // ================================================
 // DAPPER FUNDAMENTALS

@@ -7,28 +7,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User } from '../types';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, Database, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, Database, AlertCircle, Loader2 } from 'lucide-react';
 import {
-  ReferenceDataItem,
-  ReferenceDataCategory,
-  referenceDataCategories,
-  getReferenceDataByCategory,
-  createReferenceDataItem,
-  updateReferenceDataItem,
-  deleteReferenceDataItem,
-  reorderReferenceDataItems,
-} from '../data/systemReferenceData';
+  fetchSystemDataApi,
+  createSystemDataItemApi,
+  updateSystemDataItemApi,
+  deleteSystemDataItemApi,
+  reorderSystemDataItemsApi
+} from '../services/systemDataApi';
+import { ReferenceDataItem, ReferenceDataCategory } from '../types/systemDataTypes';
 
 interface SystemDataManagementProps {
   user: User;
 }
 
 export function SystemDataManagement({ user }: SystemDataManagementProps) {
+  const [categories, setCategories] = useState<ReferenceDataCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<ReferenceDataCategory | null>(null);
   const [items, setItems] = useState<ReferenceDataItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // State untuk UI
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ReferenceDataItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Form fields
   const [value, setValue] = useState('');
@@ -37,22 +40,47 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
   const [isActive, setIsActive] = useState(true);
   
   useEffect(() => {
-    if (referenceDataCategories.length > 0) {
-      setSelectedCategory(referenceDataCategories[0]);
-      loadItems(referenceDataCategories[0].code);
-    }
+    loadAllData();
   }, []);
   
-  const loadItems = (categoryCode: string) => {
-    const categoryItems = getReferenceDataByCategory(categoryCode);
-    setItems([...categoryItems].sort((a, b) => a.order - b.order));
+  const loadAllData = async (targetCategoryCode?: string) => {
+    setIsLoading(true);
+    try {
+      const data = await fetchSystemDataApi();
+      setCategories(data);
+
+      // Logika untuk menentukan kategori mana yang ditampilkan setelah load
+      if (targetCategoryCode) {
+        // Jika kita ingin refresh kategori tertentu (misal setelah save)
+        const updatedCat = data.find(c => c.code === targetCategoryCode);
+        if (updatedCat) {
+          setSelectedCategory(updatedCat);
+          setItems(updatedCat.items);
+        }
+      } else if (!selectedCategory && data.length > 0) {
+        // Init load: pilih kategori pertama
+        setSelectedCategory(data[0]);
+        setItems(data[0].items);
+      } else if (selectedCategory) {
+        // Refresh kategori yang sedang aktif
+        const currentCat = data.find(c => c.code === selectedCategory.code);
+        if (currentCat) {
+          setSelectedCategory(currentCat);
+          setItems(currentCat.items);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load data", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleCategoryChange = (categoryCode: string) => {
-    const category = referenceDataCategories.find(cat => cat.code === categoryCode);
+    const category = categories.find(cat => cat.code === categoryCode);
     if (category) {
       setSelectedCategory(category);
-      loadItems(categoryCode);
+      setItems(category.items);
       setSearchTerm('');
     }
   };
@@ -70,27 +98,28 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     setEditingItem(item);
     setValue(item.value);
     setAbbreviation(item.abbreviation || '');
-    // Check if item has description (for Material Group)
+    // Mapping: Description FE diambil dari description item (untuk MatGroup/KBLI)
     setDescription((item as any).description || '');
     setIsActive(item.isActive);
     setShowForm(true);
   };
   
-  const handleDeleteItem = (item: ReferenceDataItem) => {
+  const handleDeleteItem = async (item: ReferenceDataItem) => {
     if (!selectedCategory) return;
     
     if (window.confirm(`Are you sure you want to delete "${item.value}"?`)) {
-      const success = deleteReferenceDataItem(selectedCategory.code, item.id);
-      if (success) {
+      try {
+        await deleteSystemDataItemApi(selectedCategory.code, item.id);
         toast.success('Item deleted successfully');
-        loadItems(selectedCategory.code);
-      } else {
-        toast.error('Failed to delete item');
+        // Reload data untuk update list
+        await loadAllData(selectedCategory.code);
+      } catch (error) {
+        toast.error((error as Error).message || 'Failed to delete item');
       }
     }
   };
   
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!selectedCategory) return;
     
     if (!value.trim()) {
@@ -98,9 +127,8 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
       return;
     }
     
-    // Check for duplicates
-    const existingItems = getReferenceDataByCategory(selectedCategory.code);
-    const isDuplicate = existingItems.some(
+    // Check local duplicates (optional validation before API call)
+    const isDuplicate = items.some(
       item => item.value.toLowerCase() === value.trim().toLowerCase() && 
       (!editingItem || item.id !== editingItem.id)
     );
@@ -109,64 +137,52 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
       toast.error('This value already exists in this category');
       return;
     }
-    
-    if (editingItem) {
-      // Update existing item
-      const updates: Partial<ReferenceDataItem> = { 
-        value: value.trim(), 
-        isActive 
-      };
-      
-      // Add abbreviation if category supports it (jobsite or department)
-      if (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') {
-        updates.abbreviation = abbreviation.trim() || undefined;
-      }
-      
-      // Add description if category supports it (materialGroup or kbli)
-      if (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') {
-        (updates as any).description = description.trim();
-      }
-      
-      const updated = updateReferenceDataItem(selectedCategory.code, editingItem.id, updates);
-      
-      if (updated) {
+
+    setIsSaving(true);
+    try {
+      if (editingItem) {
+        // --- UPDATE ---
+        const payload = { 
+          value: value.trim(), 
+          isActive,
+          // Kirim abbreviation hanya jika relevan (Jobsite/Dept)
+          abbreviation: (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') 
+            ? abbreviation.trim() || undefined 
+            : undefined,
+          // Kirim description hanya jika relevan (MatGroup/KBLI)
+          description: (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') 
+            ? description.trim() || undefined 
+            : undefined
+        };
+        
+        await updateSystemDataItemApi(selectedCategory.code, editingItem.id, payload);
         toast.success('Item updated successfully');
-        loadItems(selectedCategory.code);
-        setShowForm(false);
-        resetForm();
+
       } else {
-        toast.error('Failed to update item');
-      }
-    } else {
-      // Create new item
-      const newItem = createReferenceDataItem(selectedCategory.code, value.trim());
-      
-      if (newItem) {
-        // Update with abbreviation if applicable
-        if (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') {
-          if (abbreviation.trim()) {
-            updateReferenceDataItem(selectedCategory.code, newItem.id, { 
-              abbreviation: abbreviation.trim() 
-            });
-          }
-        }
+        // --- CREATE ---
+        const payload = {
+          value: value.trim(),
+          abbreviation: (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') 
+            ? abbreviation.trim() || undefined 
+            : undefined,
+          description: (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') 
+            ? description.trim() || undefined 
+            : undefined
+        };
         
-        // Update with description if applicable (materialGroup or kbli)
-        if (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') {
-          if (description.trim()) {
-            updateReferenceDataItem(selectedCategory.code, newItem.id, { 
-              description: description.trim() 
-            } as any);
-          }
-        }
-        
+        await createSystemDataItemApi(selectedCategory.code, payload);
         toast.success('Item created successfully');
-        loadItems(selectedCategory.code);
-        setShowForm(false);
-        resetForm();
-      } else {
-        toast.error('Failed to create item');
       }
+
+      // Refresh Data
+      await loadAllData(selectedCategory.code);
+      setShowForm(false);
+      resetForm();
+
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to save item');
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -178,41 +194,72 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     setEditingItem(null);
   };
   
-  const moveItemUp = (item: ReferenceDataItem) => {
+  const handleReorder = async (newSortedItems: ReferenceDataItem[]) => {
     if (!selectedCategory) return;
-    
-    const sorted = [...items];
-    const index = sorted.findIndex(i => i.id === item.id);
-    
-    if (index > 0) {
-      [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
-      reorderReferenceDataItems(selectedCategory.code, sorted);
-      loadItems(selectedCategory.code);
+
+    // 1. Optimistic Update (Update UI langsung agar terasa cepat)
+    setItems(newSortedItems);
+
+    try {
+      // 2. Panggil API di background
+      const itemIds = newSortedItems.map(i => i.id);
+      await reorderSystemDataItemsApi(selectedCategory.code, itemIds);
       toast.success('Order updated');
+    } catch (error) {
+      // 3. Revert jika gagal
+      toast.error('Failed to save order');
+      loadAllData(selectedCategory.code); // Reload data asli dari server
+    }
+  };
+
+  const moveItemUp = (item: ReferenceDataItem) => {
+    const index = items.findIndex(i => i.id === item.id);
+    if (index > 0) {
+      const sorted = [...items];
+      [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
+      
+      // Update local order properties agar konsisten sebelum reload
+      sorted.forEach((it, idx) => it.order = idx + 1);
+      
+      handleReorder(sorted);
     }
   };
   
   const moveItemDown = (item: ReferenceDataItem) => {
-    if (!selectedCategory) return;
-    
-    const sorted = [...items];
-    const index = sorted.findIndex(i => i.id === item.id);
-    
-    if (index < sorted.length - 1) {
+    const index = items.findIndex(i => i.id === item.id);
+    if (index < items.length - 1) {
+      const sorted = [...items];
       [sorted[index], sorted[index + 1]] = [sorted[index + 1], sorted[index]];
-      reorderReferenceDataItems(selectedCategory.code, sorted);
-      loadItems(selectedCategory.code);
-      toast.success('Order updated');
+      
+      // Update local order properties
+      sorted.forEach((it, idx) => it.order = idx + 1);
+
+      handleReorder(sorted);
     }
   };
   
-  const toggleActive = (item: ReferenceDataItem) => {
+  const toggleActive = async (item: ReferenceDataItem) => {
     if (!selectedCategory) return;
     
-    const updates = { isActive: !item.isActive };
-    updateReferenceDataItem(selectedCategory.code, item.id, updates);
-    loadItems(selectedCategory.code);
-    toast.success(`Item ${item.isActive ? 'deactivated' : 'activated'}`);
+    // Optimistic toggle di UI
+    const updatedItems = items.map(i => i.id === item.id ? { ...i, isActive: !i.isActive } : i);
+    setItems(updatedItems);
+
+    try {
+      const payload = {
+        value: item.value,
+        isActive: !item.isActive,
+        abbreviation: item.abbreviation,
+        description: (item as any).description
+      };
+      
+      await updateSystemDataItemApi(selectedCategory.code, item.id, payload);
+      toast.success(`Item ${!item.isActive ? 'activated' : 'deactivated'}`);
+      // Tidak perlu loadAllData jika tidak ada perubahan data lain
+    } catch (error) {
+      toast.error('Failed to update status');
+      setItems(items); // Revert
+    }
   };
   
   const filteredItems = items.filter(item =>
@@ -225,6 +272,17 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
       <div className="p-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">Access Denied: Only administrators can manage system data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && categories.length === 0) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-500">Loading system data...</p>
         </div>
       </div>
     );
@@ -246,12 +304,13 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
           <Select 
             value={selectedCategory?.code || ''} 
             onValueChange={handleCategoryChange}
+            disabled={isLoading}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              {referenceDataCategories.map((cat) => (
+              {categories.map((cat) => (
                 <SelectItem key={cat.code} value={cat.code}>
                   <div className="flex flex-col items-start">
                     <span className="font-medium">{cat.name}</span>

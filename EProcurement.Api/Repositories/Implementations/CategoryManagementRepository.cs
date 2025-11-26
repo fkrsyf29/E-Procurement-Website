@@ -70,8 +70,10 @@ namespace EProcurement.Api.Repositories.Implementations
         public async Task UpdateSubClassification(SubClassificationUpdateRequest req)
         {
             var deletedAt = req.IsDeleted == true ? DateTime.UtcNow : (DateTime?)null;
+            var userFinal = req.IsDeleted == true ? req.DeletedBy : req.User;
+
             await ExecuteAsync(CategoryManagementCommands.UpdateSubClassification,
-                new { req.SubClassificationID, req.ClassificationID, req.Code, req.Name, req.IsActive, req.User, DeletedAt = deletedAt, req.DeletedBy });
+                new { req.SubClassificationID, req.ClassificationID, req.Code, req.Name, req.IsActive, UpdatedBy=userFinal, DeletedAt = deletedAt, req.DeletedBy });
         }
     }
 }
