@@ -1,40 +1,11 @@
 import { ApprovalHistory, Proposal } from '../types';
 import { Check, X, Clock, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { formatDate } from '../utils/formatters';
-import { mockUsers } from '../data/mockData';
 
 interface ApprovalTimelineProps {
   history?: ApprovalHistory[];
   proposal?: Proposal;
   compact?: boolean;
-}
-
-// Helper function to get user name based on role
-function getUserNameByRole(role: string, jobsite?: string, department?: string): string {
-  // Try exact role match first
-  let user = mockUsers.find(u => u.roleName === role);
-  
-  // If not found, try to match by role pattern and context
-  if (!user && jobsite && department) {
-    user = mockUsers.find(u => 
-      u.roleName === role && 
-      u.jobsite === jobsite && 
-      u.department === department
-    );
-  }
-  
-  // If still not found, try partial matching
-  if (!user) {
-    // Extract key parts from role name
-    const roleLower = role.toLowerCase();
-    user = mockUsers.find(u => {
-      const userRoleLower = u.roleName.toLowerCase();
-      // Check if roles match closely
-      return userRoleLower.includes(roleLower) || roleLower.includes(userRoleLower);
-    });
-  }
-  
-  return user?.name || '';
 }
 
 export function ApprovalTimeline({ history, proposal, compact = false }: ApprovalTimelineProps) {
@@ -47,7 +18,6 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
   }
   
   // Remove duplicate pending entries for stages that already have approved/rejected entries
-  // This prevents showing "Review 2 Pending" when "Review 2 Approved" already exists
   const approvedStages = new Set(
     timelineHistory
       .filter(item => item.action === 'Approved' || item.action === 'Rejected')
@@ -64,7 +34,7 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
   // Find the current pending stage (first pending entry)
   const currentPendingIndex = timelineHistory.findIndex(item => item.action === 'Pending');
   
-  const getIcon = (action: 'Approved' | 'Rejected' | 'Pending' | 'Created' | 'Submitted') => {
+  const getIcon = (action: string | undefined) => {
     switch (action) {
       case 'Approved':
         return <Check className="w-4 h-4 text-green-600" />;
@@ -75,10 +45,12 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
       case 'Created':
       case 'Submitted':
         return <Check className="w-4 h-4 text-blue-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const getStatusColor = (action: 'Approved' | 'Rejected' | 'Pending' | 'Created' | 'Submitted') => {
+  const getStatusColor = (action: string | undefined) => {
     switch (action) {
       case 'Approved':
         return 'bg-green-100 border-green-300';
@@ -89,6 +61,8 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
       case 'Created':
       case 'Submitted':
         return 'bg-blue-100 border-blue-300';
+      default:
+        return 'bg-gray-100 border-gray-300';
     }
   };
 
@@ -151,13 +125,15 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
               <p className="text-sm text-gray-700">
                 <strong>Approval follows creator's organizational structure:</strong>
               </p>
+              {/* Note: Field creatorJobsite/Department mungkin perlu penyesuaian jika backend belum kirim */}
+              {/* Untuk saat ini kita render safe access */}
               <div className="mt-2 text-sm text-gray-600 space-y-1">
-                <p>• Creator's Jobsite: <strong className="text-blue-700">{proposal.creatorJobsite}</strong></p>
-                <p>• Creator's Department: <strong className="text-blue-700">{proposal.creatorDepartment || proposal.department}</strong></p>
+                 {/* Menggunakan any casting sementara karena type proposal.creatorJobsite di types baru adalah Object */}
+                <p>• Creator's Jobsite: <strong className="text-blue-700">{(proposal.creatorJobsite as any)?.name || '-'}</strong></p>
+                <p>• Creator's Department: <strong className="text-blue-700">{(proposal.creatorDepartment as any)?.name || (proposal.department as any)?.name || '-'}</strong></p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Note: Procurement is for <strong>{proposal.jobsite}</strong>, but approval routing 
-                  is based on the creator's location (<strong>{proposal.creatorJobsite}</strong>) 
-                  to maintain organizational consistency and accountability.
+                  Note: Procurement is for <strong>{(proposal.jobsite as any)?.name || '-'}</strong>, but approval routing 
+                  is based on the creator's location.
                 </p>
               </div>
             </div>
@@ -169,11 +145,8 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
         <>
           {timelineHistory.map((item, index) => {
             const isCurrentPending = index === currentPendingIndex && item.action === 'Pending';
-            const userName = getUserNameByRole(
-              item.roleName || '', 
-              proposal?.jobsite, 
-              proposal?.department
-            );
+            // ✅ FIX: Gunakan langsung 'approver' dari data API (Backend sudah kirim Nama User)
+            const userName = item.approver; 
             
             return (
               <div key={item.id || `history-${index}`} className="flex gap-4">
@@ -221,9 +194,6 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
                       {!isCurrentPending && userName && (
                         <p className="text-sm text-gray-600">{userName}</p>
                       )}
-                      {!isCurrentPending && item.approver && item.approver !== userName && (
-                        <p className="text-sm text-gray-600">{item.approver}</p>
-                      )}
                       
                       {item.comment && (
                         <p className="text-sm text-gray-500 mt-1 italic">"{item.comment}"</p>
@@ -234,7 +204,7 @@ export function ApprovalTimeline({ history, proposal, compact = false }: Approva
                         {item.date ? formatDate(item.date) : 'Pending'}
                       </p>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${
-                        item.action === 'Approved' ? 'bg-green-100 text-green-800' :
+                        item.action === 'Approved' || item.action?.includes('Final') ? 'bg-green-100 text-green-800' :
                         item.action === 'Rejected' ? 'bg-red-100 text-red-800' :
                         item.action === 'Created' || item.action === 'Submitted' ? 'bg-blue-100 text-blue-800' :
                         'bg-orange-100 text-orange-800'

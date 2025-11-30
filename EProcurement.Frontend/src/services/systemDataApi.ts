@@ -15,6 +15,8 @@ export interface CreateSystemDataItemPayload {
   value: string;
   abbreviation?: string; // Optional (untuk Jobsite/Dept)
   description?: string;  // Optional (untuk KBLI/MatGroup)
+  user: string;
+  isActive: boolean;
 }
 
 export interface UpdateSystemDataItemPayload {
@@ -22,6 +24,7 @@ export interface UpdateSystemDataItemPayload {
   abbreviation?: string;
   description?: string;
   isActive: boolean;
+  user: string;
 }
 
 export interface ReorderSystemDataPayload {
@@ -111,10 +114,11 @@ export async function updateSystemDataItemApi(
  */
 export async function deleteSystemDataItemApi(
   categoryCode: string,
-  id: string
+  id: string,
+  user: string
 ): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/system-data/${categoryCode}/${id}`, {
+    const response = await fetch(`${API_BASE}/system-data/${categoryCode}/${id}/${user}`, {
       method: 'DELETE',
     });
 

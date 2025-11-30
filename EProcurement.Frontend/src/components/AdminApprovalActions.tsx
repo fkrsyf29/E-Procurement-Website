@@ -12,7 +12,7 @@ import {
   DialogFooter 
 } from './ui/dialog';
 import { Badge } from './ui/badge';
-import { CheckCircle, XCircle, Shield, AlertTriangle, Info } from 'lucide-react';
+import { CheckCircle, Shield, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Proposal } from '../types';
 
@@ -22,13 +22,18 @@ interface AdminApprovalActionsProps {
   onReject: (roleName: string, comments: string) => void;
 }
 
+// Mapping Role Standar untuk Dropdown
+// Kita sesuaikan Label agar mudah dicocokkan dengan 'RequiredRoleName' dari Backend
 const APPROVAL_ROLES = [
-  { value: 'verificator', label: 'Verificator', status: 'On Verification', nextStatus: 'On Review 1' },
-  { value: 'reviewer1', label: 'Reviewer 1', status: 'On Review 1', nextStatus: 'On Review 2' },
-  { value: 'reviewer2', label: 'Reviewer 2', status: 'On Review 2', nextStatus: 'On Approval 1' },
-  { value: 'approver1', label: 'Approver 1', status: 'On Approval 1', nextStatus: 'On Approval 2' },
-  { value: 'approver2', label: 'Approver 2', status: 'On Approval 2', nextStatus: 'On Sourcing Approval' },
-  { value: 'sourcing-head', label: 'Sourcing Dept Head', status: 'On Sourcing Approval', nextStatus: 'On Procurement Approval' },
+  { value: 'verificator', label: 'Unit Head', status: 'On Verification', nextStatus: 'On Review 1' },
+  { value: 'reviewer1', label: 'Section Head', status: 'On Review 1', nextStatus: 'On Review 2' },
+  { value: 'reviewer2', label: 'Department Head', status: 'On Review 2', nextStatus: 'On Approval 1' },
+  { value: 'approver1', label: 'Manager', status: 'On Approval 1', nextStatus: 'On Approval 2' },
+  { value: 'approver2', label: 'Division Head', status: 'On Approval 2', nextStatus: 'On Sourcing Approval' },
+  { value: 'coo', label: 'Chief Operation', status: 'On Chief Operation Approval', nextStatus: 'On Director Approval' },
+  { value: 'director', label: 'Director', status: 'On Director Approval', nextStatus: 'On President Director Approval' },
+  { value: 'presdir', label: 'President Director', status: 'On President Director Approval', nextStatus: 'Approved' },
+  { value: 'sourcing-head', label: 'Sourcing Department Head', status: 'On Sourcing Approval', nextStatus: 'On Procurement Approval' },
   { value: 'procurement-head', label: 'Procurement Division Head', status: 'On Procurement Approval', nextStatus: 'Approved' },
 ];
 
@@ -42,13 +47,41 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [comments, setComments] = useState('');
 
-  // Get available roles based on current status
+  // ✅ LOGIC BARU: Smart Filter Role
   const getAvailableRoles = () => {
-    return APPROVAL_ROLES.filter(role => 
-      role.status === proposal.status || 
-      (proposal.status === 'Draft' && role.value === 'verificator')
-    );
+    // Jika proposal sudah selesai, tidak ada aksi
+    if (proposal.status === 'Approved' || proposal.status === 'Rejected' || proposal.status === 'Completed') {
+        return [];
+    }
+
+    // 1. Coba cari berdasarkan 'RequiredRoleName' (Data dari Backend Baru)
+    if (proposal.requiredRoleName) {
+        // Cari role di list yang label-nya mirip dengan required role dari DB
+        const matched = APPROVAL_ROLES.filter(r => 
+            proposal.requiredRoleName!.toLowerCase().includes(r.label.toLowerCase())
+        );
+        if (matched.length > 0) return matched;
+    }
+
+    // 2. Fallback: Cek berdasarkan Status String (Logic Lama / Data Lama)
+    const statusMatched = APPROVAL_ROLES.filter(role => role.status === proposal.status);
+    if (statusMatched.length > 0) return statusMatched;
+
+    // 3. Fallback Terakhir: Jika Draft, tawarkan Verificator (Unit Head)
+    if (proposal.status === 'Draft') {
+        return APPROVAL_ROLES.filter(r => r.value === 'verificator');
+    }
+
+    // 4. Jika In Progress tapi tidak ada match spesifik (kasus edge case),
+    // Tampilkan semua role agar Admin bisa pilih manual (Power User Mode)
+    if (proposal.status === 'In Progress') {
+        return APPROVAL_ROLES;
+    }
+
+    return [];
   };
+
+  const availableRoles = getAvailableRoles();
 
   const getCurrentRoleInfo = () => {
     return APPROVAL_ROLES.find(role => role.value === selectedRole);
@@ -63,12 +96,14 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
     const roleInfo = getCurrentRoleInfo();
     if (!roleInfo) return;
 
+    // Kirim Label role (misal "Manager") sebagai roleName
     onApprove(roleInfo.label, comments);
+    
     setIsApproveDialogOpen(false);
     setSelectedRole('');
     setComments('');
     toast.success(`Approved as ${roleInfo.label}`, {
-      description: `Proposal status updated to ${roleInfo.nextStatus}`,
+      description: `Action logged successfully`,
     });
   };
 
@@ -87,6 +122,7 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
     if (!roleInfo) return;
 
     onReject(roleInfo.label, comments);
+    
     setIsRejectDialogOpen(false);
     setSelectedRole('');
     setComments('');
@@ -95,9 +131,7 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
     });
   };
 
-  const availableRoles = getAvailableRoles();
-
-  if (availableRoles.length === 0 || proposal.status === 'Approved' || proposal.status === 'Rejected') {
+  if (availableRoles.length === 0) {
     return null;
   }
 
@@ -150,6 +184,11 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
                   <p className="text-sm text-gray-900 mt-1">
                     <span className="font-medium">Title:</span> {proposal.title}
                   </p>
+                   {proposal.requiredRoleName && (
+                      <p className="text-sm text-blue-800 mt-1 font-semibold">
+                        Waiting for: {proposal.requiredRoleName}
+                      </p>
+                   )}
                 </div>
               </div>
             </div>
@@ -164,7 +203,7 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
                 <SelectContent>
                   {availableRoles.map((role) => (
                     <SelectItem key={role.value} value={role.value}>
-                      {role.label} → {role.nextStatus}
+                      {role.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -173,18 +212,6 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
                 Select the role you want to approve as
               </p>
             </div>
-
-            {/* Next Status Preview */}
-            {selectedRole && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="text-sm text-gray-900">
-                  <span className="font-medium">Next Status:</span>{' '}
-                  <Badge className="ml-1 bg-green-600">
-                    {getCurrentRoleInfo()?.nextStatus}
-                  </Badge>
-                </p>
-              </div>
-            )}
 
             {/* Comments */}
             <div>
@@ -258,9 +285,11 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
                     <span className="font-medium">Current Status:</span>{' '}
                     <Badge variant="outline" className="ml-1">{proposal.status}</Badge>
                   </p>
-                  <p className="text-sm text-gray-900 mt-1">
-                    <span className="font-medium">Title:</span> {proposal.title}
-                  </p>
+                   {proposal.requiredRoleName && (
+                      <p className="text-sm text-blue-800 mt-1 font-semibold">
+                        Waiting for: {proposal.requiredRoleName}
+                      </p>
+                   )}
                 </div>
               </div>
             </div>
@@ -328,7 +357,6 @@ export const AdminApprovalActions: React.FC<AdminApprovalActionsProps> = ({
               variant="destructive"
               disabled={!selectedRole || !comments.trim()}
             >
-              <XCircle className="w-4 h-4 mr-2" />
               Confirm Rejection
             </Button>
           </DialogFooter>

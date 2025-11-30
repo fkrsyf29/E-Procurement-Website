@@ -45,10 +45,10 @@ namespace EProcurement.Api.Controllers
         }
 
         // DELETE: api/system-data/{categoryCode}/{id}
-        [HttpDelete("{categoryCode}/{id}")]
-        public async Task<IActionResult> Delete(string categoryCode, string id)
+        [HttpDelete("{categoryCode}/{id}/{user}")]
+        public async Task<IActionResult> Delete(string categoryCode, string id, string user)
         {
-            var success = await _service.DeleteItemAsync(categoryCode, id);
+            var success = await _service.DeleteItemAsync(categoryCode, id, user);
             if (!success) return NotFound("Item not found or delete failed.");
             return Ok(new { message = "Item deleted successfully" });
         }

@@ -26,7 +26,7 @@ namespace EProcurement.Api.Repositories.Implementations
             return await db.QueryAsync("usp_GetSystemDataList", commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<bool> CreateAsync(string categoryCode, string code, string name, string description, bool isActive)
+        public async Task<bool> CreateAsync(string categoryCode, string code, string name, string description, bool isActive, string user)
         {
             string tableName = GetTableName(categoryCode);
             if (string.IsNullOrEmpty(tableName)) return false;
@@ -38,26 +38,26 @@ namespace EProcurement.Api.Repositories.Implementations
             int newOrder = await db.ExecuteScalarAsync<int>(sqlOrder);
 
             string sql = $@"
-                INSERT INTO {tableName} (Code, Name, Description, IsActive, OrderNo, CreatedAt, UpdatedAt)
-                VALUES (@Code, @Name, @Description, @IsActive, @OrderNo, GETDATE(), GETDATE())";
+                INSERT INTO {tableName} (Code, Name, Description, IsActive, OrderNo, CreatedBy, CreatedAt)
+                VALUES (@Code, @Name, @Description, @IsActive, @OrderNo, @User, GETDATE())";
 
             try
             {
-                var rows = await db.ExecuteAsync(sql, new { Code = code, Name = name, Description = description, IsActive = isActive, OrderNo = newOrder });
+                var rows = await db.ExecuteAsync(sql, new { Code = code, Name = name, Description = description, IsActive = isActive, OrderNo = newOrder, User = user });
                 return rows > 0;
             }
             catch
             {
                 // Fallback jika tabel tidak punya kolom Description
                 string sqlNoDesc = $@"
-                    INSERT INTO {tableName} (Code, Name, IsActive, OrderNo, CreatedAt, UpdatedAt)
-                    VALUES (@Code, @Name, @IsActive, @OrderNo, GETDATE(), GETDATE())";
-                var rows = await db.ExecuteAsync(sqlNoDesc, new { Code = code, Name = name, IsActive = isActive, OrderNo = newOrder });
+                    INSERT INTO {tableName} (Code, Name, IsActive, OrderNo, CreatedBy, CreatedAt)
+                    VALUES (@Code, @Name, @IsActive, @OrderNo, @User, GETDATE())";
+                var rows = await db.ExecuteAsync(sqlNoDesc, new { Code = code, Name = name, IsActive = isActive, OrderNo = newOrder, User = user });
                 return rows > 0;
             }
         }
 
-        public async Task<bool> UpdateAsync(string categoryCode, string code, string name, string description, bool isActive)
+        public async Task<bool> UpdateAsync(string categoryCode, string code, string name, string description, bool isActive, string user)
         {
             string tableName = GetTableName(categoryCode);
             if (string.IsNullOrEmpty(tableName)) return false;
@@ -69,12 +69,13 @@ namespace EProcurement.Api.Repositories.Implementations
                 SET Name = @Name, 
                     Description = @Description, 
                     IsActive = @IsActive,
+                    UpdatedBy = @User,
                     UpdatedAt = GETDATE()
                 WHERE Code = @Code";
 
             try
             {
-                var rows = await db.ExecuteAsync(sql, new { Code = code, Name = name, Description = description, IsActive = isActive });
+                var rows = await db.ExecuteAsync(sql, new { Code = code, Name = name, Description = description, IsActive = isActive, User = user });
                 return rows > 0;
             }
             catch
@@ -83,14 +84,15 @@ namespace EProcurement.Api.Repositories.Implementations
                     UPDATE {tableName} 
                     SET Name = @Name, 
                         IsActive = @IsActive,
+                        UpdatedBy = @User,
                         UpdatedAt = GETDATE()
                     WHERE Code = @Code";
-                var rows = await db.ExecuteAsync(sqlNoDesc, new { Code = code, Name = name, IsActive = isActive });
+                var rows = await db.ExecuteAsync(sqlNoDesc, new { Code = code, Name = name, IsActive = isActive, User = user });
                 return rows > 0;
             }
         }
 
-        public async Task<bool> DeleteAsync(string categoryCode, string code)
+        public async Task<bool> DeleteAsync(string categoryCode, string code, string user)
         {
             string tableName = GetTableName(categoryCode);
             if (string.IsNullOrEmpty(tableName)) return false;
@@ -99,13 +101,13 @@ namespace EProcurement.Api.Repositories.Implementations
             string sql = $@"
                 UPDATE {tableName} 
                 SET DeletedAt = GETDATE(),
-                    DeletedBy = 'SYSTEM TEST',
+                    DeletedBy = @User,
                     IsActive = 0
                 WHERE Code = @Code";
 
             try
             {
-                var rows = await db.ExecuteAsync(sql, new { Code = code });
+                var rows = await db.ExecuteAsync(sql, new { Code = code, User = user });
                 return rows > 0;
             }
             catch

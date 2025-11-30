@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner"; 
 import { Toaster } from "./components/ui/sonner";
 import { Login } from "./components/Login";
 import { ForgotPassword } from "./components/ForgotPassword";
@@ -22,7 +21,6 @@ import { AnnualPurchasePlan } from "./components/AnnualPurchasePlan";
 import { mockProposals, mockVendorRecommendations } from "./data/mockData";
 import { testProposals } from "./data/testProposals";
 import { approvalMatrixData } from "./data/approvalMatrix";
-import { defaultRoles } from "./data/rolesData";
 import {
   getMaterials,
   addMaterial,
@@ -47,11 +45,7 @@ import {
   RoleCategories,
   PermissionCategories,
 } from "../types";
-import {
-  initializeProposalHistory,
-  getFirstApprovalStatus,
-} from "./utils/approvalHelper";
-import { fetchCurrentUser } from "./services/userApi";
+import { fetchCurrentUser, fetchApiUsers } from "./services/userApi";
 import { fetchApiRoles } from "./services/roleApi";
 import { fetchApiPermissions } from "./services/permissionApi";
 import { fetchApiDepartment } from "./services/departmentApi";
@@ -59,49 +53,50 @@ import { fetchApiJobsite } from "./services/jobsiteApi";
 import { fetchApiApprovalRole } from "./services/approvalRoleApi";
 import { fetchApiRoleCategory } from "./services/roleCategoryApi";
 import { fetchApiPermissionCategory } from "./services/permissionCategoryApi";
-import { fetchApiUsers } from "./services/userApi";
 import { fetchApiRegion } from "./services/regionApi";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState("dashboard");
-  // Combine mockProposals with testProposals for vendor recommendation testing
-  const [proposals, setProposals] = useState<Proposal[]>([
-    ...mockProposals,
-    ...testProposals,
-  ]);
-  const [approvalMatrices, setApprovalMatrices] =
-    useState<ApprovalMatrix[]>(approvalMatrixData);
-  const [vendorRecommendations, setVendorRecommendations] = useState<
-    VendorRecommendation[]
-  >(mockVendorRecommendations);
+  
+  // State Legacy (Mock Data) - Tetap dipertahankan agar tidak error saat compile
+  const [proposals, setProposals] = useState<Proposal[]>([ ...mockProposals, ...testProposals ]);
   const [materials, setMaterials] = useState<Material[]>(getMaterials());
+  
+  // State Master Data
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
+  const [availableDepartments, setAvailableDepartments] = useState<Departments[]>([]);
+  const [availableJobsites, setAvailableJobsites] = useState<Jobsites[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<Regions[]>([]);
+  const [availableRoleCategories, setAvailableRoleCategories] = useState<RoleCategories[]>([]);
+  const [availablePermissionCategories, setAvailablePermissionCategories] = useState<PermissionCategories[]>([]);
+  const [availableApprovalRoles, setAvailableApprovalRoles] = useState<ApprovalRoles[]>([]);
+
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  const [roles, setRoles] = useState<RoleDefinition[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [availablePermissions, setAvailablePermissions] = useState<
-    Permission[]
-  >([]);
-  const [availableDepartments, setAvailableDepartments] = useState<
-    Departments[]
-  >([]);
-  const [availableJobsites, setAvailableJobsites] = useState<Jobsites[]>([]);
-  const [availableRegions, setAvailableRegions] = useState<Regions[]>([]);
-  const [availableRoleCategories, setAvailableRoleCategories] = useState<
-    RoleCategories[]
-  >([]);
-  const [availablePermissionCategories, setAvailablePermissionCategories] =
-    useState<PermissionCategories[]>([]);
-  const [availableApprovalRoles, setAvailableApprovalRoles] = useState<
-    ApprovalRoles[]
-  >([]);
-
   const handleLogin = useCallback(
     (user: User) => {
+      // ✅ BERSIH: Langsung terima user dari API (karena sudah ada permissions di dalamnya)
       setCurrentUser(user);
-      setCurrentPage("dashboard");
+      
+      // Auto Redirect berdasarkan Permission yang dibawa user
+      // Kita gunakan optional chaining (?.) dan fallback array kosong untuk keamanan
+      const perms = user.permissions || [];
+      
+      console.log("🔐 [LOGIN] User Permissions:", perms);
+
+      if (perms.includes('manage_sourcing') && !perms.includes('approve_sourcing')) {
+          setCurrentPage("sourcing");
+      } else if (perms.includes('review_vendors') && !perms.includes('approve_manager_level')) {
+          setCurrentPage("sourcing-documents");
+      } else if (perms.some(p => p.startsWith('approve_'))) {
+          setCurrentPage("my-approvals");
+      } else {
+          setCurrentPage("dashboard");
+      }
     },
     [setCurrentUser, setCurrentPage],
   );
@@ -112,31 +107,37 @@ export default function App() {
     localStorage.removeItem("authToken");
   }, [setCurrentUser, setCurrentPage]);
 
+  // Fetch Master Data on Mount
   useEffect(() => {
-    
-    let isMounted = true; // biar tidak setState kalau component unmount
-
+    let isMounted = true;
     const fetchData = async () => {
       try {
-        // 1. Fetch Data Master
-        const mappedRoles: RoleDefinition[] = await fetchApiRoles();
-        const permissionsList: Permission[] | null =
-          await fetchApiPermissions();
-        const departmentList: Departments[] | null = await fetchApiDepartment();
-        const jobsiteList: Jobsites[] | null = await fetchApiJobsite();
-        const regionList: Regions[] | null = await fetchApiRegion();
-        const approvalRoleList: ApprovalRoles[] | null =
-          await fetchApiApprovalRole();
-        const roleCategoryList: RoleCategories[] | null =
-          await fetchApiRoleCategory();
-        const permissionCategoryList: PermissionCategories[] | null =
-          await fetchApiPermissionCategory();
-        const mappedUsers: User[] | null = await fetchApiUsers();
+        // Parallel fetch
+        const [
+          mappedRoles,
+          permissionsList,
+          departmentList,
+          jobsiteList,
+          regionList,
+          approvalRoleList,
+          roleCategoryList,
+          permissionCategoryList,
+          mappedUsers
+        ] = await Promise.all([
+            fetchApiRoles().catch(() => []),
+            fetchApiPermissions().catch(() => []),
+            fetchApiDepartment().catch(() => []),
+            fetchApiJobsite().catch(() => []),
+            fetchApiRegion().catch(() => []),
+            fetchApiApprovalRole().catch(() => []),
+            fetchApiRoleCategory().catch(() => []),
+            fetchApiPermissionCategory().catch(() => []),
+            fetchApiUsers().catch(() => [])
+        ]);
 
-        // Hanya update state kalau component masih mounted
         if (isMounted) {
           setUsers(mappedUsers || []);
-          setRoles(mappedRoles);
+          setRoles(mappedRoles || []);
           setAvailablePermissions(permissionsList || []);
           setAvailableDepartments(departmentList || []);
           setAvailableJobsites(jobsiteList || []);
@@ -146,436 +147,54 @@ export default function App() {
           setAvailableRoleCategories(roleCategoryList || []);
         }
       } catch (err) {
-        if (isMounted) {
-          console.error("Koneksi ke server gagal:", err);
-          setUsers([]);
-          setRoles([]);
-          setAvailablePermissions([]);
-          setAvailableDepartments([]);
-          setAvailableJobsites([]);
-          setAvailableRegions([]);
-          setAvailableApprovalRoles([]);
-          setAvailablePermissionCategories([]);
-          setAvailableRoleCategories([]);
-        }
+        console.error("Error fetching master data:", err);
       }
     };
-
     fetchData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
+  // Check Session
   useEffect(() => {
     const checkSession = async () => {
       const token = localStorage.getItem("authToken");
-
       if (!token) {
         setIsCheckingSession(false);
         return;
       }
-      
       try {
         const user = await fetchCurrentUser(token);
-
         if (user) {
-          handleLogin(user);
+             // ✅ User dari API checkSession sekarang juga sudah membawa permissions
+             handleLogin(user);
         } else {
-          localStorage.removeItem("authToken");
+             localStorage.removeItem("authToken");
         }
       } catch (error) {
-        console.error("❌ Gagal validasi sesi:", error);
-
-        const errorMessage = error?.message || "";
-        const isNetworkError = 
-          errorMessage.includes("Network Error") || 
-          errorMessage.includes("Failed to fetch") ||
-          errorMessage.includes("Connection refused");
-
-        if (isNetworkError) {
-          toast.error("Tidak dapat terhubung ke server. Mohon coba lagi nanti.");
-        } else {
-          localStorage.removeItem("authToken");
-        }
+        console.error("Session check failed:", error);
+        localStorage.removeItem("authToken");
       } finally {
         setIsCheckingSession(false);
       }
     };
-
     checkSession();
   }, [handleLogin]);
 
-  // ✅ DEBUG: Log when proposals state changes
-  useEffect(() => {
-    // console.log('📢 [APP] proposals state updated!');
-    // console.log('   - Total proposals:', proposals.length);
-    // console.log('   - Proposal IDs:', proposals.map(p => p.id).join(', '));
-  }, [proposals]);
-
-  // ✅ CRITICAL: Sync materials from localStorage on mount and storage events
-  useEffect(() => {
-    // Load from localStorage on mount
-    const loadedMaterials = getMaterials();
-    setMaterials(loadedMaterials);
-    // console.log('✅ Materials loaded on mount:', loadedMaterials.length);
-
-    // Listen for localStorage changes (from other tabs or components)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "eproposal_materials_data") {
-        const updatedMaterials = getMaterials();
-        setMaterials(updatedMaterials);
-        // console.log('🔄 Materials synced from localStorage:', updatedMaterials.length);
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  const handleSaveProposal = (proposalData: any, isDraft: boolean) => {
-    // console.log('💾 [APP] handleSaveProposal called');
-    // console.log('   - Is Draft:', isDraft);
-    // console.log('   - Proposal ID:', proposalData.id);
-    // console.log('   - Proposal No:', proposalData.proposalNo);
-
-    // ✅ CHECK: Is this an UPDATE (edit) or CREATE (new)?
-    const isEdit =
-      proposalData.id && proposals.some((p) => p.id === proposalData.id);
-
-    if (isEdit) {
-      // ✅ UPDATE EXISTING PROPOSAL
-      // console.log('📝 [APP] Updating existing proposal:', proposalData.id);
-
-      // Get the original proposal to check if it's Rejected
-      const originalProposal = proposals.find((p) => p.id === proposalData.id);
-      const isResubmit = originalProposal?.status === "Rejected" && !isDraft;
-
-      // console.log('   - Original Status:', originalProposal?.status);
-      // console.log('   - Is Resubmit:', isResubmit);
-
-      setProposals((prevProposals) =>
-        prevProposals.map((p) => {
-          if (p.id === proposalData.id) {
-            let newStatus = p.status;
-            let newHistory = p.history;
-
-            // ✅ RESUBMIT LOGIC: Reset status and history for rejected proposals
-            if (isResubmit) {
-              // console.log('🔄 [RESUBMIT] Resetting approval flow for rejected proposal');
-
-              // Get new initial status based on updated amount and routing
-              newStatus = getFirstApprovalStatus(
-                proposalData.amount,
-                currentUser?.department || proposalData.department,
-                currentUser?.jobsite || proposalData.jobsite,
-              );
-
-              // Initialize new approval history
-              newHistory = initializeProposalHistory(
-                currentUser?.name || p.creator,
-                currentUser?.roleName || "Creator",
-                false, // Not a draft - it's a resubmission
-                proposalData.amount,
-                currentUser?.department || proposalData.department,
-                currentUser?.jobsite || proposalData.jobsite,
-                proposalData.jobsite, // Procurement jobsite for Chief Operation
-              );
-
-              // console.log('   - New Status:', newStatus);
-              // console.log('   - New History Length:', newHistory.length);
-            } else if (isDraft) {
-              // If saving as draft, set to Draft
-              newStatus = "Draft";
-            } else if (p.status === "Draft" && !isDraft) {
-              // ✅ FIX (Nov 13): Draft proposal being submitted for first time
-              // console.log('📤 [SUBMIT DRAFT] Converting draft to submitted proposal');
-
-              // Get initial approval status
-              newStatus = getFirstApprovalStatus(
-                proposalData.amount,
-                currentUser?.department || proposalData.department,
-                currentUser?.jobsite || proposalData.jobsite,
-              );
-
-              // Initialize approval history
-              newHistory = initializeProposalHistory(
-                currentUser?.name || p.creator,
-                currentUser?.roleName || "Creator",
-                false, // Not a draft - it's being submitted
-                proposalData.amount,
-                currentUser?.department || proposalData.department,
-                currentUser?.jobsite || proposalData.jobsite,
-                proposalData.jobsite, // Procurement jobsite for Chief Operation
-              );
-
-              // console.log('   - New Status:', newStatus);
-              // console.log('   - New History Length:', newHistory.length);
-            }
-            // Otherwise keep existing status (for normal updates)
-
-            // Keep original metadata, update fields
-            return {
-              ...p,
-              proposalNo: proposalData.proposalNo,
-              title: proposalData.title,
-              description: proposalData.procurementObjective,
-              category: proposalData.category,
-              classification: proposalData.classification,
-              subClassification: proposalData.subClassification,
-              subClassifications: proposalData.subClassifications,
-              categories: proposalData.categories,
-              classifications: proposalData.classifications,
-              tor: proposalData.procurementObjective || "",
-              ter: proposalData.procurementObjective || "",
-              jobsite: proposalData.jobsite,
-              department: proposalData.department,
-              workLocation: proposalData.workLocation,
-              amount: proposalData.amount,
-              status: newStatus,
-              history: newHistory,
-              scopeOfWork: proposalData.scopeOfWork,
-              analysis: proposalData.analysis,
-              fundingBudget: proposalData.fundingBudget,
-              fundingNonBudget: proposalData.fundingNonBudget,
-              contractType: proposalData.contractType,
-              contractualType: proposalData.contractualType,
-              contractPeriod: proposalData.contractPeriod,
-              penalty: proposalData.penalty,
-              contractTermination: proposalData.contractTermination,
-              regulations: proposalData.regulations,
-              attachments: proposalData.attachments,
-              matrixConditions: proposalData.matrixConditions,
-              isTransactionValueExceeded:
-                proposalData.isTransactionValueExceeded,
-              isDurationExceeded: proposalData.isDurationExceeded,
-              durationMonths: proposalData.durationMonths,
-              torItems: proposalData.torItems,
-              terItems: proposalData.terItems,
-              budgetItems: proposalData.budgetItems || [],
-              kbliCodes: proposalData.kbliCodes || [],
-              brandSpecifications: proposalData.brandSpecifications || [],
-              recommendedVendors:
-                proposalData.recommendedVendors || p.recommendedVendors || [],
-              additionalVendors:
-                proposalData.additionalVendors || p.additionalVendors || [],
-            };
-          }
-          return p;
-        }),
-      );
-
-      // console.log('✅ [APP] Proposal updated successfully');
-      return;
-    }
-
-    // ✅ CREATE NEW PROPOSAL
-    // console.log('➕ [APP] Creating new proposal');
-    // console.log('   - 🔍 CURRENT USER INFO:');
-    // console.log('      • ID:', currentUser?.userID);
-    // console.log('      • Username:', currentUser?.username);
-    // console.log('      • Name:', currentUser?.name);
-    // console.log('      • Role:', currentUser?.roleName);
-    // console.log('      • Jobsite:', currentUser?.jobsite);
-    // console.log('      • Department:', currentUser?.department);
-
-    // IMPORTANT: Use CREATOR's jobsite and department for approval routing
-    // EXCEPTION: Chief Operation uses PROCUREMENT jobsite
-    const creatorJobsite = currentUser?.jobsite;
-    const creatorDepartment = currentUser?.department;
-    const procurementJobsite = proposalData.jobsite; // Procurement jobsite for Chief Operation
-
-    // Get initial status based on approval matrix using CREATOR's jobsite/department
-    const initialStatus = isDraft
-      ? "Draft"
-      : getFirstApprovalStatus(
-          proposalData.amount,
-          creatorDepartment || proposalData.department,
-          creatorJobsite || proposalData.jobsite,
-        );
-
-    // Initialize approval history using helper with CREATOR's jobsite/department
-    // Pass procurement jobsite for Chief Operation exception
-    const history = initializeProposalHistory(
-      currentUser?.name || "",
-      currentUser?.roleName || "Creator",
-      isDraft,
-      proposalData.amount,
-      creatorDepartment || proposalData.department,
-      creatorJobsite || proposalData.jobsite,
-      procurementJobsite, // For Chief Operation approval
-    );
-
-    const newProposal: Proposal = {
-      id: `${proposals.length + 1}`,
-      proposalNo: proposalData.proposalNo,
-      title: proposalData.title,
-      description: proposalData.procurementObjective,
-      category: proposalData.category,
-      classification: proposalData.classification,
-      subClassification: proposalData.subClassification,
-      subClassifications: proposalData.subClassifications, // ✅ CRITICAL: Include array for vendor matching!
-      categories: proposalData.categories, // ✅ Full category objects with codes
-      classifications: proposalData.classifications, // ✅ Full classification objects with codes
-      tor: proposalData.procurementObjective || "",
-      ter: proposalData.procurementObjective || "",
-      vendorList: proposalData.vendorList || [],
-      jobsite: proposalData.jobsite, // Procurement jobsite (where work will be done)
-      department: proposalData.department, // Procurement department
-      workLocation: proposalData.workLocation,
-      creator: currentUser?.name || "",
-      creatorId: currentUser?.userID || "",
-      creatorJobsite: creatorJobsite, // Creator's jobsite - for approval routing
-      creatorDepartment: creatorDepartment, // Creator's department - for approval routing
-      amount: proposalData.amount,
-      createdDate: proposalData.createdDate,
-      status: initialStatus,
-      history: history,
-      // Extended fields
-      scopeOfWork: proposalData.scopeOfWork,
-      analysis: proposalData.analysis,
-      fundingBudget: proposalData.fundingBudget,
-      fundingNonBudget: proposalData.fundingNonBudget,
-      contractType: proposalData.contractType,
-      contractualType: proposalData.contractualType,
-      contractPeriod: proposalData.contractPeriod,
-      penalty: proposalData.penalty,
-      contractTermination: proposalData.contractTermination,
-      regulations: proposalData.regulations,
-      attachments: proposalData.attachments,
-      matrixConditions: proposalData.matrixConditions, // Dynamic matrix conditions object
-      isTransactionValueExceeded: proposalData.isTransactionValueExceeded, // Auto-check condition
-      isDurationExceeded: proposalData.isDurationExceeded, // Auto-check condition
-      durationMonths: proposalData.durationMonths, // Duration in months
-      torItems: proposalData.torItems,
-      terItems: proposalData.terItems,
-      budgetItems: proposalData.budgetItems || [], // ✅ CRITICAL: Budget items for funding source
-      kbliCodes: proposalData.kbliCodes || [], // ✅ NEW (Nov 12, 2025)
-      brandSpecifications: proposalData.brandSpecifications || [], // ✅ NEW (Nov 12, 2025)
-      recommendedVendors: proposalData.recommendedVendors || [], // ✅ NEW (Nov 13, 2025)
-      additionalVendors: proposalData.additionalVendors || [], // ✅ NEW (Nov 13, 2025)
-    };
-
-    // ✅ CRITICAL: Force new array reference to trigger React re-render
-    // console.log('🔄 [APP] About to call setProposals...');
-    // console.log('   - Current proposals length:', proposals.length);
-
-    setProposals((prevProposals) => {
-      // console.log('📦 [APP] Inside setProposals updater function');
-      // console.log('   - Previous proposals length:', prevProposals.length);
-
-      const updated = [...prevProposals, newProposal];
-
-      // console.log('✅ [APP] New proposal created successfully');
-      // console.log('   - Total proposals now:', updated.length);
-      // console.log('   - New proposal:', newProposal.proposalNo);
-      // console.log('   - Proposal IDs:', updated.map(p => p.id).join(', '));
-      // console.log('   - 🔍 NEW PROPOSAL DETAILS:');
-      // console.log('      • ID:', newProposal.id);
-      // console.log('      • Proposal No:', newProposal.proposalNo);
-      // console.log('      • Status:', newProposal.status);
-      // console.log('      • Creator ID:', newProposal.creatorId);
-      // console.log('      • Creator:', newProposal.creator);
-      // console.log('      • Title:', newProposal.title);
-      // console.log('      • Jobsite:', newProposal.jobsite);
-      // console.log('      • Department:', newProposal.department);
-
-      // console.log('📤 [APP] Returning updated array from setProposals');
-      return updated;
-    });
-
-    // ✅ Additional log to confirm state update triggered
-    // console.log('✅ [APP] setProposals called - React will re-render with new state');
-    // console.log('🕐 [APP] Waiting for MyProposals component to receive new props...');
-  };
-
-  const handleUpdateProposal = (
-    proposalId: string,
-    updates: Partial<Proposal>,
-  ) => {
-    // console.log('═══════════════════════════════════════════════════════');
-    // console.log('🔄 [APP] handleUpdateProposal called');
-    // console.log('   - Proposal ID:', proposalId);
-    // console.log('   - vendorConfirmationStatus:', updates.vendorConfirmationStatus);
-    // console.log('   - All updates:', updates);
-
-    setProposals((prevProposals) => {
-      const before = prevProposals.find((p) => p.id === proposalId);
-      const updated = prevProposals.map((p) =>
-        p.id === proposalId ? { ...p, ...updates } : p,
-      );
-      const after = updated.find((p) => p.id === proposalId);
-
-      // console.log('✅ [APP] Proposal updated');
-      // console.log('   - Proposal No:', after?.proposalNo);
-      // console.log('   - BEFORE vendorConfirmationStatus:', before?.vendorConfirmationStatus);
-      // console.log('   - AFTER vendorConfirmationStatus:', after?.vendorConfirmationStatus);
-      // console.log('═══════════════════════════════════════════════════════');
-
-      return updated;
-    });
-  };
-
-  const handleRequestVendors = (
-    vendorRequest: Omit<VendorRecommendation, "id">,
-  ) => {
-    const newVendorRequest: VendorRecommendation = {
-      ...vendorRequest,
-      id: `VR-${Date.now()}`,
-    };
-    setVendorRecommendations([...vendorRecommendations, newVendorRequest]);
-  };
-
-  const handleUpdateVendorRecommendation = (
-    vendorReqId: string,
-    updates: Partial<VendorRecommendation>,
-  ) => {
-    // console.log('═══════════════════════════════════════════════════════');
-    // console.log('🔄 [APP] handleUpdateVendorRecommendation called');
-    // console.log('   - Vendor Rec ID:', vendorReqId);
-    // console.log('   - New status:', updates.status);
-    // console.log('   - All updates:', updates);
-
-    setVendorRecommendations((prevRecs) => {
-      const before = prevRecs.find((vr) => vr.id === vendorReqId);
-      const updated = prevRecs.map((vr) =>
-        vr.id === vendorReqId ? { ...vr, ...updates } : vr,
-      );
-      const after = updated.find((vr) => vr.id === vendorReqId);
-
-      // console.log('✅ [APP] Vendor Recommendation updated');
-      // console.log('   - Proposal No:', after?.proposalNo);
-      // console.log('   - BEFORE status:', before?.status);
-      // console.log('   - AFTER status:', after?.status);
-      // console.log('═══════════════════════════════════════════════════════');
-
-      return updated;
-    });
-  };
-
-  // Annual Purchase Plan handlers
-  const handleAddMaterial = (
-    material: Omit<Material, "id" | "createdDate">,
-  ) => {
+  // Material Management Handlers (Legacy/Admin)
+  const handleAddMaterial = (material: Omit<Material, "id" | "createdDate">) => {
     const newMaterial = addMaterial(material);
     setMaterials(getMaterials());
     return newMaterial;
   };
-
   const handleUpdateMaterial = (id: string, updates: Partial<Material>) => {
     updateMaterial(id, updates);
     setMaterials(getMaterials());
   };
-
   const handleDeleteMaterial = (id: string) => {
     deleteMaterial(id);
     setMaterials(getMaterials());
   };
-
-  const handleBulkUploadMaterials = (
-    materialsData: Omit<Material, "id" | "createdDate">[],
-  ) => {
+  const handleBulkUploadMaterials = (materialsData: Omit<Material, "id" | "createdDate">[]) => {
     bulkAddMaterials(materialsData);
     setMaterials(getMaterials());
   };
@@ -583,49 +202,20 @@ export default function App() {
   const renderPage = () => {
     if (!currentUser) return null;
     switch (currentPage) {
+      // --- REFACTORED MODULES (API BASED) ---
+      // Module-module ini sekarang MANDIRI (Self-contained), tidak butuh props dari App
       case "dashboard":
-        return (
-          <Dashboard
-            proposals={proposals}
-            user={currentUser}
-            onUpdateProposal={handleUpdateProposal}
-          />
-        );
+        return <Dashboard user={currentUser} />;
       case "my-proposals":
-        return (
-          <MyProposals
-            user={currentUser}
-            proposals={proposals}
-            onSaveProposal={handleSaveProposal}
-          />
-        );
+        return <MyProposals user={currentUser} />;
       case "my-approvals":
-        return (
-          <MyApprovals
-            user={currentUser}
-            proposals={proposals}
-            onUpdateProposal={handleUpdateProposal}
-          />
-        );
+        return <MyApprovals user={currentUser} />;
       case "sourcing-documents":
-        return (
-          <SourcingDocuments
-            user={currentUser}
-            proposals={proposals}
-            onUpdateProposal={handleUpdateProposal}
-            onRequestVendors={handleRequestVendors}
-          />
-        );
+        return <SourcingDocuments user={currentUser} />;
       case "sourcing":
-        return (
-          <SourcingPage
-            user={currentUser}
-            vendorRecommendations={vendorRecommendations}
-            onUpdateVendorRecommendation={handleUpdateVendorRecommendation}
-            onUpdateProposal={handleUpdateProposal}
-            proposals={proposals}
-          />
-        );
+        return <SourcingPage user={currentUser} />;
+
+      // --- ADMIN MODULES (Legacy/Local State) ---
       case "users":
         return (
           <UserManagement
@@ -654,14 +244,7 @@ export default function App() {
           />
         );
       case "matrix-management":
-        return (
-          <MatrixManagement
-            user={currentUser}
-            onNavigateToItemDefinitions={() =>
-              setCurrentPage("item-definitions")
-            }
-          />
-        );
+        return <MatrixManagement user={currentUser} onNavigateToItemDefinitions={() => setCurrentPage("item-definitions")} />;
       case "item-definitions":
         return <ItemDefinitionsManagement user={currentUser} />;
       case "system-data":
@@ -669,14 +252,7 @@ export default function App() {
       case "vendor-database":
         return <VendorDatabaseManagementNew user={currentUser} />;
       case "approval-matrix":
-        return (
-          <ApprovalMatrixManagement
-            user={currentUser}
-            departments={availableDepartments}
-            jobsites={availableJobsites}
-            roles={availableApprovalRoles}
-          />
-        );
+        return <ApprovalMatrixManagement user={currentUser} departments={availableDepartments} jobsites={availableJobsites} roles={availableApprovalRoles} />;
       case "category-management":
         return <CategoryManagement user={currentUser} />;
       case "matrix-contract":
@@ -693,53 +269,24 @@ export default function App() {
           />
         );
       default:
-        return (
-          <Dashboard
-            proposals={proposals}
-            user={currentUser}
-            onUpdateProposal={handleUpdateProposal}
-          />
-        );
+        return <Dashboard user={currentUser} />;
     }
   };
 
   if (isCheckingSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-lg font-medium text-blue-600">Loading Session...</p>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-lg font-medium text-blue-600">Loading Session...</p></div>;
   }
 
   if (!currentUser) {
     if (showForgotPassword) {
-      return (
-        <>
-          <ForgotPassword onBack={() => setShowForgotPassword(false)} />
-          <Toaster />
-        </>
-      );
+      return <><ForgotPassword onBack={() => setShowForgotPassword(false)} /><Toaster /></>;
     }
-
-    return (
-      <>
-        <Login
-          onLogin={handleLogin}
-          onForgotPassword={() => setShowForgotPassword(true)}
-        />
-        <Toaster />
-      </>
-    );
+    return <><Login onLogin={handleLogin} onForgotPassword={() => setShowForgotPassword(true)} /><Toaster /></>;
   }
 
   return (
     <>
-      <Layout
-        user={currentUser}
-        currentPage={currentPage}
-        onNavigate={setCurrentPage}
-        onLogout={handleLogout}
-      >
+      <Layout user={currentUser} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout}>
         {renderPage()}
       </Layout>
       <Toaster />

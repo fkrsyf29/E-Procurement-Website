@@ -107,6 +107,16 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISystemDataRepository, SystemDataRepository>();
 builder.Services.AddScoped<ISystemDataService, SystemDataService>();
 
+builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+
+builder.Services.AddScoped<IVendorRepository, VendorRepository>();
+builder.Services.AddScoped<IVendorService, VendorService>();
+
+builder.Services.AddScoped<IProposalRepository, ProposalRepository>();
+builder.Services.AddScoped<IProposalService, ProposalService>();
+
+
 // ================================================
 // DAPPER FUNDAMENTALS
 // ================================================

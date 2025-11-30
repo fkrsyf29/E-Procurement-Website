@@ -7,13 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User } from '../types';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown, Database, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Database, Loader2 } from 'lucide-react'; // ArrowUp/Down dihapus dari import
 import {
   fetchSystemDataApi,
   createSystemDataItemApi,
   updateSystemDataItemApi,
   deleteSystemDataItemApi,
-  reorderSystemDataItemsApi
+  // reorderSystemDataItemsApi // Tidak dipakai dulu
 } from '../services/systemDataApi';
 import { ReferenceDataItem, ReferenceDataCategory } from '../types/systemDataTypes';
 
@@ -49,20 +49,16 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
       const data = await fetchSystemDataApi();
       setCategories(data);
 
-      // Logika untuk menentukan kategori mana yang ditampilkan setelah load
       if (targetCategoryCode) {
-        // Jika kita ingin refresh kategori tertentu (misal setelah save)
         const updatedCat = data.find(c => c.code === targetCategoryCode);
         if (updatedCat) {
           setSelectedCategory(updatedCat);
           setItems(updatedCat.items);
         }
       } else if (!selectedCategory && data.length > 0) {
-        // Init load: pilih kategori pertama
         setSelectedCategory(data[0]);
         setItems(data[0].items);
       } else if (selectedCategory) {
-        // Refresh kategori yang sedang aktif
         const currentCat = data.find(c => c.code === selectedCategory.code);
         if (currentCat) {
           setSelectedCategory(currentCat);
@@ -98,7 +94,6 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     setEditingItem(item);
     setValue(item.value);
     setAbbreviation(item.abbreviation || '');
-    // Mapping: Description FE diambil dari description item (untuk MatGroup/KBLI)
     setDescription((item as any).description || '');
     setIsActive(item.isActive);
     setShowForm(true);
@@ -109,9 +104,8 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     
     if (window.confirm(`Are you sure you want to delete "${item.value}"?`)) {
       try {
-        await deleteSystemDataItemApi(selectedCategory.code, item.id);
+        await deleteSystemDataItemApi(selectedCategory.code, item.id, user.username);
         toast.success('Item deleted successfully');
-        // Reload data untuk update list
         await loadAllData(selectedCategory.code);
       } catch (error) {
         toast.error((error as Error).message || 'Failed to delete item');
@@ -127,7 +121,6 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
       return;
     }
     
-    // Check local duplicates (optional validation before API call)
     const isDuplicate = items.some(
       item => item.value.toLowerCase() === value.trim().toLowerCase() && 
       (!editingItem || item.id !== editingItem.id)
@@ -141,25 +134,22 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     setIsSaving(true);
     try {
       if (editingItem) {
-        // --- UPDATE ---
         const payload = { 
           value: value.trim(), 
           isActive,
-          // Kirim abbreviation hanya jika relevan (Jobsite/Dept)
           abbreviation: (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') 
             ? abbreviation.trim() || undefined 
             : undefined,
-          // Kirim description hanya jika relevan (MatGroup/KBLI)
           description: (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') 
             ? description.trim() || undefined 
-            : undefined
+            : undefined,
+            user: user.username
         };
         
         await updateSystemDataItemApi(selectedCategory.code, editingItem.id, payload);
         toast.success('Item updated successfully');
 
       } else {
-        // --- CREATE ---
         const payload = {
           value: value.trim(),
           abbreviation: (selectedCategory.code === 'jobsite' || selectedCategory.code === 'department') 
@@ -167,14 +157,15 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
             : undefined,
           description: (selectedCategory.code === 'materialGroup' || selectedCategory.code === 'kbli') 
             ? description.trim() || undefined 
-            : undefined
+            : undefined,
+          user: user.username,
+          isActive
         };
         
         await createSystemDataItemApi(selectedCategory.code, payload);
         toast.success('Item created successfully');
       }
 
-      // Refresh Data
       await loadAllData(selectedCategory.code);
       setShowForm(false);
       resetForm();
@@ -194,54 +185,19 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     setEditingItem(null);
   };
   
-  const handleReorder = async (newSortedItems: ReferenceDataItem[]) => {
-    if (!selectedCategory) return;
-
-    // 1. Optimistic Update (Update UI langsung agar terasa cepat)
-    setItems(newSortedItems);
-
-    try {
-      // 2. Panggil API di background
-      const itemIds = newSortedItems.map(i => i.id);
-      await reorderSystemDataItemsApi(selectedCategory.code, itemIds);
-      toast.success('Order updated');
-    } catch (error) {
-      // 3. Revert jika gagal
-      toast.error('Failed to save order');
-      loadAllData(selectedCategory.code); // Reload data asli dari server
-    }
-  };
-
-  const moveItemUp = (item: ReferenceDataItem) => {
-    const index = items.findIndex(i => i.id === item.id);
-    if (index > 0) {
-      const sorted = [...items];
-      [sorted[index], sorted[index - 1]] = [sorted[index - 1], sorted[index]];
-      
-      // Update local order properties agar konsisten sebelum reload
-      sorted.forEach((it, idx) => it.order = idx + 1);
-      
-      handleReorder(sorted);
-    }
-  };
-  
-  const moveItemDown = (item: ReferenceDataItem) => {
-    const index = items.findIndex(i => i.id === item.id);
-    if (index < items.length - 1) {
-      const sorted = [...items];
-      [sorted[index], sorted[index + 1]] = [sorted[index + 1], sorted[index]];
-      
-      // Update local order properties
-      sorted.forEach((it, idx) => it.order = idx + 1);
-
-      handleReorder(sorted);
-    }
-  };
-  
   const toggleActive = async (item: ReferenceDataItem) => {
     if (!selectedCategory) return;
+
+    // ✅ REVISI 1: Guard Clause
+    // Jika kategori tidak boleh diedit (Read Only), hentikan fungsi.
+    // Ini mencegah perubahan state meskipun toggle di-klik.
+    if (!selectedCategory.canAddEditDelete) {
+        // Opsional: Tampilkan toast info
+        // toast.info("System data cannot be modified directly.");
+        return;
+    }
     
-    // Optimistic toggle di UI
+    // Optimistic toggle
     const updatedItems = items.map(i => i.id === item.id ? { ...i, isActive: !i.isActive } : i);
     setItems(updatedItems);
 
@@ -250,12 +206,12 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
         value: item.value,
         isActive: !item.isActive,
         abbreviation: item.abbreviation,
-        description: (item as any).description
+        description: (item as any).description,
+        user: user.username
       };
       
       await updateSystemDataItemApi(selectedCategory.code, item.id, payload);
       toast.success(`Item ${!item.isActive ? 'activated' : 'deactivated'}`);
-      // Tidak perlu loadAllData jika tidak ada perubahan data lain
     } catch (error) {
       toast.error('Failed to update status');
       setItems(items); // Revert
@@ -266,7 +222,6 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
     item.value.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Check if user is admin
   if (user.roleName !== 'Administrator') {
     return (
       <div className="p-8">
@@ -326,9 +281,15 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
             <Database className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm text-blue-900">
-                <strong>{selectedCategory.name}</strong>: {selectedCategory.description}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-blue-900 font-bold">{selectedCategory.name}</p>
+                {!selectedCategory.canAddEditDelete && (
+                  <span className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 text-xs font-semibold">
+                    Read Only (System)
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-blue-800">{selectedCategory.description}</p>
               <p className="text-xs text-blue-700 mt-1">
                 Total items: {items.length} | Active: {items.filter(i => i.isActive).length}
               </p>
@@ -348,10 +309,13 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={handleNewItem} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add {selectedCategory.name}
-            </Button>
+            
+            {selectedCategory.canAddEditDelete && (
+              <Button onClick={handleNewItem} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add {selectedCategory.name}
+              </Button>
+            )}
           </div>
           
           {/* Items Table */}
@@ -370,15 +334,19 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                     )}
                     <th className="px-4 py-3 text-center text-sm text-gray-900 w-24">Active</th>
                     <th className="px-4 py-3 text-center text-sm text-gray-900 w-32">Last Updated</th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-900 w-48">Actions</th>
+                    
+                    {selectedCategory.canAddEditDelete && (
+                      <th className="px-4 py-3 text-center text-sm text-gray-900 w-48">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredItems.length === 0 ? (
                     <tr>
                       <td colSpan={
-                        (selectedCategory?.code === 'jobsite' || selectedCategory?.code === 'department') ? 6 : 
-                        (selectedCategory?.code === 'materialGroup' || selectedCategory?.code === 'kbli') ? 6 : 5
+                        (selectedCategory?.code === 'jobsite' || selectedCategory?.code === 'department' || selectedCategory?.code === 'materialGroup' || selectedCategory?.code === 'kbli') 
+                        ? (selectedCategory.canAddEditDelete ? 6 : 5) 
+                        : (selectedCategory.canAddEditDelete ? 5 : 4)
                       } className="px-4 py-8 text-center text-gray-500">
                         {searchTerm ? 'No items found matching your search.' : `No ${selectedCategory.name.toLowerCase()} items found.`}
                       </td>
@@ -393,13 +361,10 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                             <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Inactive</span>
                           )}
                         </td>
+                        
                         {(selectedCategory?.code === 'jobsite' || selectedCategory?.code === 'department') && (
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {item.abbreviation ? (
-                              <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{item.abbreviation}</code>
-                            ) : (
-                              <span className="text-gray-400 text-xs">No code</span>
-                            )}
+                            {item.abbreviation ? <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{item.abbreviation}</code> : <span className="text-gray-400 text-xs">No code</span>}
                           </td>
                         )}
                         {(selectedCategory?.code === 'materialGroup' || selectedCategory?.code === 'kbli') && (
@@ -407,7 +372,12 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                             {(item as any).description || <span className="text-gray-400 text-xs">No description</span>}
                           </td>
                         )}
+
                         <td className="px-4 py-3 text-center">
+                          {/* ✅ REVISI 2: Switch Tampilan
+                             Property 'disabled' dihapus agar terlihat terang/aktif.
+                             Logic 'toggleActive' di atas sudah memblokir perubahan jika Read Only.
+                          */}
                           <Switch
                             checked={item.isActive}
                             onCheckedChange={() => toggleActive(item)}
@@ -416,45 +386,32 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                         <td className="px-4 py-3 text-center text-xs text-gray-500">
                           {item.updatedAt}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => moveItemUp(item)}
-                              disabled={index === 0}
-                              title="Move up"
-                            >
-                              <ArrowUp className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => moveItemDown(item)}
-                              disabled={index === array.length - 1}
-                              title="Move down"
-                            >
-                              <ArrowDown className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditItem(item)}
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteItem(item)}
-                              className="text-red-600 hover:text-red-700"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
+
+                        {selectedCategory.canAddEditDelete && (
+                          <td className="px-4 py-3">
+                            <div className="flex justify-center gap-2">
+                              {/* ✅ REVISI 3: Tombol Up/Down Dihilangkan (Hidden) */}
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditItem(item)}
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item)}
+                                className="text-red-600 hover:text-red-700"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -462,28 +419,10 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
               </table>
             </div>
           </div>
-          
-          {/* Info Box */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="text-sm text-amber-900 mb-2">⚠️ Important Notes</h3>
-              <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-                <li><strong>Order</strong>: Items are displayed in forms according to their order (use arrows to reorder)</li>
-                <li><strong>Active Status</strong>: Only active items appear in dropdown lists throughout the system</li>
-                {(selectedCategory?.code === 'jobsite' || selectedCategory?.code === 'department') && (
-                  <li><strong>Codes/Abbreviations</strong>: Used for auto-generating proposal numbers (format: 001/JobsiteCode/DeptCode/Month/Year)</li>
-                )}
-                <li><strong>Deactivate vs Delete</strong>: Deactivating preserves historical data; deleting removes completely</li>
-                <li><strong>System Impact</strong>: Changes take effect immediately in all forms and dropdowns</li>
-                <li><strong>User Roles</strong>: Modifying user roles may affect access permissions system-wide</li>
-              </ul>
-            </div>
-          </div>
         </>
       )}
       
-      {/* Item Form Dialog */}
+      {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-[500px]">
           <DialogHeader>
@@ -507,7 +446,6 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
               />
             </div>
             
-            {/* Abbreviation field - only for jobsite and department */}
             {(selectedCategory?.code === 'jobsite' || selectedCategory?.code === 'department') && (
               <div>
                 <Label htmlFor="abbreviation">
@@ -521,49 +459,20 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
                   placeholder={selectedCategory?.code === 'jobsite' ? 'e.g., 40AB, 40AC' : 'e.g., PLANT, HR, GA'}
                   maxLength={selectedCategory?.code === 'jobsite' ? 4 : 10}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedCategory?.code === 'jobsite' 
-                    ? 'This code will be used in auto-generated proposal numbers (e.g., 001/40AB/PLANT/XI/2025)'
-                    : 'This code will be used in auto-generated proposal numbers (e.g., 001/40AB/PLANT/XI/2025)'}
-                </p>
               </div>
             )}
             
-            {/* Description field - for materialGroup and kbli */}
-            {selectedCategory?.code === 'materialGroup' && (
+            {(selectedCategory?.code === 'materialGroup' || selectedCategory?.code === 'kbli') && (
               <div>
                 <Label htmlFor="description">
-                  Material Group Description *
-                  <span className="text-xs text-gray-500 ml-1">(auto-fills in Annual Purchase Plan)</span>
+                  {selectedCategory?.code === 'kbli' ? 'KBLI Description' : 'Material Group Description'} *
                 </Label>
                 <Input
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value.toUpperCase())}
-                  placeholder="e.g., HEAVY CONSTRUCTION MACHINERY AND EQ/HEAVY EQ COMPONENTS"
+                  onChange={(e) => setDescription(selectedCategory?.code === 'materialGroup' ? e.target.value.toUpperCase() : e.target.value)}
+                  placeholder={selectedCategory?.code === 'materialGroup' ? 'e.g., HEAVY CONSTRUCTION' : 'e.g., Description'}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  This description will auto-fill when Material Group is selected in Annual Purchase Plan
-                </p>
-              </div>
-            )}
-            
-            {/* Description field - for KBLI */}
-            {selectedCategory?.code === 'kbli' && (
-              <div>
-                <Label htmlFor="description">
-                  KBLI Description *
-                  <span className="text-xs text-gray-500 ml-1">(business activity description)</span>
-                </Label>
-                <Input
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g., Perdagangan Besar Suku Cadang Kendaraan Bermotor"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Description of the business activity according to KBLI classification
-                </p>
               </div>
             )}
             
@@ -579,7 +488,6 @@ export function SystemDataManagement({ user }: SystemDataManagementProps) {
             </div>
           </div>
           
-          {/* Form Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               type="button"

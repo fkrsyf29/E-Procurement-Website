@@ -1,3 +1,5 @@
+// src/services/categoryApi.ts
+
 import { CategoryDto } from '../types/categoryTypes';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;

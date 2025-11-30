@@ -44,13 +44,10 @@ namespace EProcurement.Api.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("{id}/{user}")]
+        public async Task<IActionResult> Delete(int id, string user)
         {
-            // TODO: Ambil User ID dari Token/Context
-            string currentUser = "SYSTEM"; // Sementara hardcode atau ambil dari User.Identity.Name
-
-            await _service.DeleteAsync(id, currentUser);
+            await _service.DeleteAsync(id, user);
             return Ok(new { message = "Approval Matrix deleted successfully" });
         }
     }

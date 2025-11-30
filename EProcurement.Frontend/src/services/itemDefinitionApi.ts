@@ -43,7 +43,14 @@ export async function fetchAllItemDefinitions(): Promise<ItemDefinition[]> {
 
 // --- Create New Definition ---
 export async function createItemDefinition(
-    input: { code: string, label: string, category: ItemCategory, order: number, validationSource?: string | null },
+    input: { 
+        code: string, 
+        label: string, 
+        category: ItemCategory, 
+        order: number, 
+        isActive: boolean, 
+        validationSource?: string | null 
+    },
     currentUserId: string
 ): Promise<ItemDefinition> {
 
@@ -52,7 +59,7 @@ export async function createItemDefinition(
         label: input.label,
         category: input.category.toUpperCase(), // Kirim UPPERCASE ke DB
         order: input.order,
-        isActive: true, // Asumsi default saat create adalah true
+        isActive: input.isActive,
         validationSource: input.validationSource || null,
         createdBy: currentUserId,
     };

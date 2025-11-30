@@ -16,7 +16,7 @@ interface BudgetItemSelectionProps {
   onBudgetItemsChange: (items: BudgetItem[]) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedJobsite: string; // Jobsite selected in form for plant filtering
+  selectedJobsite: string; 
 }
 
 type SortField = 'materialCode' | 'description' | 'brand' | 'subClassification' | 'plant';
@@ -33,33 +33,33 @@ export function BudgetItemSelection({
 }: BudgetItemSelectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaterialIds, setSelectedMaterialIds] = useState<Set<string>>(
-    new Set(budgetItems.map(item => item.materialId))
+    new Set(budgetItems.map(item => item.materialId || ''))
   );
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   
-  // Sync selectedMaterialIds when budgetItems change from outside
   useEffect(() => {
-    setSelectedMaterialIds(new Set(budgetItems.map(item => item.materialId)));
+    // Ensure valid IDs are used
+    const validIds = budgetItems
+        .map(item => item.materialId)
+        .filter((id): id is string => !!id);
+    setSelectedMaterialIds(new Set(validIds));
   }, [budgetItems]);
 
   // Filter and sort materials
   const filteredMaterials = useMemo(() => {
     let filtered = materials;
 
-    // ✅ PLANT FILTERING: Based on selected jobsite in form
-    // If JAHO selected → show all plants
-    // If other jobsite selected → show only that jobsite's plant
+    // PLANT FILTERING
     if (selectedJobsite && selectedJobsite !== 'JAHO') {
-      filtered = filtered.filter(m => m.jobsite === selectedJobsite);
+      filtered = filtered.filter(m => m.jobsite === selectedJobsite || m.jobsiteName === selectedJobsite);
     }
-    // If JAHO selected, no filtering - show all plants
 
-    // Filter by sub-classification if any selected
+    // Filter by sub-classification
     if (selectedSubClassifications.length > 0) {
       filtered = filtered.filter(m => 
         selectedSubClassifications.some(subClass => 
-          m.subClassification?.toLowerCase().includes(subClass.toLowerCase())
+          (m.subClassification || m.subClassificationName || '').toLowerCase().includes(subClass.toLowerCase())
         )
       );
     }
@@ -68,10 +68,10 @@ export function BudgetItemSelection({
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(m =>
-        m.material.toLowerCase().includes(search) ||
-        m.materialDescription.toLowerCase().includes(search) ||
-        m.extMaterialGroup.toLowerCase().includes(search) ||
-        (m.plant && m.plant.toLowerCase().includes(search))
+        (m.material || m.materialCode || '').toLowerCase().includes(search) ||
+        (m.materialDescription || m.description || '').toLowerCase().includes(search) ||
+        (m.extMaterialGroup || m.externalBrandName || '').toLowerCase().includes(search) ||
+        (m.plant || m.jobsiteName || '').toLowerCase().includes(search)
       );
     }
 
@@ -83,24 +83,24 @@ export function BudgetItemSelection({
         
         switch (sortField) {
           case 'materialCode':
-            aVal = a.material;
-            bVal = b.material;
+            aVal = a.material || a.materialCode || '';
+            bVal = b.material || b.materialCode || '';
             break;
           case 'description':
-            aVal = a.materialDescription;
-            bVal = b.materialDescription;
+            aVal = a.materialDescription || a.description || '';
+            bVal = b.materialDescription || b.description || '';
             break;
           case 'brand':
-            aVal = a.extMaterialGroup;
-            bVal = b.extMaterialGroup;
+            aVal = a.extMaterialGroup || a.externalBrandName || '';
+            bVal = b.extMaterialGroup || b.externalBrandName || '';
             break;
           case 'subClassification':
-            aVal = a.subClassification || '';
-            bVal = b.subClassification || '';
+            aVal = a.subClassification || a.subClassificationName || '';
+            bVal = b.subClassification || b.subClassificationName || '';
             break;
           case 'plant':
-            aVal = a.plant || '';
-            bVal = b.plant || '';
+            aVal = a.plant || a.jobsiteName || '';
+            bVal = b.plant || b.jobsiteName || '';
             break;
         }
         
@@ -117,29 +117,30 @@ export function BudgetItemSelection({
     const newSelectedIds = new Set(selectedMaterialIds);
 
     if (isSelected) {
-      // Remove from selection
       newSelectedIds.delete(material.id);
       const newBudgetItems = budgetItems.filter(item => item.materialId !== material.id);
       onBudgetItemsChange(newBudgetItems);
     } else {
-      // Add to selection with empty values, placeholders from Annual Purchase Plan
       newSelectedIds.add(material.id);
       const newBudgetItem: BudgetItem = {
         id: `budget-${Date.now()}-${material.id}`,
         materialId: material.id,
-        materialCode: material.material,
-        materialDescription: material.materialDescription,
-        uom: material.baseUnitOfMeasure,
-        brand: material.extMaterialGroup,
-        qty: 0, // ✅ Empty initially - user must enter
-        estimatedPrice: 0, // ✅ Empty initially - user must enter
-        unique: undefined, // ✅ Empty initially - user must select
-        subClassification: material.subClassification,
-        plant: material.plant,
+        materialCode: material.material || material.materialCode,
+        materialDescription: material.materialDescription || material.description || '',
+        uom: material.baseUnitOfMeasure || material.uomName || 'EA',
+        brand: material.extMaterialGroup || material.externalBrandName,
+        qty: 0,
+        estimatedPrice: 0,
+        totalPrice: 0, // Init
+        unique: undefined,
+        subClassification: material.subClassification || material.subClassificationName,
+        plant: material.plant || material.jobsiteName,
         contractType: material.contractType,
         contractNo: material.contractNumber,
         contractName: material.contractName,
-        // ✅ Placeholders from Annual Purchase Plan (light gray guide text)
+        currency: 'USD',
+        
+        // Placeholders
         placeholderQty: material.qty || undefined,
         placeholderPrice: material.estimatedPrice || undefined,
         placeholderUnique: material.unique || undefined
@@ -160,19 +161,20 @@ export function BudgetItemSelection({
         const newBudgetItem: BudgetItem = {
           id: `budget-${Date.now()}-${material.id}`,
           materialId: material.id,
-          materialCode: material.material,
-          materialDescription: material.materialDescription,
-          uom: material.baseUnitOfMeasure,
-          brand: material.extMaterialGroup,
-          qty: 0, // ✅ Empty initially - user must enter
-          estimatedPrice: 0, // ✅ Empty initially - user must enter
-          unique: undefined, // ✅ Empty initially - user must select
-          subClassification: material.subClassification,
-          plant: material.plant,
+          materialCode: material.material || material.materialCode,
+          materialDescription: material.materialDescription || material.description || '',
+          uom: material.baseUnitOfMeasure || material.uomName || 'EA',
+          brand: material.extMaterialGroup || material.externalBrandName,
+          qty: 0,
+          estimatedPrice: 0,
+          totalPrice: 0,
+          unique: undefined,
+          subClassification: material.subClassification || material.subClassificationName,
+          plant: material.plant || material.jobsiteName,
           contractType: material.contractType,
           contractNo: material.contractNumber,
           contractName: material.contractName,
-          // ✅ Placeholders from Annual Purchase Plan (light gray guide text)
+          currency: 'USD',
           placeholderQty: material.qty || undefined,
           placeholderPrice: material.estimatedPrice || undefined,
           placeholderUnique: material.unique || undefined
@@ -191,26 +193,32 @@ export function BudgetItemSelection({
     const newSelectedIds = new Set(
       Array.from(selectedMaterialIds).filter(id => !filteredMaterialIds.has(id))
     );
-    const newBudgetItems = budgetItems.filter(item => !filteredMaterialIds.has(item.materialId));
+    const newBudgetItems = budgetItems.filter(item => item.materialId && !filteredMaterialIds.has(item.materialId));
 
     setSelectedMaterialIds(newSelectedIds);
     onBudgetItemsChange(newBudgetItems);
-    toast.success(`Deselected ${filteredMaterials.filter(m => selectedMaterialIds.has(m.id)).length} items`);
+    toast.success(`Deselected items`);
   };
 
   const handleQtyChange = (materialId: string, value: string) => {
     const qty = parseFloat(value) || 0;
-    const newBudgetItems = budgetItems.map(item =>
-      item.materialId === materialId ? { ...item, qty } : item
-    );
+    const newBudgetItems = budgetItems.map(item => {
+      if (item.materialId === materialId) {
+         return { ...item, qty, totalPrice: qty * (item.estimatedPrice || 0) };
+      }
+      return item;
+    });
     onBudgetItemsChange(newBudgetItems);
   };
 
   const handlePriceChange = (materialId: string, value: string) => {
     const price = parseFloat(value) || 0;
-    const newBudgetItems = budgetItems.map(item =>
-      item.materialId === materialId ? { ...item, estimatedPrice: price } : item
-    );
+    const newBudgetItems = budgetItems.map(item => {
+       if (item.materialId === materialId) {
+           return { ...item, estimatedPrice: price, totalPrice: (item.qty || 0) * price };
+       }
+       return item;
+    });
     onBudgetItemsChange(newBudgetItems);
   };
 
@@ -233,7 +241,6 @@ export function BudgetItemSelection({
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // Toggle through: asc -> desc -> null
       if (sortDirection === 'asc') {
         setSortDirection('desc');
       } else if (sortDirection === 'desc') {
@@ -257,7 +264,7 @@ export function BudgetItemSelection({
   };
 
   const totalEstimatedCost = useMemo(() => {
-    return budgetItems.reduce((sum, item) => sum + (item.qty * item.estimatedPrice), 0);
+    return budgetItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
   }, [budgetItems]);
 
   const handleSaveItems = () => {
@@ -269,7 +276,6 @@ export function BudgetItemSelection({
     onOpenChange(false);
   };
 
-  // Get budget item for a material
   const getBudgetItem = (materialId: string): BudgetItem | undefined => {
     return budgetItems.find(item => item.materialId === materialId);
   };
@@ -301,7 +307,7 @@ export function BudgetItemSelection({
                 onClick={handleDeselectAll} 
                 variant="outline" 
                 size="sm"
-                disabled={filteredMaterials.filter(m => selectedMaterialIds.has(m.id)).length === 0}
+                disabled={selectedMaterialIds.size === 0}
               >
                 <Square className="w-4 h-4 mr-2" />
                 Deselect All
@@ -350,72 +356,40 @@ export function BudgetItemSelection({
             </div>
           </div>
 
-          {/* Material Selection Table with Inline Qty & Price */}
+          {/* Material Selection Table */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm text-gray-700 w-12">
-                      Select
-                    </th>
+                    <th className="px-4 py-3 text-left text-sm text-gray-700 w-12">Select</th>
                     <th className="px-4 py-3 text-left text-sm text-gray-700">
-                      <button
-                        onClick={() => handleSort('materialCode')}
-                        className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                      >
-                        Material Code
-                        {getSortIcon('materialCode')}
+                      <button onClick={() => handleSort('materialCode')} className="flex items-center gap-2 hover:text-blue-600">
+                        Material Code {getSortIcon('materialCode')}
                       </button>
                     </th>
                     <th className="px-4 py-3 text-left text-sm text-gray-700">
-                      <button
-                        onClick={() => handleSort('description')}
-                        className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                      >
-                        Description
-                        {getSortIcon('description')}
+                      <button onClick={() => handleSort('description')} className="flex items-center gap-2 hover:text-blue-600">
+                        Description {getSortIcon('description')}
                       </button>
                     </th>
+                    <th className="px-4 py-3 text-left text-sm text-gray-700">UoM</th>
                     <th className="px-4 py-3 text-left text-sm text-gray-700">
-                      UoM
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm text-gray-700">
-                      <button
-                        onClick={() => handleSort('brand')}
-                        className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                      >
-                        Brand
-                        {getSortIcon('brand')}
+                      <button onClick={() => handleSort('brand')} className="flex items-center gap-2 hover:text-blue-600">
+                        Brand {getSortIcon('brand')}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[140px]">
-                      Unique
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-700 w-24">
-                      Plant
-                    </th>
+                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[140px]">Unique</th>
+                    <th className="px-4 py-3 text-center text-sm text-gray-700 w-24">Plant</th>
                     <th className="px-4 py-3 text-left text-sm text-gray-700 min-w-[200px]">
-                      <button
-                        onClick={() => handleSort('subClassification')}
-                        className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                      >
-                        Sub-Classification
-                        {getSortIcon('subClassification')}
+                      <button onClick={() => handleSort('subClassification')} className="flex items-center gap-2 hover:text-blue-600">
+                        Sub-Classification {getSortIcon('subClassification')}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">
-                      Qty
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">
-                      Price (USD)
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm text-gray-700 w-16">
-                      Action
-                    </th>
+                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">Qty</th>
+                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">Price (USD)</th>
+                    <th className="px-4 py-3 text-center text-sm text-gray-700 min-w-[180px]">Total</th>
+                    <th className="px-4 py-3 text-left text-sm text-gray-700 w-16">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -441,18 +415,10 @@ export function BudgetItemSelection({
                               onCheckedChange={() => handleMaterialToggle(material)}
                             />
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {material.material}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {material.materialDescription}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {material.baseUnitOfMeasure}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {material.extMaterialGroup}
-                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{material.material || material.materialCode}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{material.materialDescription || material.description}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{material.baseUnitOfMeasure || material.uomName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{material.extMaterialGroup || material.externalBrandName}</td>
                           <td className="px-4 py-3">
                             {isSelected && budgetItem ? (
                               <Select
@@ -472,11 +438,11 @@ export function BudgetItemSelection({
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900 text-center font-semibold bg-blue-50">
-                            {material.plant || '-'}
+                            {material.plant || material.jobsiteName || '-'}
                           </td>
                           <td className="px-4 py-3 text-xs text-gray-700 bg-purple-50">
                             <div className="max-w-[200px]">
-                              {material.subClassification || '-'}
+                              {material.subClassification || material.subClassificationName || '-'}
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -511,7 +477,7 @@ export function BudgetItemSelection({
                           </td>
                           <td className="px-4 py-3 text-base font-semibold text-gray-900 text-center">
                             {isSelected && budgetItem ? (
-                              formatNumberWithSeparator(budgetItem.qty * budgetItem.estimatedPrice)
+                              formatNumberWithSeparator(budgetItem.totalPrice || 0)
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}
@@ -535,13 +501,13 @@ export function BudgetItemSelection({
                 {budgetItems.length > 0 && (
                   <tfoot className="bg-gray-50 border-t-2 border-gray-300">
                     <tr>
-                      <td colSpan={8} className="px-4 py-3 text-right text-gray-900">
+                      <td colSpan={10} className="px-4 py-3 text-right text-gray-900">
                         <strong>Total Estimated Cost:</strong>
                       </td>
-                      <td className="px-4 py-3 text-gray-900">
+                      <td className="px-4 py-3 text-gray-900 text-center">
                         <strong>{formatNumberWithSeparator(totalEstimatedCost)}</strong>
                       </td>
-                      <td colSpan={2}></td>
+                      <td></td>
                     </tr>
                   </tfoot>
                 )}

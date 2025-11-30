@@ -1,3 +1,5 @@
+// src/types/torTerMatrixTypes.ts
+
 export interface MatrixAssignmentDto {
     assignmentID: number;
     subClassificationID: number;

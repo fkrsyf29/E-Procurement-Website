@@ -140,6 +140,7 @@ export function ItemDefinitionsManagement({ user }: ItemDefinitionsManagementPro
             code,
             label,
             category: activeTab,
+            isActive: isActive,
             order: newOrder,
             validationSource: null, // Asumsi default null
         };

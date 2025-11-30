@@ -1,3 +1,5 @@
+// src/types/systemDataTypes.ts
+
 export interface ReferenceDataItem {
   id: string;
   value: string;
@@ -13,5 +15,6 @@ export interface ReferenceDataCategory {
   code: string;
   name: string;
   description: string;
+  canAddEditDelete : boolean;
   items: ReferenceDataItem[];
 }

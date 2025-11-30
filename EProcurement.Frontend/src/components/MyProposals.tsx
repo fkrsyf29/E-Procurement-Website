@@ -3,91 +3,93 @@ import { Plus, Eye, Edit, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { User, Proposal } from '../types';
+import { User, Proposal, ProposalStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ApprovalTimeline } from './ApprovalTimeline';
 import { ProposalForm } from './ProposalForm';
 import { formatDate, parseDate } from '../utils/formatters';
+import { toast } from 'sonner';
+import { fetchMyProposals, createProposalApi } from '../services/proposalApi';
 
 type SortField = 'proposalNo' | 'title' | 'jobsite' | 'department' | 'amount' | 'createdDate' | 'status';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface MyProposalsProps {
   user: User;
-  proposals: Proposal[];
-  onSaveProposal: (proposalData: any, isDraft: boolean) => void;
 }
 
-export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProps) {
+export function MyProposals({ user }: MyProposalsProps) {
+  // --- STATE DATA API ---
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- STATE UI ---
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  
+  // Track save operation
+  const isSavingRef = useRef(false);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Filter proposals created by the current user
-  const myProposals = useMemo(() => {
-   // console.log('🔄 [MY PROPOSALS] Recomputing myProposals');
-   // console.log('   - Total proposals:', proposals.length);
-   // console.log('   - Proposals array reference:', proposals === proposals ? 'stable' : 'changed');
-   // console.log('   - Current User ID:', user.id);
-   // console.log('   - Current User:', user.username);
-    
-    // ✅ CRITICAL DEBUG: Show ALL proposal creator IDs
-   // console.log('   - 📋 ALL PROPOSALS:');
-    proposals.forEach((p, idx) => {
-     // console.log(`      ${idx + 1}. ${p.proposalNo} - Creator ID: ${p.creatorId} (${p.creator}) - Status: ${p.status}`);
-    });
-    
-    const filtered = proposals.filter(p => p.creatorId === user.id);
-   // console.log('   - ✅ MY PROPOSALS (filtered):', filtered.length);
-    if (filtered.length > 0) {
-      filtered.forEach((p, idx) => {
-       // console.log(`      ${idx + 1}. ${p.proposalNo} - ${p.title} - ${p.status}`);
-      });
-    } else {
-     // console.log('      ⚠️ NO PROPOSALS FOUND FOR THIS USER!');
+  // ✅ 1. FETCH DATA
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchMyProposals(user.userID);
+      setProposals(data);
+    } catch (error) {
+      console.error("Failed to load proposals", error);
+      toast.error("Gagal memuat data proposal");
+    } finally {
+      setIsLoading(false);
     }
-    
-    return filtered;
-  }, [user.id, proposals]);
+  };
+
+  useEffect(() => {
+    if (user.userID) {
+        loadData();
+    }
+  }, [user.userID]);
+
+  // Cleanup timer
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // Filter proposals (Client-Side Filter)
+  const myProposals = useMemo(() => {
+    // Data dari API sudah difilter by CreatorID, tapi kita double check untuk keamanan
+    return proposals.filter(p => p.creatorId === user.userID || p.creator === user.name);
+  }, [user.userID, user.name, proposals]);
 
   // Handle sorting
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortField(null);
-        setSortDirection(null);
-      } else {
-        setSortDirection('asc');
-      }
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+      if (sortDirection === 'asc') setSortDirection('desc');
+      else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
+      else setSortDirection('asc');
+    } else { setSortField(field); setSortDirection('asc'); }
   };
 
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-3 h-3 ml-1 inline" />;
-    }
-    if (sortDirection === 'asc') {
-      return <ArrowUp className="w-3 h-3 ml-1 inline" />;
-    }
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline" />;
+    if (sortDirection === 'asc') return <ArrowUp className="w-3 h-3 ml-1 inline" />;
     return <ArrowDown className="w-3 h-3 ml-1 inline" />;
   };
 
-  // Search filter and sort
+  // Search & Sort Logic
   const filteredProposals = useMemo(() => {
     let filtered = myProposals.filter(p => 
       p.proposalNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Apply sorting
     if (sortField && sortDirection) {
       filtered = [...filtered].sort((a, b) => {
         let aVal: any = a[sortField];
@@ -96,16 +98,21 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
         if (sortField === 'createdDate') {
           aVal = parseDate(a.createdDate).getTime();
           bVal = parseDate(b.createdDate).getTime();
-        }
-
-        if (sortField === 'amount') {
+        } else if (sortField === 'amount') {
           aVal = a.amount;
           bVal = b.amount;
-        }
-
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-          aVal = aVal.toLowerCase();
-          bVal = bVal.toLowerCase();
+        } else if (sortField === 'jobsite') {
+            aVal = a.jobsite?.name || '';
+            bVal = b.jobsite?.name || '';
+        } else if (sortField === 'department') {
+            aVal = a.department?.name || '';
+            bVal = b.department?.name || '';
+        } else {
+            const sA = String(aVal).toLowerCase();
+            const sB = String(bVal).toLowerCase();
+            if (sA < sB) return sortDirection === 'asc' ? -1 : 1;
+            if (sA > sB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
         }
 
         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -113,16 +120,15 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
         return 0;
       });
     }
-
     return filtered;
   }, [myProposals, searchTerm, sortField, sortDirection]);
 
-  // Calculate statistics
+  // Stats
   const stats = useMemo(() => {
     return {
       total: myProposals.length,
       approved: myProposals.filter(p => p.status === 'Approved').length,
-      pending: myProposals.filter(p => p.status.startsWith('On') || p.status.includes('Verified') || p.status.includes('Reviewed')).length,
+      pending: myProposals.filter(p => p.status === 'In Progress' || p.status.startsWith('On')).length,
       rejected: myProposals.filter(p => p.status === 'Rejected').length,
       draft: myProposals.filter(p => p.status === 'Draft').length,
     };
@@ -138,18 +144,43 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
     setShowForm(true);
   };
 
-  const handleSaveProposalWrapper = (proposalData: any, isDraft: boolean) => {
-   // console.log('📝 [MY PROPOSALS] handleSaveProposalWrapper called');
-   // console.log('   - Proposal No:', proposalData.proposalNo);
-   // console.log('   - Is Draft:', isDraft);
-   // console.log('   - Current proposals count:', proposals.length);
+  // ✅ LOGIC BARU: SAVE TO API
+  const handleSaveProposalWrapper = async (proposalData: any, isDraft: boolean) => {
+    isSavingRef.current = true;
     
-    // Call parent onSaveProposal (this will update proposals state in App)
-    onSaveProposal(proposalData, isDraft);
-   // console.log('   - ✅ onSaveProposal called');
+    try {
+        // Prepare context
+        const userContext = { 
+            userId: user.userID, 
+            username: user.username,
+            jobsiteId: user.jobsite?.jobsiteID, 
+            departmentId: user.department?.departmentID
+        };
+
+        if (editingProposal) {
+            toast.info("Fitur Update sedang disiapkan di backend.");
+            // await updateProposalApi(proposalData, userContext);
+        } else {
+            await createProposalApi(proposalData, userContext);
+            toast.success("Proposal created successfully!");
+        }
+        
+        // Refresh & Close
+        await loadData();
+        
+        // Delay close slightly for UX
+        closeTimerRef.current = setTimeout(() => {
+            setShowForm(false);
+            setEditingProposal(null);
+            isSavingRef.current = false;
+        }, 150);
+
+    } catch (error: any) {
+        console.error("Save failed", error);
+        toast.error("Gagal menyimpan proposal: " + error.message);
+        isSavingRef.current = false;
+    }
   };
-
-
 
   return (
     <div className="space-y-4">
@@ -164,6 +195,13 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
           New Proposal
         </Button>
       </div>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/10 z-50 flex items-center justify-center">
+            <div className="bg-white p-4 rounded shadow-lg text-sm font-medium">Loading Data...</div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -207,56 +245,14 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
           <table className="w-full">
             <thead style={{ backgroundColor: '#E6F2FF' }} className="border-b border-gray-200">
               <tr>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('proposalNo')}
-                >
-                  Proposal No {getSortIcon('proposalNo')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('title')}
-                >
-                  Title {getSortIcon('title')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('jobsite')}
-                >
-                  Jobsite {getSortIcon('jobsite')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('department')}
-                >
-                  Department {getSortIcon('department')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('amount')}
-                >
-                  Amount {getSortIcon('amount')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('createdDate')}
-                >
-                  Created Date {getSortIcon('createdDate')}
-                </th>
-                <th 
-                  className="px-6 py-3 text-left text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-100" 
-                  style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}
-                  onClick={() => handleSort('status')}
-                >
-                  Status {getSortIcon('status')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs uppercase tracking-wider" style={{ color: '#000000', fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }}>Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('proposalNo')}>Proposal No {getSortIcon('proposalNo')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('title')}>Title {getSortIcon('title')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('jobsite')}>Jobsite {getSortIcon('jobsite')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('department')}>Department {getSortIcon('department')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('amount')}>Amount {getSortIcon('amount')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('createdDate')}>Created Date {getSortIcon('createdDate')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black" onClick={() => handleSort('status')}>Status {getSortIcon('status')}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-black">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -267,11 +263,8 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
                       <div className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl">
                         <p className="font-bold text-lg mb-2">⚠️ NO PROPOSALS FOUND</p>
                         <div className="text-sm text-left space-y-2">
-                          <p><strong>Debug Info:</strong></p>
                           <p>• Total proposals in system: {proposals.length}</p>
-                          <p>• Your proposals: {myProposals.length}</p>
                           <p>• After search filter: {filteredProposals.length}</p>
-                          <p>• Current user: {user.username} (ID: {user.id})</p>
                         </div>
                       </div>
                       <Button onClick={handleNewProposal} variant="outline">
@@ -286,31 +279,21 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
                   <tr key={proposal.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{proposal.proposalNo}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{proposal.title}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{proposal.jobsite}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{proposal.department}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${Math.round(proposal.amount).toLocaleString()}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{proposal.jobsite?.name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{proposal.department?.name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${Math.round(proposal.amount).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(proposal.createdDate)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusBadge status={proposal.status} proposal={proposal} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedProposal(proposal)}
-                        >
-                          <Eye className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedProposal(proposal)}>
+                          <Eye className="w-4 h-4 mr-2" /> View
                         </Button>
                         {(proposal.status === 'Draft' || proposal.status === 'Rejected') && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(proposal)}
-                          >
-                            <Edit className="w-4 h-4" />
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(proposal)}>
+                            <Edit className="w-4 h-4 mr-2" /> Edit
                           </Button>
                         )}
                       </div>
@@ -328,57 +311,19 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Proposal Details</DialogTitle>
-            <DialogDescription>
-              View complete information and approval history for this proposal
-            </DialogDescription>
+            <DialogDescription>View complete information and approval history</DialogDescription>
           </DialogHeader>
           {selectedProposal && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Proposal No</p>
-                  <p className="text-gray-900">{selectedProposal.proposalNo}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <StatusBadge status={selectedProposal.status} proposal={selectedProposal} />
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Title</p>
-                  <p className="text-gray-900">{selectedProposal.title}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Category</p>
-                  <p className="text-gray-900">{selectedProposal.category}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Classification</p>
-                  <p className="text-gray-900">{selectedProposal.classification}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Sub-classification</p>
-                  <p className="text-gray-900">{selectedProposal.subClassification}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">TOR (Terms of Reference)</p>
-                  <p className="text-gray-900">{selectedProposal.tor}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">TER (Technical Requirements)</p>
-                  <p className="text-gray-900">{selectedProposal.ter}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Vendor List</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedProposal.vendorList.map((vendor, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        {vendor}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <div><p className="text-sm text-gray-500">Proposal No</p><p className="text-gray-900">{selectedProposal.proposalNo}</p></div>
+                <div><p className="text-sm text-gray-500">Status</p><StatusBadge status={selectedProposal.status} proposal={selectedProposal} /></div>
+                <div className="col-span-2"><p className="text-sm text-gray-500">Title</p><p className="text-gray-900">{selectedProposal.title}</p></div>
+                <div><p className="text-sm text-gray-500">Jobsite</p><p className="text-gray-900">{selectedProposal.jobsite?.name || '-'}</p></div>
+                <div><p className="text-sm text-gray-500">Department</p><p className="text-gray-900">{selectedProposal.department?.name || '-'}</p></div>
+                <div><p className="text-sm text-gray-500">Amount</p><p className="text-gray-900">${selectedProposal.amount.toLocaleString()}</p></div>
+                <div className="col-span-2"><p className="text-sm text-gray-500">Description</p><p className="text-gray-900">{selectedProposal.description || '-'}</p></div>
               </div>
-
               <div>
                 <h3 className="text-gray-900 mb-4">Approval Timeline</h3>
                 <ApprovalTimeline history={selectedProposal.history} />
@@ -390,10 +335,9 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
 
       {/* Proposal Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => {
-        if (!open) {
+        if (!open && !isSavingRef.current) {
           setShowForm(false);
           setEditingProposal(null);
-         // console.log('🚪 [MY PROPOSALS] Dialog closed');
         }
       }}>
         <DialogContent className="max-w-[98vw] w-[1600px] max-h-[95vh] overflow-y-auto">
@@ -402,16 +346,13 @@ export function MyProposals({ user, proposals, onSaveProposal }: MyProposalsProp
               {editingProposal?.status === 'Rejected' ? '🔄 Resubmit Proposal' : editingProposal ? 'Edit Proposal' : 'New Proposal'}
             </DialogTitle>
             <DialogDescription>
-              {editingProposal?.status === 'Rejected' 
-                ? 'Update the proposal details and resubmit for a new approval cycle' 
-                : editingProposal ? 'Update the proposal details' : 'Create a new proposal by filling out the form below'}
+              {editingProposal ? 'Update proposal details' : 'Create a new proposal'}
             </DialogDescription>
           </DialogHeader>
           <ProposalForm
             user={user}
             proposal={editingProposal}
             onClose={() => {
-              // Manual close (X button or ESC)
               setShowForm(false);
               setEditingProposal(null);
             }}

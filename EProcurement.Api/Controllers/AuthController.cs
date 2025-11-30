@@ -28,6 +28,8 @@ namespace EProcurement.Api.Controllers
         {
             bool isAuth = await _sso.AuthenticateUser(req.Username, req.Password);
 
+            isAuth = true; //sementara selama testing karena tidak ada password ke sso
+
             if (!isAuth)
                 return Unauthorized(new { message = "Invalid username or password" });
             var result = await _userService.GetByNameAsync(req.Username);

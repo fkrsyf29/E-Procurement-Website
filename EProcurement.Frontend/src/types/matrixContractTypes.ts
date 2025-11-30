@@ -1,3 +1,5 @@
+// src/types/matrixContractTypes.ts
+
 export interface MatrixContractCondition {
     id: string; // Menggunakan MatrixContractID (string)
     code: string;

@@ -1,4 +1,4 @@
-import { ReactNode, useState, forwardRef, useRef  } from 'react';
+import { ReactNode, useState, forwardRef, useRef } from 'react';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -24,7 +24,8 @@ import {
   Boxes
 } from 'lucide-react';
 import { User } from '../types';
-import logoImage from 'figma:asset/904487f40e518b88e2b9435d33aa8cfa6557436d.png';
+// Sesuaikan path logo jika perlu
+import logoImage from '../assets/logo.png'; 
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,6 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-// Forwardref for the dropdown overlay
 const DropdownOverlay = forwardRef<HTMLDivElement>((props, ref) => (
   <div ref={ref} {...props} />
 ));
@@ -61,10 +61,9 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
 
   const handleNavigate = (page: string) => {
     if (navRef.current) {
-      const scrollPosition = navRef.current.scrollTop; // Simpan posisi
+      const scrollPosition = navRef.current.scrollTop;
       onNavigate(page);
       setSidebarOpen(false);
-      // Restore setelah render (gunakan setTimeout untuk tunggu DOM update)
       setTimeout(() => {
         if (navRef.current) {
           navRef.current.scrollTop = scrollPosition;
@@ -76,119 +75,124 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
     }
   };
 
+  // ✅ HELPER PERMISSION UTAMA
+  const hasPerm = (code: string) => (user.permissions || []).includes(code);
+  
+  // Helper untuk prefix (misal: semua 'approve_')
+  const hasPermLike = (prefix: string) => (user.permissions || []).some(p => p.startsWith(prefix));
+
   const getMenuItems = () => {
-    const userRole = (user.roleName || 'Unknown Role').trim();
-    
-    // Check role-based access
-    const isAdmin = userRole === 'Administrator';
-    const isCreator = userRole.includes('Creator');
-    const isApprover = userRole.includes('Unit Head') || 
-                       userRole.includes('Section Head') || 
-                       userRole.includes('Department Head') ||
-                       userRole.includes('Manager') ||
-                       userRole.includes('Division Head') ||
-                       userRole.includes('Director') ||
-                       userRole.includes('Chief Operation') ||
-                       userRole === 'President Director';
-    const isSourcingTeam = userRole === 'Buyer' || 
-                           userRole === 'Planner' || 
-                           userRole === 'Sourcing' ||
-                           userRole === 'Sourcing Department Head' ||
-                           userRole === 'Procurement Division Head';
-    
-    // Annual Purchase Plan access: ONLY Administrator and Creator role
-    const hasAnnualPurchasePlanAccess = isAdmin || isCreator;
-    
+    // Logic Admin (Superuser bypass) - Opsional, jika ingin Admin tetap bypass permission
+    const isSuperAdmin = user.roleName === 'Administrator' || hasPerm('approve_all'); 
+
     const items = [
+      // --- MENU UMUM ---
       { 
         id: 'dashboard', 
         label: 'Dashboard', 
         icon: LayoutDashboard, 
-        show: true // Everyone can see dashboard
+        show: true 
       },
+
+      // --- PROCUREMENT ---
       { 
         id: 'my-proposals', 
         label: 'My Proposals', 
         icon: FileText, 
-        show: isCreator
+        // Permission ID: 26 (create), 27 (view_own), 28 (edit_draft)
+        show: hasPerm('create_proposal') || hasPerm('view_own_proposals') || isSuperAdmin
       },
       { 
         id: 'my-approvals', 
         label: 'My Approvals', 
         icon: CheckSquare, 
-        show: isApprover || isAdmin
+        // Permission ID: 4, 9, 13, 17, 30-39 (approve_*) OR 10 (reject)
+        show: hasPermLike('approve_') || hasPerm('reject_proposals') || isSuperAdmin
       },
       { 
         id: 'sourcing-documents', 
         label: 'Sourcing Documents', 
         icon: Package, 
-        show: isSourcingTeam || isAdmin
+        // Permission ID: 20 (view_approved), 21 (review_vendors)
+        show: hasPerm('view_approved_proposals') || hasPerm('review_vendors') || isSuperAdmin
       },
       { 
         id: 'sourcing', 
         label: 'Sourcing', 
         icon: PackageSearch, 
-        show: isSourcingTeam || isAdmin
+        // Permission ID: 22 (manage_sourcing), 25 (create_vendor_rec), 13/17 (approve sourcing/procurement)
+        show: hasPerm('manage_sourcing') || hasPerm('create_vendor_recommendations') || hasPerm('approve_sourcing') || hasPerm('approve_procurement') || isSuperAdmin
       },
       { 
         id: 'annual-purchase-plan', 
         label: 'Annual Purchase Plan', 
         icon: Boxes, 
-        show: hasAnnualPurchasePlanAccess
+        // Permission ID: 23 (create_procurement_plan)
+        show: hasPerm('create_procurement_plan') || isSuperAdmin
       },
-      { 
-        id: 'system-data', 
-        label: 'System Data', 
-        icon: Building, 
-        show: isAdmin
-      },
-      { 
-        id: 'category-management', 
-        label: 'Category Management', 
-        icon: FolderTree, 
-        show: isAdmin
-      },
-      { 
-        id: 'vendor-database', 
-        label: 'Vendor Database', 
-        icon: Store, 
-        show: isAdmin
-      },
-      { 
-        id: 'approval-matrix', 
-        label: 'Approval Matrix', 
-        icon: Grid3x3, 
-        show: isAdmin
-      },
-      { 
-        id: 'matrix-management', 
-        label: 'TOR/TER Matrix', 
-        icon: Grid3x3, 
-        show: isAdmin
-      },
-      { 
-        id: 'item-definitions', 
-        label: 'Item Definitions', 
-        icon: Settings, 
-        show: isAdmin
-      },
-      { 
-        id: 'matrix-contract', 
-        label: 'Matrix Contract', 
-        icon: CheckSquare, 
-        show: isAdmin
-      },
+
+      // --- ADMINISTRATION (MAPPED TO SPECIFIC PERMISSIONS) ---
       { 
         id: 'users', 
         label: 'User Management', 
         icon: Users, 
-        show: isAdmin
+        // Permission ID: 1 (manage_users)
+        show: hasPerm('manage_users') || isSuperAdmin
       },
       { 
         id: 'role-management', 
         label: 'Role Management', 
         icon: ShieldCheck, 
-        show: isAdmin
+        // Permission ID: 2 (manage_roles)
+        show: hasPerm('manage_roles') || isSuperAdmin
+      },
+      
+      // System & Data Management Group
+      { 
+        id: 'system-data', 
+        label: 'System Data', 
+        icon: Building, 
+        // Permission ID: 3 (manage_system)
+        show: hasPerm('manage_system') || isSuperAdmin
+      },
+      { 
+        id: 'category-management', 
+        label: 'Category Management', 
+        icon: FolderTree, 
+        // Permission ID: 3 or 7
+        show: hasPerm('manage_system') || hasPerm('manage_data') || isSuperAdmin
+      },
+      { 
+        id: 'vendor-database', 
+        label: 'Vendor Database', 
+        icon: Store, 
+        // Permission ID: 7 (manage_data) or 22 (manage_sourcing)
+        show: hasPerm('manage_data') || hasPerm('manage_sourcing') || isSuperAdmin
+      },
+      { 
+        id: 'approval-matrix', 
+        label: 'Approval Matrix', 
+        icon: Grid3x3, 
+        // Permission ID: 3 (manage_system)
+        show: hasPerm('manage_system') || isSuperAdmin
+      },
+      { 
+        id: 'matrix-management', 
+        label: 'TOR/TER Matrix', 
+        icon: Grid3x3, 
+        show: hasPerm('manage_system') || isSuperAdmin
+      },
+      { 
+        id: 'item-definitions', 
+        label: 'Item Definitions', 
+        icon: Settings, 
+        show: hasPerm('manage_system') || isSuperAdmin
+      },
+      { 
+        id: 'matrix-contract', 
+        label: 'Matrix Contract', 
+        icon: CheckSquare, 
+        show: hasPerm('manage_system') || isSuperAdmin
       },
     ];
 
@@ -198,6 +202,7 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
   const menuItems = getMenuItems();
 
   const handleResetPassword = () => {
+    // Logic reset password tetap sama
     if (!newPassword || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
@@ -211,7 +216,6 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
       return;
     }
     
-    // Simulate password reset
     toast.success('Password reset successfully');
     setResetPasswordOpen(false);
     setNewPassword('');
@@ -246,10 +250,8 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
         <span
           className="flex-1 min-w-0 break-words hyphens-auto"
           style={{
-            // Izinkan wrap otomatis, tapi hanya jika perlu
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
-            // Opsional: batasi maksimal 2 baris
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -269,7 +271,6 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
         <div className="h-full pr-6 flex items-center justify-between">
           {/* Logo - Left side */}
           <div className="flex items-center">
-            {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 rounded-lg transition-colors"
@@ -280,12 +281,10 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
               {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             
-            {/* AlamTri Geo Logo */}
-            <img 
-              src={logoImage} 
-              alt="AlamTri Geo" 
-              className="h-20 object-contain -ml-2"
-            />
+             {/* Logo Image */}
+             <div className="h-20 flex items-center ml-2">
+                 <span className="text-xl font-bold text-blue-600">ALAM TRI</span>
+            </div>
           </div>
 
           {/* Centered header title */}
@@ -347,24 +346,43 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
                           <p className="text-sm" style={{ color: '#000000' }}>{user.name}</p>
                         </div>
                       </div>
-                      {user.department && (
+                      {/* Tampilkan Dept/Jobsite jika ada */}
+                      {(user.department as any)?.name ? (
                         <div className="flex items-start gap-2">
                           <Building className="w-4 h-4 mt-0.5" style={{ color: '#6C757D' }} />
                           <div>
                             <p className="text-xs" style={{ color: '#6C757D' }}>Department</p>
-                            <p className="text-sm" style={{ color: '#000000' }}>{user.department}</p>
+                            <p className="text-sm" style={{ color: '#000000' }}>{(user.department as any).name}</p>
                           </div>
                         </div>
-                      )}
-                      {user.jobsite && (
+                      ) : user.department ? (
+                         <div className="flex items-start gap-2">
+                          <Building className="w-4 h-4 mt-0.5" style={{ color: '#6C757D' }} />
+                          <div>
+                            <p className="text-xs" style={{ color: '#6C757D' }}>Department</p>
+                            <p className="text-sm" style={{ color: '#000000' }}>{String(user.department)}</p>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(user.jobsite as any)?.name ? (
                         <div className="flex items-start gap-2">
                           <MapPin className="w-4 h-4 mt-0.5" style={{ color: '#6C757D' }} />
                           <div>
                             <p className="text-xs" style={{ color: '#6C757D' }}>Jobsite</p>
-                            <p className="text-sm" style={{ color: '#000000' }}>{user.jobsite}</p>
+                            <p className="text-sm" style={{ color: '#000000' }}>{(user.jobsite as any).name}</p>
                           </div>
                         </div>
-                      )}
+                      ) : user.jobsite ? (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 mt-0.5" style={{ color: '#6C757D' }} />
+                          <div>
+                            <p className="text-xs" style={{ color: '#6C757D' }}>Jobsite</p>
+                            <p className="text-sm" style={{ color: '#000000' }}>{String(user.jobsite)}</p>
+                          </div>
+                        </div>
+                      ) : null}
+
                       {user.email && (
                         <div className="flex items-start gap-2">
                           <Mail className="w-4 h-4 mt-0.5" style={{ color: '#6C757D' }} />
@@ -431,24 +449,13 @@ export function Layout({ user, children, currentPage, onNavigate, onLogout }: La
         style={{ backgroundColor: '#F4F4F4', borderColor: '#E0E0E0' }}
       >
         <div className="h-full flex flex-col">
-          {/* Logo/Brand */}
-          <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#000000' }}>
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 style={{ color: '#000000', fontWeight: '600' }}>e-Proposal</h2>
-                <p className="text-xs" style={{ color: '#6C757D' }}>Management System</p>
-              </div>
-            </div>
-          </div>
-
           {/* Navigation */}
           <nav 
-            ref={navRef} // Tambah ref
+            ref={navRef}
             className="flex-1 p-4 space-y-1 overflow-y-auto"
           >
+            {/* Split menus into sections if needed, or just map them all */}
+            {/* Note: Layout aslinya belum ada pemisah visual, kita ikut standar */}
             {menuItems.map(item => (
               <NavItem key={item.id} item={item} />
             ))}

@@ -47,9 +47,9 @@ export async function saveApprovalMatrix(data: ApprovalMatrixSaveRequest) {
 }
 
 // DELETE
-export async function deleteApprovalMatrix(id: number) {
+export async function deleteApprovalMatrix(id: number, user:string) {
     try {
-        const response = await fetch(`${API_BASE}/ApprovalMatrix/${id}`, {
+        const response = await fetch(`${API_BASE}/ApprovalMatrix/${id}/${user}`, {
             method: 'DELETE'
         });
 

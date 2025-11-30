@@ -25,7 +25,9 @@ namespace EProcurement.Api.Services.Implementations
                     CategoryCode = (string)x.CategoryCode,
                     CategoryName = (string)x.CategoryName,
                     CategoryDesc = (string)x.CategoryDesc,
-                    CategoryOrder = (int)x.CategoryOrder
+                    CategoryOrder = (int)x.CategoryOrder,
+                    // ✅ TAMBAHKAN INI: Group by CanAddEditDelete juga
+                    CanAddEditDelete = (bool)x.CanAddEditDelete
                 })
                 .OrderBy(g => g.Key.CategoryOrder)
                 .Select(g => new SystemDataCategoryDto
@@ -33,6 +35,8 @@ namespace EProcurement.Api.Services.Implementations
                     Code = g.Key.CategoryCode,
                     Name = g.Key.CategoryName,
                     Description = g.Key.CategoryDesc,
+                    // ✅ TAMBAHKAN INI: Map value dari Key ke DTO
+                    CanAddEditDelete = g.Key.CanAddEditDelete,
                     Items = g.Select(item => MapToDto(g.Key.CategoryCode, item))
                          .Cast<SystemDataItemDto>() // Paksa casting ke tipe DTO
                          .ToList()
@@ -71,16 +75,16 @@ namespace EProcurement.Api.Services.Implementations
             {
                 Id = newCode,
                 Value = request.Value,
-                IsActive = true,
-                // Mapping balik properti DTO sesuai logic baru
+                IsActive = request.IsActive,
                 Abbreviation = (categoryCode == "jobsite" || categoryCode == "department") ? newCode : request.Abbreviation,
                 Description = request.Description,
+                User = request.User,
                 CreatedAt = DateTime.Now.ToString("yyyy-MM-dd"),
                 UpdatedAt = DateTime.Now.ToString("yyyy-MM-dd")
             };
 
             // Simpan ke Repository
-            var success = await _repository.CreateAsync(categoryCode, newCode, request.Value, dbDescription, true);
+            var success = await _repository.CreateAsync(categoryCode, newCode, request.Value, dbDescription, request.IsActive, request.User);
             return success ? newItem : null;
         }
 
@@ -91,12 +95,12 @@ namespace EProcurement.Api.Services.Implementations
             // Jika User ingin ganti Kode Jobsite (misal 40AB -> 40AC), idealnya hapus dan buat baru, atau butuh logic khusus.
 
             string dbDescription = ResolveDbDescription(categoryCode, request.Description);
-            return await _repository.UpdateAsync(categoryCode, id, request.Value, dbDescription, request.IsActive);
+            return await _repository.UpdateAsync(categoryCode, id, request.Value, dbDescription, request.IsActive, request.User);
         }
 
-        public async Task<bool> DeleteItemAsync(string categoryCode, string id)
+        public async Task<bool> DeleteItemAsync(string categoryCode, string id, string user)
         {
-            return await _repository.DeleteAsync(categoryCode, id);
+            return await _repository.DeleteAsync(categoryCode, id, user);
         }
 
         public async Task<bool> ReorderItemsAsync(string categoryCode, List<string> itemIds)

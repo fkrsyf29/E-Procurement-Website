@@ -37,7 +37,7 @@ import { Departments, Jobsites, ApprovalRoles, User } from '../types';
 import { fetchApprovalMatrices, saveApprovalMatrix, deleteApprovalMatrix } from '../services/approvalMatrixApi';
 
 interface ApprovalMatrixManagementProps {
-  user: User;
+  user: User | null;
   departments: Departments[];
   jobsites: Jobsites[];
   roles: ApprovalRoles[];
@@ -63,7 +63,7 @@ interface MatrixFormData {
 type SortField = 'department' | 'jobsite' | 'amountMin' | 'group';
 type SortDirection = 'asc' | 'desc';
 
-export function ApprovalMatrixManagement({ user, departments, jobsites, roles }: ApprovalMatrixManagementProps) {
+export function ApprovalMatrixManagement({ user: propCurrentUser, departments, jobsites, roles }: ApprovalMatrixManagementProps) {
   // --- State ---
   const [matrices, setMatrices] = useState<ApprovalMatrixDto[]>([]); // Hanya fetch matrices
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +94,8 @@ export function ApprovalMatrixManagement({ user, departments, jobsites, roles }:
     groupName: '',
     steps: [],
   });
+
+  const currentUserName = propCurrentUser?.username || 'System';
 
   useEffect(() => {
     loadMatrices();
@@ -199,7 +201,7 @@ export function ApprovalMatrixManagement({ user, departments, jobsites, roles }:
         amountMax: formData.amountMax,
         groupName: formData.groupName,
         isActive: true,
-        user: user?.username || 'SYSTEM',
+        user: currentUserName,
         steps: formData.steps.map((s, index) => ({
           stepNumber: index + 1,
           stepName: s.stepName,
@@ -245,7 +247,7 @@ export function ApprovalMatrixManagement({ user, departments, jobsites, roles }:
   const handleDeleteMatrix = async () => {
     if (!selectedMatrix) return;
     try {
-        await deleteApprovalMatrix(selectedMatrix.matrixID);
+        await deleteApprovalMatrix(selectedMatrix.matrixID,currentUserName);
         toast.success('Matrix deleted successfully');
         loadMatrices();
     } catch (error) {
@@ -334,9 +336,26 @@ export function ApprovalMatrixManagement({ user, departments, jobsites, roles }:
           <Label>Min Amount (USD)</Label>
           <Input
             type="number"
-            value={formData.amountMin}
-            onChange={e => setFormData({ ...formData, amountMin: parseFloat(e.target.value) || 0 })}
-          />
+            value={formData.amountMin.toString()}
+            onFocus={(e) => {
+              if (formData.amountMin === 0) {
+                setFormData({ ...formData, amountMin: "" });
+              }
+            }}
+
+            onChange={(e) => {
+                const val = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  amountMin: val === "" ? "" : parseFloat(val) 
+                });
+              }}
+              onBlur={() => {
+                if (formData.amountMin === "" || isNaN(formData.amountMin)) {
+                  setFormData({ ...formData, amountMin: 0 });
+                }
+              }}
+            />
         </div>
         <div>
           <Label>Max Amount (USD)</Label>

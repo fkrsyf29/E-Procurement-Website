@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Edit, Trash2, Star, Phone, Mail, MapPin, Award, X, Save, FileText, Building2, Calendar, Shield, Tag } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Switch } from './ui/switch';
+import { Plus, Search, Edit, Trash2, Star, Phone, Mail, FileText, Award, X, Save, RefreshCcw, Loader2, Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { 
   Table, 
   TableBody, 
@@ -13,7 +13,7 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from './ui/table';
+} from '@/components/ui/table';
 import { 
   Dialog, 
   DialogContent, 
@@ -21,12 +21,14 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogFooter 
-} from './ui/dialog';
-import { Badge } from './ui/badge';
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { VendorRecord, vendorDatabase } from '../data/vendorDatabase_NEW';
-import { categoryHierarchy, SubClassification } from '../data/categoryHierarchy';
-import { getActiveExternalBrands, getActiveKBLICodes } from '../data/systemReferenceData';
+
+// --- IMPORTS DARI API & TYPES ---
+import { VendorRecord } from '../types';
+import { fetchVendorsApi, syncVendorsApi, updateVendorApi, UpdateVendorPayload, getActiveExternalBrands, getActiveKBLICodes } from '../services/vendorApi';
+import { categoryHierarchy, SubClassification } from '../data/categoryHierarchy'; // Masih pakai mock hierarchy utk struktur tree
 import { User } from '../types';
 
 interface VendorDatabaseManagementNewProps {
@@ -34,13 +36,23 @@ interface VendorDatabaseManagementNewProps {
 }
 
 export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNewProps) {
-  const [vendors, setVendors] = useState<VendorRecord[]>(vendorDatabase);
+  // --- STATE DATA ---
+  const [vendors, setVendors] = useState<VendorRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // --- STATE UI ---
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [editingVendor, setEditingVendor] = useState<VendorRecord | null>(null);
   const [viewingVendor, setViewingVendor] = useState<VendorRecord | null>(null);
   
+  // --- STATE MASTER DATA (Dropdowns) ---
+  const [availableBrands, setAvailableBrands] = useState<{id: number, name: string}[]>([]);
+  const [availableKblis, setAvailableKblis] = useState<{code: string, description: string}[]>([]);
+
   // Pagination
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,10 +66,13 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   const [address, setAddress] = useState('');
   const [website, setWebsite] = useState('');
   
-  // Form fields - Capabilities
-  const [selectedSubClasses, setSelectedSubClasses] = useState<SubClassification[]>([]);
-  const [selectedKBLICodes, setSelectedKBLICodes] = useState<{ code: string; description: string }[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  // Form fields - Capabilities (Selection IDs)
+  const [selectedSubClassIds, setSelectedSubClassIds] = useState<number[]>([]);
+  const [selectedKbliIds, setSelectedKbliIds] = useState<string[]>([]);
+  const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
+  
+  // UI State untuk helper display form (karena form asli pakai object array, bukan ID)
+  // Kita gunakan state ID di atas untuk logic, tapi UI mungkin butuh object untuk render badge
   
   // Form fields - Performance & Qualification
   const [rating, setRating] = useState<number>(0);
@@ -82,39 +97,58 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   // Form fields - Status
   const [isActive, setIsActive] = useState(true);
   const [isPreferred, setIsPreferred] = useState(false);
-  
-  // Multi-select helpers
-  const [subClassSelectorOpen, setSubClassSelectorOpen] = useState(false);
-  const [kbliSelectorOpen, setKbliSelectorOpen] = useState(false);
-  const [brandSelectorOpen, setBrandSelectorOpen] = useState(false);
-  
-  // Get all sub-classifications from hierarchy
-  const getAllSubClassifications = (): SubClassification[] => {
-    const allSubClasses: SubClassification[] = [];
-    categoryHierarchy.forEach(cat => {
-      cat.classifications.forEach(cls => {
-        cls.subClassifications.forEach(sub => {
-          allSubClasses.push(sub);
-        });
-      });
-    });
-    return allSubClasses;
+
+  // --- INITIALIZATION ---
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    try {
+        // 1. Load Vendors
+        const vendorData = await fetchVendorsApi();
+        setVendors(vendorData);
+
+        // 2. Load Master Data untuk Form
+        const brands = await getActiveExternalBrands();
+        setAvailableBrands(brands);
+        
+        const kblis = await getActiveKBLICodes();
+        setAvailableKblis(kblis);
+
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setIsLoading(false);
+    }
   };
-  
-  // Get available KBLI codes
-  const availableKBLICodes = getActiveKBLICodes();
-  
-  // Get available brands
-  const availableBrands = getActiveExternalBrands();
-  
+
+  // --- ACTIONS ---
+
+  const handleSyncData = async () => {
+    setIsSyncing(true);
+    try {
+        await syncVendorsApi();
+        toast.success('Sinkronisasi Data Master Berhasil');
+        // Reload data setelah sync
+        const vendorData = await fetchVendorsApi();
+        setVendors(vendorData);
+    } catch (error) {
+        toast.error('Gagal melakukan sinkronisasi');
+    } finally {
+        setIsSyncing(false);
+    }
+  };
+
   // Filter vendors
   const filteredVendors = useMemo(() => {
     if (!searchTerm) return vendors;
 
     const term = searchTerm.toLowerCase();
     return vendors.filter(vendor =>
-      vendor.vendorName.toLowerCase().includes(term) ||
-      vendor.vendorCode.toLowerCase().includes(term) ||
+      vendor.vendorName?.toLowerCase().includes(term) ||
+      vendor.vendorCode?.toLowerCase().includes(term) ||
       vendor.email?.toLowerCase().includes(term) ||
       vendor.contactPerson?.toLowerCase().includes(term)
     );
@@ -133,6 +167,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   }, [searchTerm, pageSize]);
   
   const handleNewVendor = () => {
+    // Note: Biasanya insert vendor via Sync, tapi jika ada fitur manual add:
     resetForm();
     setEditingVendor(null);
     setShowForm(true);
@@ -150,21 +185,20 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
     setAddress(vendor.address || '');
     setWebsite(vendor.website || '');
     
-    // Capabilities
-    const subClasses = vendor.capabilities.subClassifications.map(sc => {
-      const allSubClasses = getAllSubClassifications();
-      return allSubClasses.find(s => s.code === sc.subClassificationCode)!;
-    }).filter(Boolean);
-    setSelectedSubClasses(subClasses);
-    setSelectedKBLICodes(vendor.capabilities.kbliCodes);
-    setSelectedBrands(vendor.capabilities.brands);
+    // Capabilities Mapping (Object to ID Array)
+    setSelectedSubClassIds(vendor.capabilities.subClassifications.map(x => x.subClassificationID));
+    // KBLI di backend ID-nya adalah string code
+    setSelectedKbliIds(vendor.capabilities.kbliCodes.map(x => x.kbliId)); 
+    setSelectedBrandIds(vendor.capabilities.brands.map(x => x.externalBrandID));
     
     // Performance
     setRating(vendor.rating || 0);
-    setCertifications(vendor.certifications || []);
+    // Certifications & Tags (Manual field, asumsi disimpan di kolom Notes atau JSON lain jika belum ada kolom khusus)
+    // Untuk saat ini kita kosongkan atau ambil dari notes jika ada logic parsing
+    setCertifications([]); 
     
     // Business
-    setCompanySize(vendor.companySize || 'Medium');
+    setCompanySize((vendor.companySize as any) || 'Medium');
     setYearEstablished(vendor.yearEstablished?.toString() || '');
     setNpwp(vendor.npwp || '');
     setSiup(vendor.siup || '');
@@ -175,7 +209,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
     
     // Notes & Tags
     setNotes(vendor.notes || '');
-    setTags(vendor.tags || []);
+    setTags([]); // Logic tags belum ada di backend struct, skip dulu
     
     // Status
     setIsActive(vendor.isActive);
@@ -190,120 +224,60 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
   };
   
   const handleDeleteVendor = (vendor: VendorRecord) => {
-    if (window.confirm(`Are you sure you want to delete ${vendor.vendorName}?`)) {
-      const newVendors = vendors.filter(v => v.id !== vendor.id);
-      setVendors(newVendors);
-      toast.success('Vendor deleted successfully');
+    // Implementasi delete API jika ada
+    if (window.confirm(`Are you sure you want to delete ${vendor.vendorName}? (Soft Delete)`)) {
+       // Call API delete...
+       toast.info('Fitur delete belum terhubung ke API (Soft Delete implemented on backend update)');
     }
   };
   
-  const handleSaveVendor = () => {
+  const handleSaveVendor = async () => {
+    if(!editingVendor) return;
+
     // Validation
     if (!vendorName.trim()) {
       toast.error('Please enter vendor name');
       return;
     }
-    if (!vendorCode.trim()) {
-      toast.error('Please enter vendor code');
-      return;
-    }
-    if (selectedSubClasses.length === 0) {
-      toast.error('Please select at least one sub-classification');
-      return;
-    }
     
-    const now = new Date().toISOString().split('T')[0];
-        const savedVendor: VendorRecord = editingVendor
-      ? {
-          ...editingVendor,
-          vendorName,
-          vendorCode,
-          contactPerson: contactPerson || undefined,
-          phoneNumber: phoneNumber || undefined,
-          email: email || undefined,
-          address: address || undefined,
-          website: website || undefined,
-          capabilities: {
-            subClassifications: selectedSubClasses.map(sc => ({
-              categoryCode: sc.code.split('.')[0],
-              categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
-              classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
-              classificationName: categoryHierarchy
-                .find(c => c.code === sc.code.split('.')[0])
-                ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
-              subClassificationCode: sc.code,
-              subClassificationName: sc.name
-            })),
-            kbliCodes: selectedKBLICodes,
-            brands: selectedBrands
-          },
-          rating: rating || undefined,
-          certifications: certifications.length > 0 ? certifications : undefined,
-          companySize,
-          yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
-          npwp: npwp || undefined,
-          siup: siup || undefined,
-          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-          paymentTerms: paymentTerms || undefined,
-          notes: notes || undefined,
-          tags: tags.length > 0 ? tags : undefined,
-          isActive,
-          isPreferred,
-          updatedDate: now,
-          updatedBy: user.username
-        }
-      : {
-          id: `VDB-${Date.now()}`,
-          vendorName,
-          vendorCode,
-          contactPerson: contactPerson || undefined,
-          phoneNumber: phoneNumber || undefined,
-          email: email || undefined,
-          address: address || undefined,
-          website: website || undefined,
-          capabilities: {
-            subClassifications: selectedSubClasses.map(sc => ({
-              categoryCode: sc.code.split('.')[0],
-              categoryName: categoryHierarchy.find(c => c.code === sc.code.split('.')[0])?.name || '',
-              classificationCode: `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`,
-              classificationName: categoryHierarchy
-                .find(c => c.code === sc.code.split('.')[0])
-                ?.classifications.find(cl => cl.code === `${sc.code.split('.')[0]}.${sc.code.split('.')[1]}`)?.name || '',
-              subClassificationCode: sc.code,
-              subClassificationName: sc.name
-            })),
-            kbliCodes: selectedKBLICodes,
-            brands: selectedBrands
-          },
-          rating: rating || undefined,
-          certifications: certifications.length > 0 ? certifications : undefined,
-          companySize,
-          yearEstablished: yearEstablished ? parseInt(yearEstablished) : undefined,
-          npwp: npwp || undefined,
-          siup: siup || undefined,
-          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
-          paymentTerms: paymentTerms || undefined,
-          notes: notes || undefined,
-          tags: tags.length > 0 ? tags : undefined,
-          isActive,
-          isPreferred,
-          createdDate: now,
-          updatedDate: now,
-          createdBy: user.username,
-          updatedBy: user.username
+    setIsSaving(true);
+
+    try {
+        const payload: UpdateVendorPayload = {
+            contactPerson,
+            contactEmail: email,
+            contactPhone: phoneNumber,
+            rating,
+            isActive,
+            isPreferred,
+            companySize,
+            yearEstablished: yearEstablished ? parseInt(yearEstablished) : null,
+            siup,
+            creditLimit: creditLimit ? parseFloat(creditLimit) : null,
+            paymentTerms,
+            notes,
+            updatedBy: user.username,
+            
+            // Arrays of IDs
+            subClassificationIds: selectedSubClassIds,
+            kbliIds: selectedKbliIds,
+            brandIds: selectedBrandIds
         };
 
-    if (editingVendor) {
-      setVendors(vendors.map(v => v.id === editingVendor.id ? savedVendor : v));
-      toast.success('Vendor updated successfully');
-    } else {
-      setVendors([...vendors, savedVendor]);
-      toast.success('Vendor created successfully');
+        await updateVendorApi(editingVendor.vendorId, payload);
+        
+        toast.success('Vendor updated successfully');
+        setShowForm(false);
+        
+        // Refresh data
+        const newData = await fetchVendorsApi();
+        setVendors(newData);
+
+    } catch (error) {
+        toast.error('Gagal menyimpan data vendor');
+    } finally {
+        setIsSaving(false);
     }
-    
-    setShowForm(false);
-    resetForm();
-    setCurrentPage(1);
   };
   
   const resetForm = () => {
@@ -314,9 +288,9 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
     setEmail('');
     setAddress('');
     setWebsite('');
-    setSelectedSubClasses([]);
-    setSelectedKBLICodes([]);
-    setSelectedBrands([]);
+    setSelectedSubClassIds([]);
+    setSelectedKbliIds([]);
+    setSelectedBrandIds([]);
     setRating(0);
     setCertifications([]);
     setCertificationInput('');
@@ -334,49 +308,48 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
     setEditingVendor(null);
   };
   
-  // Add certification
+  // --- UI HELPERS FOR MULTI SELECT ---
+  
+  // Toggle sub-classification
+  const toggleSubClass = (subId: number) => {
+    if (selectedSubClassIds.includes(subId)) {
+        setSelectedSubClassIds(selectedSubClassIds.filter(id => id !== subId));
+    } else {
+        setSelectedSubClassIds([...selectedSubClassIds, subId]);
+    }
+  };
+  
+  // Toggle KBLI (ID is string code)
+  const toggleKBLI = (code: string) => {
+    if (selectedKbliIds.includes(code)) {
+        setSelectedKbliIds(selectedKbliIds.filter(id => id !== code));
+    } else {
+        setSelectedKbliIds([...selectedKbliIds, code]);
+    }
+  };
+  
+  // Toggle brand
+  const toggleBrand = (brandId: number) => {
+    if (selectedBrandIds.includes(brandId)) {
+        setSelectedBrandIds(selectedBrandIds.filter(id => id !== brandId));
+    } else {
+        setSelectedBrandIds([...selectedBrandIds, brandId]);
+    }
+  };
+
+  // Add certification (UI Only for now)
   const addCertification = () => {
     if (certificationInput.trim() && !certifications.includes(certificationInput.trim())) {
       setCertifications([...certifications, certificationInput.trim()]);
       setCertificationInput('');
     }
   };
-  
-  // Add tag
+
+  // Add tag (UI Only for now)
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
       setTagInput('');
-    }
-  };
-  
-  // Toggle sub-classification
-  const toggleSubClass = (subClass: SubClassification) => {
-    const exists = selectedSubClasses.find(sc => sc.code === subClass.code);
-    if (exists) {
-      setSelectedSubClasses(selectedSubClasses.filter(sc => sc.code !== subClass.code));
-    } else {
-      setSelectedSubClasses([...selectedSubClasses, subClass]);
-    }
-  };
-  
-  // Toggle KBLI
-  const toggleKBLI = (kbli: { code: string; description: string }) => {
-    const exists = selectedKBLICodes.find(k => k.code === kbli.code);
-    if (exists) {
-      setSelectedKBLICodes(selectedKBLICodes.filter(k => k.code !== kbli.code));
-    } else {
-      setSelectedKBLICodes([...selectedKBLICodes, kbli]);
-    }
-  };
-  
-  // Toggle brand
-  const toggleBrand = (brand: string) => {
-    const exists = selectedBrands.includes(brand);
-    if (exists) {
-      setSelectedBrands(selectedBrands.filter(b => b !== brand));
-    } else {
-      setSelectedBrands([...selectedBrands, brand]);
     }
   };
   
@@ -412,29 +385,40 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
             className="pl-10"
           />
         </div>
-        <Button onClick={handleNewVendor} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Vendor
-        </Button>
+        <div className="flex gap-2">
+            <Button 
+                onClick={handleSyncData} 
+                disabled={isSyncing || isLoading}
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+                {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <RefreshCcw className="w-4 h-4 mr-2" />}
+                {isSyncing ? 'Syncing...' : 'Sync Master Data'}
+            </Button>
+            {/* <Button onClick={handleNewVendor} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Vendor
+            </Button> */}
+        </div>
       </div>
       
       {/* Statistics */}
       <div className="mb-6 grid grid-cols-4 gap-4">
         <div className="bg-white border rounded-lg p-4">
           <div className="text-sm text-gray-600">Total Vendors</div>
-          <div className="text-2xl text-gray-900 mt-1">{vendors.length}</div>
+          <div className="text-2xl text-gray-900 mt-1">{isLoading ? '-' : vendors.length}</div>
         </div>
         <div className="bg-white border rounded-lg p-4">
           <div className="text-sm text-gray-600">Active Vendors</div>
-          <div className="text-2xl text-green-600 mt-1">{vendors.filter(v => v.isActive).length}</div>
+          <div className="text-2xl text-green-600 mt-1">{isLoading ? '-' : vendors.filter(v => v.isActive).length}</div>
         </div>
         <div className="bg-white border rounded-lg p-4">
           <div className="text-sm text-gray-600">Preferred Vendors</div>
-          <div className="text-2xl text-blue-600 mt-1">{vendors.filter(v => v.isPreferred).length}</div>
+          <div className="text-2xl text-blue-600 mt-1">{isLoading ? '-' : vendors.filter(v => v.isPreferred).length}</div>
         </div>
         <div className="bg-white border rounded-lg p-4">
           <div className="text-sm text-gray-600">Inactive Vendors</div>
-          <div className="text-2xl text-gray-400 mt-1">{vendors.filter(v => !v.isActive).length}</div>
+          <div className="text-2xl text-gray-400 mt-1">{isLoading ? '-' : vendors.filter(v => !v.isActive).length}</div>
         </div>
       </div>
       
@@ -457,16 +441,25 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedVendors.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                    <TableCell colSpan={10} className="text-center py-12">
+                        <div className="flex flex-col items-center justify-center text-gray-500">
+                            <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                            <p>Loading vendors data...</p>
+                        </div>
+                    </TableCell>
+                </TableRow>
+              ) : paginatedVendors.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No vendors found matching your search.' : 'No vendors available. Click "Add Vendor" to create one.'}
+                    {searchTerm ? 'No vendors found matching your search.' : 'No vendors available. Click "Sync Master Data" to fetch from central DB.'}
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedVendors.map((vendor, index) => (
-                  <TableRow key={vendor.id} className={!vendor.isActive ? 'opacity-50' : ''}>
-                    <TableCell className="text-gray-600">{index + 1}</TableCell>
+                  <TableRow key={vendor.vendorId} className={!vendor.isActive ? 'opacity-50' : ''}>
+                    <TableCell className="text-gray-600">{index + 1 + ((currentPage - 1) * pageSize)}</TableCell>
                     <TableCell>
                       <code className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
                         {vendor.vendorCode}
@@ -508,7 +501,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                       <div className="flex flex-wrap gap-1">
                         {vendor.capabilities.subClassifications.slice(0, 2).map((sc, idx) => (
                           <Badge key={idx} variant="outline" className="text-xs">
-                            {sc.subClassificationCode}
+                            {sc.subClassificationCode || 'N/A'}
                           </Badge>
                         ))}
                         {vendor.capabilities.subClassifications.length > 2 && (
@@ -536,7 +529,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                       <div className="flex flex-wrap gap-1">
                         {vendor.capabilities.brands.slice(0, 2).map((brand, idx) => (
                           <Badge key={idx} variant="outline" className="text-xs">
-                            {brand}
+                            {brand.brandName}
                           </Badge>
                         ))}
                         {vendor.capabilities.brands.length > 2 && (
@@ -579,14 +572,14 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteVendor(vendor)}
                           className="h-8 px-2 text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </Button> */}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -648,7 +641,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
         )}
       </div>
       
-      {/* Form Dialog - will continue in next part */}
+      {/* Form Dialog - (Edit Only for now mostly) */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -672,6 +665,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <Input
                     id="vendorName"
                     value={vendorName}
+                    disabled={!!editingVendor} // Disable name edit for existing vendor (Master Data)
                     onChange={(e) => setVendorName(e.target.value)}
                     placeholder="e.g., PT Kambing Guling"
                   />
@@ -681,12 +675,13 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <Input
                     id="vendorCode"
                     value={vendorCode}
+                    disabled={!!editingVendor} // Disable code edit
                     onChange={(e) => setVendorCode(e.target.value.toUpperCase())}
                     placeholder="e.g., VND-KG-001"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contactPerson">Contact Person</Label>
+                  <Label htmlFor="contactPerson">Contact Person (PIC)</Label>
                   <Input
                     id="contactPerson"
                     value={contactPerson}
@@ -695,7 +690,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Label htmlFor="phoneNumber">Phone Number (PIC)</Label>
                   <Input
                     id="phoneNumber"
                     value={phoneNumber}
@@ -704,7 +699,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email (PIC)</Label>
                   <Input
                     id="email"
                     type="email"
@@ -727,6 +722,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <Textarea
                     id="address"
                     value={address}
+                    disabled={!!editingVendor} // Disable address edit
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Full address..."
                     rows={2}
@@ -751,13 +747,14 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                           <div className="text-xs text-gray-600 mb-1">{cls.name}</div>
                           <div className="ml-3 space-y-1">
                             {cls.subClassifications.map(sub => {
-                              const isSelected = selectedSubClasses.some(sc => sc.code === sub.code);
+                              // Cek berdasarkan ID (subClassificationID)
+                              const isSelected = selectedSubClassIds.includes(sub.subClassificationID);
                               return (
-                                <label key={sub.code} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
+                                <label key={sub.subClassificationID} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
-                                    onChange={() => toggleSubClass(sub)}
+                                    onChange={() => toggleSubClass(sub.subClassificationID)}
                                     className="rounded"
                                   />
                                   <span className="text-xs text-gray-700">
@@ -772,16 +769,29 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                     </div>
                   ))}
                 </div>
+                {/* Selected Badges */}
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedSubClasses.map(sc => (
-                    <Badge key={sc.code} className="bg-blue-100 text-blue-800 border-blue-300">
-                      {sc.code}
-                      <X 
-                        className="w-3 h-3 ml-1 cursor-pointer" 
-                        onClick={() => toggleSubClass(sc)}
-                      />
-                    </Badge>
-                  ))}
+                    {/* Kita perlu loop hierarchy lagi untuk mendapatkan Nama/Code berdasarkan ID yang selected, 
+                        karena state kita hanya menyimpan ID. 
+                        Untuk performa lebih baik, idealnya kita punya map/lookup object. 
+                        Disini kita lakukan find sederhana.
+                    */}
+                    {selectedSubClassIds.map(id => {
+                        // Cari detail data dari hierarchy (agak berat tapi akurat untuk display)
+                        let detail: any = null;
+                        categoryHierarchy.forEach(cat => cat.classifications.forEach(cls => cls.subClassifications.forEach(sub => {
+                            if(sub.subClassificationID === id) detail = sub;
+                        })));
+                        
+                        if(!detail) return null;
+
+                        return (
+                            <Badge key={id} className="bg-blue-100 text-blue-800 border-blue-300">
+                                {detail.code}
+                                <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => toggleSubClass(id)} />
+                            </Badge>
+                        )
+                    })}
                 </div>
               </div>
               
@@ -789,14 +799,15 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               <div className="mb-4">
                 <Label>KBLI Codes (Select multiple)</Label>
                 <div className="mt-2 border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
-                  {availableKBLICodes.map(kbli => {
-                    const isSelected = selectedKBLICodes.some(k => k.code === kbli.code);
+                  {availableKblis.map(kbli => {
+                    // KBLI ID adalah Code string
+                    const isSelected = selectedKbliIds.includes(kbli.code);
                     return (
                       <label key={kbli.code} className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-2 rounded mb-1">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleKBLI(kbli)}
+                          onChange={() => toggleKBLI(kbli.code)}
                           className="rounded mt-0.5"
                         />
                         <span className="text-xs text-gray-700">
@@ -807,13 +818,10 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   })}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedKBLICodes.map(kbli => (
-                    <Badge key={kbli.code} className="bg-green-100 text-green-800 border-green-300">
-                      {kbli.code}
-                      <X 
-                        className="w-3 h-3 ml-1 cursor-pointer" 
-                        onClick={() => toggleKBLI(kbli)}
-                      />
+                  {selectedKbliIds.map(code => (
+                    <Badge key={code} className="bg-green-100 text-green-800 border-green-300">
+                      {code}
+                      <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => toggleKBLI(code)} />
                     </Badge>
                   ))}
                 </div>
@@ -825,31 +833,32 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                 <div className="mt-2 border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
                   <div className="grid grid-cols-3 gap-2">
                     {availableBrands.map(brand => {
-                      const isSelected = selectedBrands.includes(brand);
+                      const isSelected = selectedBrandIds.includes(brand.id);
                       return (
-                        <label key={brand} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
+                        <label key={brand.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            onChange={() => toggleBrand(brand)}
+                            onChange={() => toggleBrand(brand.id)}
                             className="rounded"
                           />
-                          <span className="text-xs text-gray-700">{brand}</span>
+                          <span className="text-xs text-gray-700">{brand.name}</span>
                         </label>
                       );
                     })}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedBrands.map(brand => (
-                    <Badge key={brand} className="bg-purple-100 text-purple-800 border-purple-300">
-                      {brand}
-                      <X 
-                        className="w-3 h-3 ml-1 cursor-pointer" 
-                        onClick={() => toggleBrand(brand)}
-                      />
-                    </Badge>
-                  ))}
+                  {selectedBrandIds.map(id => {
+                    const brand = availableBrands.find(b => b.id === id);
+                    if(!brand) return null;
+                    return (
+                        <Badge key={id} className="bg-purple-100 text-purple-800 border-purple-300">
+                        {brand.name}
+                        <X className="w-3 h-3 ml-1 cursor-pointer" onClick={() => toggleBrand(id)} />
+                        </Badge>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -888,7 +897,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               </div>
               
               <div className="mt-4">
-                <Label>Certifications</Label>
+                <Label>Certifications (Manual Input)</Label>
                 <div className="flex gap-2 mt-2">
                   <Input
                     value={certificationInput}
@@ -934,6 +943,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <Input
                     id="npwp"
                     value={npwp}
+                    disabled={!!editingVendor} // Disable NPWP edit
                     onChange={(e) => setNpwp(e.target.value)}
                     placeholder="e.g., 01.234.567.8-901.000"
                   />
@@ -1045,8 +1055,8 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSaveVendor} className="bg-blue-600 hover:bg-blue-700">
-              <Save className="w-4 h-4 mr-2" />
+            <Button onClick={handleSaveVendor} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2" />}
               {editingVendor ? 'Update Vendor' : 'Create Vendor'}
             </Button>
           </DialogFooter>
@@ -1111,7 +1121,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <div className="flex flex-wrap gap-1">
                     {viewingVendor.capabilities.subClassifications.map((sc, idx) => (
                       <Badge key={idx} variant="outline">
-                        {sc.subClassificationCode} - {sc.subClassificationName}
+                        {sc.subClassificationCode || sc.subClassificationName}
                       </Badge>
                     ))}
                   </div>
@@ -1133,7 +1143,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                   <div className="flex flex-wrap gap-1">
                     {viewingVendor.capabilities.brands.map((brand, idx) => (
                       <Badge key={idx} variant="outline" className="bg-purple-50">
-                        {brand}
+                        {brand.brandName}
                       </Badge>
                     ))}
                   </div>
@@ -1141,11 +1151,11 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
               </div>
               
               {/* Performance */}
-              {(viewingVendor.rating || viewingVendor.certifications) && (
+              {(viewingVendor.rating != null || (viewingVendor as any).certifications?.length > 0) && (
                 <div className="border-t pt-4">
                   <h3 className="text-sm mb-2 text-gray-500">Performance & Qualification</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    {viewingVendor.rating && (
+                    {viewingVendor.rating != null && (
                       <div>
                         <span className="text-gray-600">Rating:</span>
                         <div className="flex items-center gap-1 mt-1">
@@ -1154,33 +1164,7 @@ export function VendorDatabaseManagementNew({ user }: VendorDatabaseManagementNe
                         </div>
                       </div>
                     )}
-                    {viewingVendor.certifications && (
-                      <div className="col-span-2">
-                        <span className="text-gray-600">Certifications:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {viewingVendor.certifications.map((cert, idx) => (
-                            <Badge key={idx} className="bg-blue-100 text-blue-800 border-blue-300">
-                              <Award className="w-3 h-3 mr-1" />
-                              {cert}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Tags */}
-              {viewingVendor.tags && viewingVendor.tags.length > 0 && (
-                <div className="border-t pt-4">
-                  <h3 className="text-sm mb-2 text-gray-500">Tags</h3>
-                  <div className="flex flex-wrap gap-1">
-                    {viewingVendor.tags.map((tag, idx) => (
-                      <Badge key={idx} className="bg-gray-100 text-gray-800 border-gray-300">
-                        {tag}
-                      </Badge>
-                    ))}
+                    {/* Certifications (Jika ada field ini di masa depan) */}
                   </div>
                 </div>
               )}

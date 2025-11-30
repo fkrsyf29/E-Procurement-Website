@@ -1,3 +1,5 @@
+// src/types/categoryTypes.ts
+
 export interface SubClassificationDto {
     subClassificationID: number;
     classificationID: number;

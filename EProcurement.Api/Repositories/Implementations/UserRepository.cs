@@ -26,7 +26,16 @@ namespace EProcurement.Api.Repositories.Implementations
 
         public async Task<UserDto?> GetByNameAsync(string UserName)
         {
-            return await QuerySingleAsync<UserDto>(UserQueries.GetByName, new { UserName = UserName });
+            var user = await QuerySingleAsync<UserDto>(UserQueries.GetByName, new { UserName = UserName });
+
+            if (user != null)
+            {
+                var permissions = await QueryAsync<string>(UserQueries.GetPermissions, new { UserName = UserName });
+
+                user.Permissions = permissions.ToList();
+            }
+
+            return user;
         }
 
         public async Task<UserInsertResult> InsertAsync(UserCreateRequest req)
